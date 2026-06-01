@@ -6,7 +6,7 @@ import { jsonResponse, safeErrorResponse } from './_shared/http';
 
 export async function handler(event: FunctionEvent) {
   try {
-    const { corporationId } = getAuthScope();
+    const { corporationId } = getAuthScope(event);
     const focus = event.queryStringParameters?.focus ?? defaultResearchFocus;
     const db = await getMongoDb();
     const document = await db

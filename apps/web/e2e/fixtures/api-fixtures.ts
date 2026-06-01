@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test';
+import type { SessionStateResponse } from '@gryyk/contracts';
 import { commandSurfaceFixtures } from './command-surfaces';
 
 async function json(route: Route, body: unknown) {
@@ -10,6 +11,22 @@ async function json(route: Route, body: unknown) {
 }
 
 export async function installCommandSurfaceApiFixtures(page: Page) {
+  await page.route('**/api/eve-session**', (route) => {
+    if (route.request().method() === 'POST') {
+      return json(route, {
+        signedIn: false,
+        scopeSource: 'fallback',
+        corporationId: '917701062'
+      });
+    }
+
+    return json(route, {
+      signedIn: false,
+      scopeSource: 'fallback',
+      corporationId: '917701062'
+    });
+  });
+
   await page.route('**/api/command-brief**', (route) => json(route, commandSurfaceFixtures.commandBrief));
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
 
@@ -43,5 +60,21 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     }
 
     return json(route, { followUps: commandSurfaceFixtures.people.followUps });
+  });
+}
+
+export async function installSessionApiFixture(page: Page, session: SessionStateResponse) {
+  let currentSession = session;
+
+  await page.route('**/api/eve-session**', (route) => {
+    if (route.request().method() === 'POST') {
+      currentSession = {
+        signedIn: false,
+        scopeSource: 'fallback',
+        corporationId: '917701062'
+      };
+    }
+
+    return json(route, currentSession);
   });
 }

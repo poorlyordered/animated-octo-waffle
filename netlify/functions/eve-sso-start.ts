@@ -1,0 +1,34 @@
+import { createEveSsoState, buildEveSsoAuthorizationUrl, isLocalReturnPath, readEveSsoConfig } from './_shared/eve-sso';
+import type { FunctionEvent } from './_shared/auth-scope';
+import { redirectResponse, safeErrorResponse } from './_shared/http';
+import {
+  createSignedCookieValue,
+  readSessionSecret,
+  serializeCookie,
+  ssoStateCookieName
+} from './_shared/session-cookie';
+
+export async function handler(event: FunctionEvent) {
+  try {
+    const returnTo = event.queryStringParameters?.returnTo;
+    if (returnTo && !isLocalReturnPath(returnTo)) {
+      return safeErrorResponse('Invalid return path', 400);
+    }
+
+    const config = readEveSsoConfig();
+    const state = createEveSsoState(returnTo);
+    const stateCookie = serializeCookie(
+      ssoStateCookieName,
+      createSignedCookieValue(state, readSessionSecret()),
+      { maxAge: 10 * 60, secure: process.env.NODE_ENV === 'production' }
+    );
+
+    return redirectResponse(buildEveSsoAuthorizationUrl(config, state.state), [stateCookie]);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'EVE SSO configuration is required') {
+      return safeErrorResponse('EVE SSO is not configured', 500);
+    }
+
+    return safeErrorResponse('Unable to start EVE SSO sign-in');
+  }
+}
