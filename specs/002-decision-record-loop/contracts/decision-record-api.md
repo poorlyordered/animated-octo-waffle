@@ -1,6 +1,6 @@
 # Contract: Decision Record API
 
-The Decision Record Loop exposes short server endpoints. MongoDB credentials and corporation scope stay server-side. Responses are sanitized and scoped to `EVEONLINE_CORPORATION_ID`.
+The Decision Record Loop exposes short server endpoints. MongoDB credentials and corporation scope stay server-side. Responses are sanitized and scoped to `EVEONLINE_CORPORATION_ID`. Decision records are persisted in the MongoDB `strategic_decisions` collection and normalized into the API shapes below.
 
 ## GET /api/decision-records
 

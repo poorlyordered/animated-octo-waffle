@@ -7,6 +7,7 @@ This quickstart validates the Decision Record Loop after implementation.
 - Server-side MongoDB environment variables are configured.
 - Server-side `EVEONLINE_CORPORATION_ID` is configured for the corporation under validation.
 - `research_briefs` contains at least one processed brief for the configured corporation and focus `grykk-47-eve-official-news`.
+- `strategic_decisions` exists in the configured MongoDB database for decision record persistence.
 - The source brief includes at least one recommendation.
 
 ## Validation Flow

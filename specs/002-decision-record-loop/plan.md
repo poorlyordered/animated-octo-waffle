@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build the second Gryyk-47 command-system slice: a read/write decision record loop that lets the commander convert command brief recommendations into auditable decisions, preserve source provenance, update decision status, and keep player-impacting action boundaries explicit. The feature stores decision records in MongoDB through short server-side APIs and does not execute game actions, external-service changes, or long-running automation.
+Build the second Gryyk-47 command-system slice: a read/write decision record loop that lets the commander convert command brief recommendations into auditable decisions, preserve source provenance, update decision status, and keep player-impacting action boundaries explicit. The feature stores normalized decision records in MongoDB through short server-side APIs and does not execute game actions, external-service changes, or long-running automation.
 
 ## Technical Context
 
@@ -14,7 +14,7 @@ Build the second Gryyk-47 command-system slice: a read/write decision record loo
 
 **Primary Dependencies**: React for decision UI, Netlify serverless functions for short read/write endpoints, MongoDB driver for document persistence, Zod schemas for boundary validation
 
-**Storage**: MongoDB Atlas operational database, adding a `decision_records` collection linked to existing `research_briefs`
+**Storage**: MongoDB Atlas operational database, extending the existing `strategic_decisions` collection with normalized decision-record fields linked to existing `research_briefs`
 
 **Testing**: Contract tests for decision API response/request shapes, unit tests for normalization/state transitions/approval rules, component tests for create/list/detail/status flows
 

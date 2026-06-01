@@ -1,13 +1,14 @@
 # Research: Decision Record Loop
 
-## Decision: Store decision records in MongoDB as first-class operational documents
+## Decision: Store decision records in MongoDB as first-class operational documents in `strategic_decisions`
 
-**Rationale**: The project already uses MongoDB for operational documents, research briefs, and request status. Decision records are document-shaped, provenance-heavy, and naturally scoped by corporation and source brief. Keeping them in MongoDB avoids a second persistence stack for the M2 slice.
+**Rationale**: The project already uses MongoDB for operational documents, research briefs, and request status. The `gryyk47` database already contains a `strategic_decisions` collection with corporation-scoped decision-like documents, including `corporationId`, `researchBriefId`, `decisionContext`, `finalDecision`, agent recommendations, and synthesis fields. M2 should normalize and extend this existing decision store rather than creating a parallel `decision_records` collection.
 
 **Alternatives considered**:
 
 - Store decisions only in client state: rejected because decision records must be durable and auditable.
 - Add a relational database: rejected because this slice does not need relational joins and would add unnecessary operational complexity.
+- Create a new `decision_records` collection immediately: rejected because `strategic_decisions` already exists and should be the canonical decision collection unless implementation analysis proves it cannot support the contract.
 
 ## Decision: Use short Netlify functions for create, list, detail, and status update operations
 

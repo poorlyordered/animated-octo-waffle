@@ -4,11 +4,17 @@
 
 Represents a commander decision created from a command brief recommendation.
 
+Persistence:
+
+- Stored in the MongoDB `strategic_decisions` collection.
+- Existing documents with fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `agentRecommendations`, `agentsConsulted`, `gryykSynthesis`, and `timestamp` must be normalized into the DecisionRecord contract where possible.
+- New documents should use the normalized fields below while preserving compatibility with existing strategic decision data during migration.
+
 Fields:
 
 - `id`: stable decision record identifier.
 - `corporationId`: server-owned corporation scope.
-- `sourceBriefId`: command brief identifier used to create the decision.
+- `sourceBriefId`: command brief identifier used to create the decision. Existing documents may provide this as `researchBriefId`.
 - `sourceRecommendation`: recommendation text selected from the source brief.
 - `sourceProvenance`: immutable decision-time provenance snapshot.
 - `status`: one of `proposed`, `approved`, `delegated`, `done`, or `rejected`.
@@ -19,6 +25,13 @@ Fields:
 - `statusHistory`: ordered status change history.
 - `createdAt`: ISO timestamp when the decision was created.
 - `updatedAt`: ISO timestamp when the decision was last changed.
+
+Compatibility mapping:
+
+- `researchBriefId` maps to `sourceBriefId`.
+- `decisionContext` may seed `rationale` when a normalized rationale is not present.
+- `finalDecision` may seed the decision summary or expected-result display when normalized fields are not present.
+- `timestamp` maps to `createdAt` when normalized timestamps are not present.
 
 Validation rules:
 
