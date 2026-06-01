@@ -47,11 +47,11 @@ Deliverables:
 - Initial product architecture decision recorded
 - First feature candidate selected
 
-### M1: Command Brief MVP
+### M1: Command Brief MVP - Complete
 
 Goal: show the commander the latest structured state of the corporation across numbers, opportunity, and people.
 
-Candidate capabilities:
+Delivered capabilities:
 
 - Load latest processed research brief from MongoDB
 - Show status of background intelligence jobs
@@ -59,16 +59,31 @@ Candidate capabilities:
 - Surface recommended actions and watchlist
 - Make missing data explicit
 
-### M2: Decision Record Loop
+Validation:
+
+- Spec: `specs/001-command-brief-mvp`
+- Implementation committed in `c962920 feat: implement command brief mvp`
+- Local validation covered lint, typecheck, tests, and production build
+
+### M2: Decision Record Loop - Complete
 
 Goal: let the commander turn a recommendation into a tracked decision.
 
-Candidate capabilities:
+Delivered capabilities:
 
 - Save decision records
 - Link decisions to source briefs and data snapshots
 - Track status: proposed, approved, delegated, done, rejected
 - Capture rationale and expected result
+- Preserve explicit approval boundaries for player-impacting decisions
+- Normalize existing `strategic_decisions` documents while writing new normalized records
+
+Validation:
+
+- Spec: `specs/002-decision-record-loop`
+- Implementation committed in `f9420ba feat: implement decision record loop`
+- Quickstart write-flow validation committed in `f940034 test: validate decision record quickstart target`
+- Local validation covered lint, typecheck, tests, production build, and an isolated MongoDB write-flow check against `gryyk47_greenfield_test`
 
 ### M3: Automation Queue
 
@@ -93,4 +108,14 @@ Candidate capabilities:
 
 ## Near-Term Recommendation
 
-Start with M1 as the first spec: a clean Command Brief MVP that reads processed data rather than running research inside the web app. This gives the new architecture a useful first vertical slice without repeating the old Netlify timeout and AI-processing problems.
+Proceed to M3: Automation Queue.
+
+The next slice should turn approved decision records into auditable work items without executing player-impacting actions automatically. This builds on M1's grounded command briefs and M2's approval boundary while keeping long-running work outside Netlify request/response paths.
+
+Recommended M3 scope:
+
+- Define an `automation_queue` contract for queued work, status, owner, input, output, failure, retry metadata, and provenance.
+- Add a command surface that can queue a task from an approved decision record.
+- Prevent unapproved player-impacting decisions from creating queue entries.
+- Keep queue processing out of the web request path; the MVP should create and inspect queue records only.
+- Add validation against an isolated MongoDB test database before enabling any real worker integration.
