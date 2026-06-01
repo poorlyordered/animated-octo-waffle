@@ -39,6 +39,39 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   });
 
   await page.route('**/api/automation-queue**', (route) => {
+    const url = new URL(route.request().url());
+    const detailMatch = url.pathname.match(/\/api\/automation-queue\/([^/]+)$/);
+    const handoffMatch = url.pathname.match(/\/api\/automation-queue\/([^/]+)\/handoff$/);
+
+    if (handoffMatch) {
+      const queueItem = commandSurfaceFixtures.automationQueue.queueItems.find((item) => item.id === handoffMatch[1]);
+      return json(route, {
+        handoff: {
+          ...commandSurfaceFixtures.automationQueue.handoffs[0],
+          queueItemId: queueItem?.id ?? handoffMatch[1]
+        }
+      });
+    }
+
+    if (detailMatch) {
+      const queueItem =
+        commandSurfaceFixtures.automationQueue.queueItems.find((item) => item.id === detailMatch[1]) ??
+        commandSurfaceFixtures.automationQueue.queueItems[0];
+      const handoff = commandSurfaceFixtures.automationQueue.handoffs.find((item) => item.queueItemId === queueItem.id);
+      return json(route, {
+        queueItem,
+        handoff: handoff
+          ? {
+              id: handoff.id,
+              status: handoff.status,
+              createdAt: handoff.createdAt,
+              updatedAt: handoff.updatedAt,
+              failure: handoff.failure
+            }
+          : undefined
+      });
+    }
+
     if (route.request().method() !== 'GET') {
       return json(route, { queueItem: commandSurfaceFixtures.automationQueue.queueItems[0] });
     }

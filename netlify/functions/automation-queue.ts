@@ -9,6 +9,12 @@ import {
   findAutomationQueueItem,
   listAutomationQueueItems
 } from './_shared/automation-queue-store';
+import {
+  findLatestWorkerHandoff,
+  prepareWorkerHandoff,
+  workerHandoffSummaryFromHandoff
+} from './_shared/worker-handoff-store';
+import { assertNoExecutionRequest } from './_shared/worker-handoff-rules';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 
 function parseJsonBody(event: FunctionEvent): unknown {
@@ -21,6 +27,11 @@ function parseJsonBody(event: FunctionEvent): unknown {
 
 function queuePathId(event: FunctionEvent): string | null {
   const match = event.path?.match(/\/automation-queue\/([^/]+)$/);
+  return match?.[1] ?? null;
+}
+
+function handoffPathId(event: FunctionEvent): string | null {
+  const match = event.path?.match(/\/automation-queue\/([^/]+)\/handoff$/);
   return match?.[1] ?? null;
 }
 
@@ -40,7 +51,12 @@ export async function handler(event: FunctionEvent) {
           return safeErrorResponse('Queue item not found', 404);
         }
 
-        return jsonResponse(200, { queueItem });
+        const handoff = await findLatestWorkerHandoff(db, corporationId, queueItem.id);
+
+        return jsonResponse(200, {
+          queueItem,
+          handoff: handoff ? workerHandoffSummaryFromHandoff(handoff) : undefined
+        });
       }
 
       const status = event.queryStringParameters?.status
@@ -55,6 +71,18 @@ export async function handler(event: FunctionEvent) {
     }
 
     if (method === 'POST') {
+      const handoffQueueItemId = handoffPathId(event);
+      if (handoffQueueItemId) {
+        assertNoExecutionRequest(parseJsonBody(event));
+        const handoff = await prepareWorkerHandoff(db, corporationId, handoffQueueItemId);
+
+        if (!handoff) {
+          return safeErrorResponse('Queue item not found', 404);
+        }
+
+        return jsonResponse(201, { handoff });
+      }
+
       const request = createAutomationQueueItemRequestSchema.parse(parseJsonBody(event));
       const queueItem = await createAutomationQueueItem(db, corporationId, request);
 
@@ -84,6 +112,21 @@ export async function handler(event: FunctionEvent) {
     }
 
     if (error instanceof Error && error.message === 'Automation queue item already exists for this decision and task intent') {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Queue item is not eligible for worker handoff') {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === 'Explicit approval is required before preparing player-impacting worker handoff'
+    ) {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Worker handoff does not execute, dispatch, or retry work') {
       return safeErrorResponse(error.message, 400);
     }
 

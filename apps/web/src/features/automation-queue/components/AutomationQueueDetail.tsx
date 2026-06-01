@@ -1,14 +1,18 @@
-import type { AutomationQueueItem } from '@gryyk/contracts';
+import type { AutomationQueueItem, WorkerHandoffSummary } from '@gryyk/contracts';
 import { OperatingLegCoverage } from '../../command-brief/components/OperatingLegCoverage';
 
 interface AutomationQueueDetailProps {
   queueItem: AutomationQueueItem | null;
+  handoff?: WorkerHandoffSummary;
+  onPrepareHandoff: (queueItemId: string) => Promise<unknown>;
 }
 
-export function AutomationQueueDetail({ queueItem }: AutomationQueueDetailProps) {
+export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff }: AutomationQueueDetailProps) {
   if (!queueItem) {
     return <section className="empty-state">Select queued work.</section>;
   }
+
+  const canPrepareHandoff = queueItem.status !== 'completed' && queueItem.status !== 'canceled';
 
   return (
     <section className="decision-detail" aria-label="Automation queue detail">
@@ -38,6 +42,34 @@ export function AutomationQueueDetail({ queueItem }: AutomationQueueDetailProps)
       </dl>
 
       <p className="notice">Queued work is not execution. This view does not retry, dispatch, or perform EVE actions.</p>
+
+      <section aria-label="Worker handoff">
+        <h3>Worker handoff</h3>
+        {handoff ? (
+          <dl>
+            <div>
+              <dt>Status</dt>
+              <dd>{handoff.status}</dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{new Date(handoff.createdAt).toLocaleString()}</dd>
+            </div>
+            {handoff.failure ? (
+              <div>
+                <dt>Failure</dt>
+                <dd>{handoff.failure.message}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : (
+          <p>No worker handoff has been prepared for this queued work.</p>
+        )}
+        <button type="button" disabled={!canPrepareHandoff} onClick={() => void onPrepareHandoff(queueItem.id)}>
+          Prepare handoff
+        </button>
+        <p className="notice">Preparing handoff creates a durable record only. It does not dispatch, retry, or execute work.</p>
+      </section>
 
       {queueItem.provenance.coverage ? <OperatingLegCoverage coverage={queueItem.provenance.coverage} /> : null}
 

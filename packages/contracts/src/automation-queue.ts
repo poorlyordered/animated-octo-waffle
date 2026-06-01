@@ -1,5 +1,6 @@
 import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
 import type { ApprovalRecord } from './decision-record.js';
+import type { WorkerHandoffSummary } from './worker-handoff.js';
 
 export const queueStatuses = ['queued', 'blocked', 'running', 'failed', 'completed', 'canceled'] as const;
 export type QueueStatus = (typeof queueStatuses)[number];
@@ -76,6 +77,7 @@ export interface AutomationQueueListResponse {
 
 export interface AutomationQueueItemResponse {
   queueItem: AutomationQueueItem;
+  handoff?: WorkerHandoffSummary;
 }
 
 export function approvalSnapshotFromRecord(approval: ApprovalRecord | null): ApprovalSnapshot | null {

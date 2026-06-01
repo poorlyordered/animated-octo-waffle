@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
   AutomationQueueItem,
+  WorkerHandoff,
+  WorkerHandoffSummary,
   CreateAutomationQueueItemRequest,
   QueueStatus
 } from '@gryyk/contracts';
@@ -9,18 +11,25 @@ import {
   getAutomationQueueItem,
   listAutomationQueueItems
 } from '../services/automationQueueClient';
+import { prepareWorkerHandoff } from '../services/workerHandoffClient';
+
+export interface SelectedAutomationQueueItem {
+  queueItem: AutomationQueueItem;
+  handoff?: WorkerHandoffSummary;
+}
 
 interface AutomationQueueState {
   queueItems: AutomationQueueItem[];
   loading: boolean;
   error: string | null;
-  selectedQueueItem: AutomationQueueItem | null;
+  selectedQueueItem: SelectedAutomationQueueItem | null;
   statusFilter: QueueStatus | 'all';
 }
 
 interface UseAutomationQueueState extends AutomationQueueState {
   createQueueItem: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem>;
-  loadQueueItem: (id: string) => Promise<AutomationQueueItem>;
+  loadQueueItem: (id: string) => Promise<SelectedAutomationQueueItem>;
+  prepareHandoff: (queueItemId: string) => Promise<WorkerHandoff>;
   selectQueueItem: (queueItem: AutomationQueueItem | null) => void;
   setStatusFilter: (status: QueueStatus | 'all') => void;
   queueItemsForDecision: (decisionId: string) => AutomationQueueItem[];
@@ -49,7 +58,7 @@ export function useAutomationQueue(): UseAutomationQueueState {
         setState((current) => ({
           ...current,
           queueItems,
-          selectedQueueItem: current.selectedQueueItem ?? queueItems[0] ?? null,
+          selectedQueueItem: current.selectedQueueItem ?? (queueItems[0] ? { queueItem: queueItems[0] } : null),
           loading: false,
           error: null
         }));
@@ -77,24 +86,31 @@ export function useAutomationQueue(): UseAutomationQueueState {
     setState((current) => ({
       ...current,
       queueItems: [queueItem, ...current.queueItems.filter((item) => item.id !== queueItem.id)],
-      selectedQueueItem: queueItem,
+      selectedQueueItem: { queueItem },
       error: null
     }));
 
     return queueItem;
   }
 
-  async function loadQueueItem(id: string): Promise<AutomationQueueItem> {
-    const { queueItem } = await getAutomationQueueItem(id);
+  async function loadQueueItem(id: string): Promise<SelectedAutomationQueueItem> {
+    const { queueItem, handoff } = await getAutomationQueueItem(id);
+    const selectedQueueItem = { queueItem, handoff };
 
     setState((current) => ({
       ...current,
       queueItems: current.queueItems.map((item) => (item.id === queueItem.id ? queueItem : item)),
-      selectedQueueItem: queueItem,
+      selectedQueueItem,
       error: null
     }));
 
-    return queueItem;
+    return selectedQueueItem;
+  }
+
+  async function prepareHandoff(queueItemId: string): Promise<WorkerHandoff> {
+    const { handoff } = await prepareWorkerHandoff(queueItemId);
+    await loadQueueItem(queueItemId);
+    return handoff;
   }
 
   const queueItemsByDecision = useMemo(() => {
@@ -108,7 +124,9 @@ export function useAutomationQueue(): UseAutomationQueueState {
     ...state,
     createQueueItem,
     loadQueueItem,
-    selectQueueItem: (queueItem) => setState((current) => ({ ...current, selectedQueueItem: queueItem })),
+    prepareHandoff,
+    selectQueueItem: (queueItem) =>
+      setState((current) => ({ ...current, selectedQueueItem: queueItem ? { queueItem } : null })),
     setStatusFilter: (statusFilter) => setState((current) => ({ ...current, statusFilter })),
     queueItemsForDecision: (decisionId) => queueItemsByDecision[decisionId] ?? []
   };
