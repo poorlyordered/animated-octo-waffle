@@ -1,4 +1,5 @@
 import { CommandBriefRoute } from './routes/CommandBriefRoute';
+import { NumbersRoute } from './routes/NumbersRoute';
 import { DecisionRecordsRoute } from './routes/DecisionRecordsRoute';
 import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
 import { PeopleRoute } from './routes/PeopleRoute';
@@ -10,6 +11,7 @@ export function App() {
     <>
       <SessionStatus />
       <CommandBriefRoute />
+      <NumbersRoute />
       <DecisionRecordsRoute />
       <AutomationQueueRoute />
       <PeopleRoute />

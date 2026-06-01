@@ -178,14 +178,35 @@ Validation:
 - Spec: `specs/007-worker-handoff`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M8: Numbers Operating Layer - Complete
+
+Goal: show read-only corporation health across wallet, assets, logistics, market, and activity from processed scoped data.
+
+Delivered capabilities:
+
+- Numbers contracts and browser-safe response schemas
+- MongoDB-backed `numbers_snapshots` latest scoped read path
+- Section normalization for wallet, assets, logistics, market, and activity
+- Explicit stale and missing section states with safe reasons
+- Provenance display with source count, confidence, model, prompt version, and created timestamp
+- Observations, risks, opportunities, and display-only follow-up candidates
+- Command shell Numbers surface with read-only/no-execution boundary copy
+- Contract/unit coverage for snapshots, empty state, normalization, missing/stale behavior, scoped reads, and secret-free responses
+- Browser smoke coverage for complete snapshots, stale/missing data, follow-up candidates, and read-only boundary language
+
+Validation:
+
+- Spec: `specs/008-numbers-layer`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M8 selection after M7 review.
+Proceed to M9 selection after M8 review.
 
-The next slice should build on authenticated command scope, auditable queue handoff, and the validation loop now in place.
+The next slice should build on authenticated command scope, the numbers/people/opportunity operating surfaces, auditable queue handoff, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Numbers operating layer for wallet/assets/logistics visibility.
 - Live EVE SSO identity validation and token handling through a server-side adapter.
 - Worker polling/claim/completion callbacks for prepared handoff records.
+- Decision or queue creation from Numbers follow-up candidates.

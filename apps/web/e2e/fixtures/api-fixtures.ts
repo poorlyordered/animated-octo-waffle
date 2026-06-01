@@ -29,6 +29,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
 
   await page.route('**/api/command-brief**', (route) => json(route, commandSurfaceFixtures.commandBrief));
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
+  await page.route('**/api/numbers**', (route) => json(route, commandSurfaceFixtures.numbers));
 
   await page.route('**/api/decision-records**', (route) => {
     if (route.request().method() !== 'GET') {
