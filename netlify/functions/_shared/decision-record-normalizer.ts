@@ -41,6 +41,35 @@ function boolValue(value: unknown): boolean {
   return typeof value === 'boolean' ? value : false;
 }
 
+function sourceReferences(value: unknown): SourceProvenanceSnapshot['sourceReferences'] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const record = item as Record<string, unknown>;
+    const title = typeof record.title === 'string' ? record.title : undefined;
+
+    if (!title) {
+      return [];
+    }
+
+    const reference: SourceProvenanceSnapshot['sourceReferences'][number] = { title };
+    if (typeof record.url === 'string') {
+      reference.url = record.url;
+    }
+    if (typeof record.sourceId === 'string') {
+      reference.sourceId = record.sourceId;
+    }
+
+    return [reference];
+  });
+}
+
 export function sourceProvenanceFromBrief(brief: CommandBrief): SourceProvenanceSnapshot {
   return {
     briefId: brief.id,
@@ -67,7 +96,7 @@ function normalizeSourceProvenance(document: DecisionDocument): SourceProvenance
     promptVersion: stringValue(source.promptVersion, 'unknown'),
     confidence: typeof source.confidence === 'number' ? Math.min(Math.max(source.confidence, 0), 1) : 0,
     sourceCount,
-    sourceReferences: Array.isArray(source.sourceReferences) ? source.sourceReferences : [],
+    sourceReferences: sourceReferences(source.sourceReferences),
     coverage:
       source.coverage && typeof source.coverage === 'object'
         ? (source.coverage as SourceProvenanceSnapshot['coverage'])

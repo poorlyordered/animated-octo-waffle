@@ -123,7 +123,7 @@
 - [x] T043 Run npm run typecheck and record result in specs/002-decision-record-loop/validation.md
 - [x] T044 Run npm test and record result in specs/002-decision-record-loop/validation.md
 - [x] T045 Run npm run build and record result in specs/002-decision-record-loop/validation.md
-- [ ] T046 Validate quickstart flow from specs/002-decision-record-loop/quickstart.md when MongoDB write target is available
+- [x] T046 Validate quickstart flow from specs/002-decision-record-loop/quickstart.md when MongoDB write target is available
 - [x] T047 Review implementation against constitution gates in specs/002-decision-record-loop/plan.md
 
 ---

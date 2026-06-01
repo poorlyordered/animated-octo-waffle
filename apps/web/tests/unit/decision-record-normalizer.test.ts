@@ -26,4 +26,34 @@ describe('decision record normalizer', () => {
     expect(normalized.expectedResult).toBe('Legacy decision');
     expect(normalized.status).toBe('proposed');
   });
+
+  it('drops null optional fields from stored source references', () => {
+    const normalized = normalizeDecisionRecordDocument({
+      _id: { toString: () => 'decision-1' },
+      corporationId: '917701062',
+      sourceBriefId: 'brief-1',
+      sourceRecommendation: 'Scout the opportunity.',
+      rationale: 'The opportunity needs validation.',
+      expectedResult: 'A commander can approve or reject the path.',
+      status: 'proposed',
+      isPlayerImpacting: false,
+      approval: null,
+      statusHistory: [{ toStatus: 'proposed', changedAt: '2026-06-01T12:00:00.000Z' }],
+      createdAt: '2026-06-01T12:00:00.000Z',
+      updatedAt: '2026-06-01T12:00:00.000Z',
+      sourceProvenance: {
+        briefId: 'brief-1',
+        briefCreatedAt: '2026-06-01T11:00:00.000Z',
+        focus: 'grykk-47-eve-official-news',
+        model: 'test-model',
+        promptVersion: 'test-prompt',
+        confidence: 0.8,
+        sourceCount: 1,
+        sourceReferences: [{ title: 'EVE update', url: undefined, sourceId: null }],
+        coverage: processedBrief.coverage
+      }
+    });
+
+    expect(normalized.sourceProvenance.sourceReferences).toEqual([{ title: 'EVE update' }]);
+  });
 });
