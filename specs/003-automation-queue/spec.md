@@ -85,7 +85,7 @@ As the commander, I want player-impacting work to remain blocked unless explicit
 - **FR-002**: System MUST reject queue creation when the source decision is missing, outside the server-owned corporation scope, or not approved.
 - **FR-003**: System MUST reject queue creation for player-impacting decisions unless explicit approval metadata is present on the source decision.
 - **FR-004**: System MUST persist queue records with source decision ID, corporation ID, task intent, input summary, expected output, status, requester, timestamps, and source provenance.
-- **FR-005**: New queue records MUST start in a waiting status and MUST NOT include execution result, worker completion, or external action metadata at creation time.
+- **FR-005**: New queue records MUST start with status `queued` and MUST NOT include execution result, worker completion, or external action metadata at creation time.
 - **FR-006**: System MUST list queue records for the configured corporation and allow commanders to inspect individual queue details.
 - **FR-007**: System MUST expose queue status, owner or requested worker target when present, attempt count, failure message, retry eligibility, output summary, and timestamps when those fields exist.
 - **FR-008**: System MUST distinguish queued work from executed work in all user-facing copy and state labels.
@@ -98,7 +98,7 @@ As the commander, I want player-impacting work to remain blocked unless explicit
 ### Key Entities *(include if feature involves data)*
 
 - **AutomationQueueItem**: A durable work-order record created from an approved decision. Key attributes include ID, corporation ID, source decision ID, task intent, input summary, expected output, status, requester, owner or worker target, attempt metadata, failure metadata, output metadata, provenance, created timestamp, and updated timestamp.
-- **QueueStatus**: The lifecycle state of queued work. Initial MVP statuses include waiting, blocked, in progress, failed, completed, and canceled, with creation limited to waiting records.
+- **QueueStatus**: The lifecycle state of queued work. Initial MVP statuses include queued, blocked, running, failed, completed, and canceled, with creation limited to queued records.
 - **QueueProvenance**: The source context that explains why the item exists, including decision record reference, source brief reference when available, recommendation text when available, approval metadata when relevant, source count, confidence, and created timestamp.
 - **DecisionQueueLink**: The relationship between a decision record and one or more queue items created from it.
 
