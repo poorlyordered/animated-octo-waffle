@@ -24,6 +24,7 @@ test('keeps automation queue visible as queued work rather than execution', asyn
   await page.goto('/');
 
   await expectVisibleText(page, 'Queued work is not execution. This view does not retry, dispatch, or perform EVE actions.');
+  await expectVisibleText(page, 'Preparing handoff creates a durable record only. It does not dispatch, retry, or execute work.');
   await expectForbiddenTextAbsent(page);
   await assertNoBrowserDiagnostics();
 });

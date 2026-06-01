@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
+import { workerHandoffSummarySchema } from './worker-handoff.schema.js';
 
 export const queueStatusSchema = z.enum(['queued', 'blocked', 'running', 'failed', 'completed', 'canceled']);
 
@@ -74,5 +75,6 @@ export const automationQueueListResponseSchema = z.object({
 });
 
 export const automationQueueItemResponseSchema = z.object({
-  queueItem: automationQueueItemSchema
+  queueItem: automationQueueItemSchema,
+  handoff: workerHandoffSummarySchema.optional()
 });

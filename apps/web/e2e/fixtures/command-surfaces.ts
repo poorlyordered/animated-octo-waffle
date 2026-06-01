@@ -2,6 +2,7 @@ import { completedItem, failedItem, queuedItem } from '../../tests/fixtures/auto
 import { processedBrief, processedRequest } from '../../tests/fixtures/commandBrief';
 import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
 import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
+import { blockedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
 
 export const commandSurfaceFixtures = {
   commandBrief: {
@@ -59,6 +60,18 @@ export const commandSurfaceFixtures = {
         ...completedItem,
         id: 'queue-browser-completed',
         taskIntent: 'Browser smoke completed work item.'
+      }
+    ],
+    handoffs: [
+      {
+        ...readyHandoff,
+        id: 'handoff-browser-ready',
+        queueItemId: 'queue-browser-queued'
+      },
+      {
+        ...blockedHandoff,
+        id: 'handoff-browser-blocked',
+        queueItemId: 'queue-browser-failed'
       }
     ]
   },

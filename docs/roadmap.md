@@ -157,14 +157,35 @@ Validation:
 - Spec: `specs/006-eve-sso-scope`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M7: Worker Handoff For Automation Queue - Complete
+
+Goal: prepare approved queued automation work for external workers through durable, auditable handoff records without dispatching or executing work in request paths.
+
+Delivered capabilities:
+
+- Worker handoff contracts and browser-safe response schemas
+- MongoDB-backed `worker_handoffs` record normalization, rules, and store helpers
+- Handoff preparation from eligible automation queue items
+- Idempotent active handoff behavior for repeated preparation requests
+- Scoped worker handoff list/detail API
+- Queue detail handoff readiness and failure summaries
+- Browser-visible prepare-handoff controls with explicit no-execution language
+- Contract/unit coverage for handoff schemas, payload derivation, eligibility, approval boundaries, duplicate active handoffs, and non-execution requests
+- Browser smoke coverage for handoff-ready, handoff-blocked, and no-execution states
+
+Validation:
+
+- Spec: `specs/007-worker-handoff`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M7 selection after M6 review.
+Proceed to M8 selection after M7 review.
 
-The next slice should build on authenticated command scope and the validation loop now in place.
+The next slice should build on authenticated command scope, auditable queue handoff, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Worker handoff for queued automation records.
 - Numbers operating layer for wallet/assets/logistics visibility.
 - Live EVE SSO identity validation and token handling through a server-side adapter.
+- Worker polling/claim/completion callbacks for prepared handoff records.

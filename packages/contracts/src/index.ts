@@ -8,3 +8,5 @@ export * from './people.js';
 export * from './people.schema.js';
 export * from './auth-session.js';
 export * from './auth-session.schema.js';
+export * from './worker-handoff.js';
+export * from './worker-handoff.schema.js';

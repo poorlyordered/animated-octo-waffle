@@ -23,12 +23,16 @@ export function AutomationQueueRoute() {
       </header>
       <AutomationQueueList
         queueItems={automationQueue.queueItems}
-        selectedQueueItemId={automationQueue.selectedQueueItem?.id}
+        selectedQueueItemId={automationQueue.selectedQueueItem?.queueItem.id}
         statusFilter={automationQueue.statusFilter}
         onSelect={automationQueue.selectQueueItem}
         onStatusFilterChange={automationQueue.setStatusFilter}
       />
-      <AutomationQueueDetail queueItem={automationQueue.selectedQueueItem} />
+      <AutomationQueueDetail
+        queueItem={automationQueue.selectedQueueItem?.queueItem ?? null}
+        handoff={automationQueue.selectedQueueItem?.handoff}
+        onPrepareHandoff={automationQueue.prepareHandoff}
+      />
     </main>
   );
 }
