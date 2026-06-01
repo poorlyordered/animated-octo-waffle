@@ -1,10 +1,15 @@
+import { useState } from 'react';
+import type { CommandBrief, CreateDecisionRecordRequest, DecisionRecord } from '@gryyk/contracts';
 import type { CommandBriefViewModel } from '@gryyk/contracts';
+import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
+import { DecisionRecordSummary } from '../../decision-records/components/DecisionRecordSummary';
 import { OperatingLegCoverage } from './OperatingLegCoverage';
 
 interface CommandBriefPanelProps {
   loading?: boolean;
   error?: string | null;
   viewModel: CommandBriefViewModel;
+  onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
 }
 
 function Metadata({ label, value }: { label: string; value: string | number }) {
@@ -16,7 +21,20 @@ function Metadata({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function ListSection({ title, items }: { title: string; items: string[] }) {
+function ListSection({
+  title,
+  items,
+  brief,
+  onCreateDecision
+}: {
+  title: string;
+  items: string[];
+  brief?: CommandBrief;
+  onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
+}) {
+  const [selectedRecommendation, setSelectedRecommendation] = useState<string | null>(null);
+  const [createdDecision, setCreatedDecision] = useState<DecisionRecord | null>(null);
+
   if (items.length === 0) {
     return null;
   }
@@ -26,14 +44,37 @@ function ListSection({ title, items }: { title: string; items: string[] }) {
       <h2>{title}</h2>
       <ul>
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item}>
+            <span>{item}</span>
+            {brief && onCreateDecision ? (
+              <button type="button" onClick={() => setSelectedRecommendation(item)}>
+                Record decision
+              </button>
+            ) : null}
+          </li>
         ))}
       </ul>
+      {brief && selectedRecommendation && onCreateDecision ? (
+        <DecisionRecordCreate
+          brief={brief}
+          recommendation={selectedRecommendation}
+          onCancel={() => setSelectedRecommendation(null)}
+          onCreate={async (request) => {
+            const decision = await onCreateDecision(request);
+            if (decision) {
+              setCreatedDecision(decision);
+            }
+            setSelectedRecommendation(null);
+            return decision;
+          }}
+        />
+      ) : null}
+      {createdDecision ? <DecisionRecordSummary decision={createdDecision} /> : null}
     </section>
   );
 }
 
-export function CommandBriefPanel({ loading = false, error = null, viewModel }: CommandBriefPanelProps) {
+export function CommandBriefPanel({ loading = false, error = null, viewModel, onCreateDecision }: CommandBriefPanelProps) {
   const { brief, request, displayState, staleReason } = viewModel;
 
   if (loading) {
@@ -93,7 +134,7 @@ export function CommandBriefPanel({ loading = false, error = null, viewModel }: 
           <OperatingLegCoverage coverage={brief.coverage} />
 
           <ListSection title="Strategic impacts" items={brief.strategicImpacts} />
-          <ListSection title="Recommended actions" items={brief.recommendedActions} />
+          <ListSection title="Recommended actions" items={brief.recommendedActions} brief={brief} onCreateDecision={onCreateDecision} />
           <ListSection title="Watchlist" items={brief.watchlist} />
           <ListSection title="Memory" items={brief.memory} />
 

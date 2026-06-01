@@ -118,3 +118,86 @@ h2 {
 .missing-reasons {
   color: #d8cfc0;
 }
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid #4a5561;
+  border-radius: 6px;
+  background: #18212a;
+  color: #f4f0e8;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+li {
+  margin-bottom: 8px;
+}
+
+li button {
+  margin-left: 12px;
+}
+
+form,
+label,
+dl,
+.decision-list {
+  display: grid;
+  gap: 12px;
+}
+
+textarea,
+input,
+select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #4a5561;
+  border-radius: 6px;
+  background: #0d1116;
+  color: #f4f0e8;
+  padding: 10px;
+}
+
+textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-row input {
+  width: auto;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.form-error {
+  color: #ff9b9b;
+}
+
+.decision-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+}
+
+.decision-list-item.selected {
+  border-color: #e8c46b;
+}
