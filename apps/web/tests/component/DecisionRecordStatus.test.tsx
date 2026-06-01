@@ -19,7 +19,7 @@ describe('Decision record status components', () => {
 
     render(<DecisionRecordDetail decision={proposedDecision} onUpdateStatus={onUpdateStatus} />);
 
-    expect(screen.getByText('Decision records do not execute actions or create automation queue entries.')).toBeInTheDocument();
+    expect(screen.getByText('Decision records do not execute actions. Approved decisions can create queued work without dispatching workers.')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'Approved for follow-up.' } });
     fireEvent.click(screen.getByText('Update status'));
 
