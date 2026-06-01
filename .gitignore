@@ -5,6 +5,7 @@ build/
 .netlify/
 netlify/functions-dist/
 coverage/
+*.tsbuildinfo
 
 # Local environment
 .env

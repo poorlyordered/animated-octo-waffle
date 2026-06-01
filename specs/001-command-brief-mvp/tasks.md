@@ -12,11 +12,11 @@
 
 **Purpose**: Project initialization and baseline tooling for the greenfield app.
 
-- [ ] T001 Create app and package directory structure in apps/web/src, apps/web/tests, netlify/functions, and packages/contracts
-- [ ] T002 Initialize TypeScript web application package configuration in package.json and apps/web/package.json
-- [ ] T003 [P] Configure TypeScript project references in tsconfig.json, apps/web/tsconfig.json, and packages/contracts/tsconfig.json
-- [ ] T004 [P] Configure test runner and DOM/component test setup in apps/web/vitest.config.ts and apps/web/tests/setup.ts
-- [ ] T005 [P] Configure linting and formatting scripts in package.json
+- [x] T001 Create app and package directory structure in apps/web/src, apps/web/tests, netlify/functions, and packages/contracts
+- [x] T002 Initialize TypeScript web application package configuration in package.json and apps/web/package.json
+- [x] T003 [P] Configure TypeScript project references in tsconfig.json, apps/web/tsconfig.json, and packages/contracts/tsconfig.json
+- [x] T004 [P] Configure test runner and DOM/component test setup in apps/web/vitest.config.ts and apps/web/tests/setup.ts
+- [x] T005 [P] Configure linting and formatting scripts in package.json
 
 ---
 
@@ -26,14 +26,14 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 Define shared command brief, research request, source reference, coverage, and response types in packages/contracts/src/command-brief.ts
-- [ ] T007 Define validation schemas for command brief API responses in packages/contracts/src/command-brief.schema.ts
-- [ ] T008 Implement server-side environment validation for MongoDB and database names in netlify/functions/_shared/env.ts
-- [ ] T009 Implement MongoDB connection helper with server-only credentials in netlify/functions/_shared/mongo.ts
-- [ ] T010 Implement authenticated corporation scope helper interface in netlify/functions/_shared/auth-scope.ts
-- [ ] T011 Implement safe error response helper in netlify/functions/_shared/http.ts
-- [ ] T012 Create command brief feature shell files in apps/web/src/features/command-brief/
-- [ ] T013 Add route placeholder for command brief screen in apps/web/src/routes/CommandBriefRoute.tsx
+- [x] T006 Define shared command brief, research request, source reference, coverage, and response types in packages/contracts/src/command-brief.ts
+- [x] T007 Define validation schemas for command brief API responses in packages/contracts/src/command-brief.schema.ts
+- [x] T008 Implement server-side environment validation for MongoDB and database names in netlify/functions/_shared/env.ts
+- [x] T009 Implement MongoDB connection helper with server-only credentials in netlify/functions/_shared/mongo.ts
+- [x] T010 Implement authenticated corporation scope helper interface in netlify/functions/_shared/auth-scope.ts
+- [x] T011 Implement safe error response helper in netlify/functions/_shared/http.ts
+- [x] T012 Create command brief feature shell files in apps/web/src/features/command-brief/
+- [x] T013 Add route placeholder for command brief screen in apps/web/src/routes/CommandBriefRoute.tsx
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
@@ -47,18 +47,18 @@
 
 ### Tests for User Story 1
 
-- [ ] T014 [P] [US1] Add contract test for GET /api/command-brief metadata, source references, success, and empty responses in apps/web/tests/contract/command-brief-api.test.ts
-- [ ] T015 [P] [US1] Add unit tests for command brief document normalization in apps/web/tests/unit/command-brief-normalizer.test.ts
-- [ ] T016 [P] [US1] Add component test for processed command brief rendering in apps/web/tests/component/CommandBriefProcessed.test.tsx
+- [x] T014 [P] [US1] Add contract test for GET /api/command-brief metadata, source references, success, and empty responses in apps/web/tests/contract/command-brief-api.test.ts
+- [x] T015 [P] [US1] Add unit tests for command brief document normalization in apps/web/tests/unit/command-brief-normalizer.test.ts
+- [x] T016 [P] [US1] Add component test for processed command brief rendering in apps/web/tests/component/CommandBriefProcessed.test.tsx
 
 ### Implementation for User Story 1
 
-- [ ] T017 [P] [US1] Implement command brief document normalizer in netlify/functions/_shared/command-brief-normalizer.ts
-- [ ] T018 [US1] Implement GET command brief Netlify function in netlify/functions/command-brief.ts
-- [ ] T019 [US1] Implement command brief client service in apps/web/src/features/command-brief/services/commandBriefClient.ts
-- [ ] T020 [US1] Implement command brief state hook in apps/web/src/features/command-brief/state/useCommandBrief.ts
-- [ ] T021 [US1] Implement processed brief UI component in apps/web/src/features/command-brief/components/CommandBriefPanel.tsx
-- [ ] T022 [US1] Wire command brief route to load and render processed brief data in apps/web/src/routes/CommandBriefRoute.tsx
+- [x] T017 [P] [US1] Implement command brief document normalizer in netlify/functions/_shared/command-brief-normalizer.ts
+- [x] T018 [US1] Implement GET command brief Netlify function in netlify/functions/command-brief.ts
+- [x] T019 [US1] Implement command brief client service in apps/web/src/features/command-brief/services/commandBriefClient.ts
+- [x] T020 [US1] Implement command brief state hook in apps/web/src/features/command-brief/state/useCommandBrief.ts
+- [x] T021 [US1] Implement processed brief UI component in apps/web/src/features/command-brief/components/CommandBriefPanel.tsx
+- [x] T022 [US1] Wire command brief route to load and render processed brief data in apps/web/src/routes/CommandBriefRoute.tsx
 
 **Checkpoint**: User Story 1 is functional and testable independently.
 
@@ -72,17 +72,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T023 [P] [US2] Add contract test for GET /api/research-status states in apps/web/tests/contract/research-status-api.test.ts
-- [ ] T024 [P] [US2] Add unit tests for display state derivation in apps/web/tests/unit/command-brief-display-state.test.ts
-- [ ] T025 [P] [US2] Add component tests for processing and failed states in apps/web/tests/component/CommandBriefStatus.test.tsx
+- [x] T023 [P] [US2] Add contract test for GET /api/research-status states in apps/web/tests/contract/research-status-api.test.ts
+- [x] T024 [P] [US2] Add unit tests for display state derivation in apps/web/tests/unit/command-brief-display-state.test.ts
+- [x] T025 [P] [US2] Add component tests for processing and failed states in apps/web/tests/component/CommandBriefStatus.test.tsx
 
 ### Implementation for User Story 2
 
-- [ ] T026 [P] [US2] Implement research request normalizer in netlify/functions/_shared/research-request-normalizer.ts
-- [ ] T027 [US2] Implement GET research status Netlify function in netlify/functions/research-status.ts
-- [ ] T028 [US2] Implement display state derivation in apps/web/src/features/command-brief/services/displayState.ts
-- [ ] T029 [US2] Extend command brief client service to load research status in apps/web/src/features/command-brief/services/commandBriefClient.ts
-- [ ] T030 [US2] Extend command brief UI with processing, failed, and stale states in apps/web/src/features/command-brief/components/CommandBriefPanel.tsx
+- [x] T026 [P] [US2] Implement research request normalizer in netlify/functions/_shared/research-request-normalizer.ts
+- [x] T027 [US2] Implement GET research status Netlify function in netlify/functions/research-status.ts
+- [x] T028 [US2] Implement display state derivation in apps/web/src/features/command-brief/services/displayState.ts
+- [x] T029 [US2] Extend command brief client service to load research status in apps/web/src/features/command-brief/services/commandBriefClient.ts
+- [x] T030 [US2] Extend command brief UI with processing, failed, and stale states in apps/web/src/features/command-brief/components/CommandBriefPanel.tsx
 
 **Checkpoint**: User Stories 1 and 2 work independently and together.
 
@@ -96,15 +96,15 @@
 
 ### Tests for User Story 3
 
-- [ ] T031 [P] [US3] Add unit tests for operating leg coverage derivation in apps/web/tests/unit/operating-leg-coverage.test.ts
-- [ ] T032 [P] [US3] Add component tests for complete and incomplete coverage displays in apps/web/tests/component/OperatingLegCoverage.test.tsx
+- [x] T031 [P] [US3] Add unit tests for operating leg coverage derivation in apps/web/tests/unit/operating-leg-coverage.test.ts
+- [x] T032 [P] [US3] Add component tests for complete and incomplete coverage displays in apps/web/tests/component/OperatingLegCoverage.test.tsx
 
 ### Implementation for User Story 3
 
-- [ ] T033 [P] [US3] Implement operating leg coverage derivation in apps/web/src/features/command-brief/services/coverage.ts
-- [ ] T034 [US3] Apply coverage derivation in command brief normalizer in netlify/functions/_shared/command-brief-normalizer.ts
-- [ ] T035 [US3] Implement coverage display component in apps/web/src/features/command-brief/components/OperatingLegCoverage.tsx
-- [ ] T036 [US3] Integrate coverage display into command brief recommendations in apps/web/src/features/command-brief/components/CommandBriefPanel.tsx
+- [x] T033 [P] [US3] Implement operating leg coverage derivation in apps/web/src/features/command-brief/services/coverage.ts
+- [x] T034 [US3] Apply coverage derivation in command brief normalizer in netlify/functions/_shared/command-brief-normalizer.ts
+- [x] T035 [US3] Implement coverage display component in apps/web/src/features/command-brief/components/OperatingLegCoverage.tsx
+- [x] T036 [US3] Integrate coverage display into command brief recommendations in apps/web/src/features/command-brief/components/CommandBriefPanel.tsx
 
 **Checkpoint**: All user stories are independently functional.
 
@@ -114,11 +114,11 @@
 
 **Purpose**: Documentation, validation, and operational hardening.
 
-- [ ] T037 [P] Add local fixture data for processed, processing, failed, stale, and empty states in apps/web/tests/fixtures/commandBrief.ts
-- [ ] T038 [P] Add README setup notes for required environment variables in README.md
+- [x] T037 [P] Add local fixture data for processed, processing, failed, stale, and empty states in apps/web/tests/fixtures/commandBrief.ts
+- [x] T038 [P] Add README setup notes for required environment variables in README.md
 - [ ] T039 Validate quickstart flow from specs/001-command-brief-mvp/quickstart.md
-- [ ] T040 Run full validation suite and record results in specs/001-command-brief-mvp/validation.md
-- [ ] T041 Review implementation against constitution gates in specs/001-command-brief-mvp/plan.md
+- [x] T040 Run full validation suite and record results in specs/001-command-brief-mvp/validation.md
+- [x] T041 Review implementation against constitution gates in specs/001-command-brief-mvp/plan.md
 
 ---
 
