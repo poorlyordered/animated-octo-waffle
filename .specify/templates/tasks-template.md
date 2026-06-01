@@ -67,8 +67,10 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T005 [P] Implement authentication/authorization framework
 - [ ] T006 [P] Setup API routing and middleware structure
 - [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T008 Configure error handling and structured operational logging
+- [ ] T009 Define data provenance, status, and audit metadata for AI or automation outputs
+- [ ] T010 Confirm secret handling and approval gates for player-impacting actions
+- [ ] T011 Setup environment configuration management
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

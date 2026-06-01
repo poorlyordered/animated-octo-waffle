@@ -40,7 +40,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- Does this feature identify which operating legs it affects: numbers, opportunity, people?
+- Does it separate observations, recommendations, draft orders, and executed actions?
+- Are long-running AI, research, sync, or enrichment jobs outside request/response paths?
+- Are source data, model/prompt metadata, confidence, timestamps, and failure states captured where AI output is stored?
+- Are server-side secrets, EVE SSO tokens, MongoDB credentials, and player-impacting actions protected by server boundaries and explicit approval?
 
 ## Project Structure
 

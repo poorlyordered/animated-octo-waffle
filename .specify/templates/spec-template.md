@@ -68,6 +68,14 @@
 
 [Add more user stories as needed, each with an assigned priority]
 
+### Operating Model Alignment
+
+- **Numbers**: [Relevant financial, market, asset, activity, or measurable operational data; or N/A with reason]
+- **Opportunity**: [Relevant news, patch, market, recruiting, diplomacy, timing, or risk data; or N/A with reason]
+- **People**: [Relevant member, role, trust, activity, delegation, onboarding, or retention data; or N/A with reason]
+- **Decision Boundary**: [Observation, recommendation, draft order, or executed action]
+- **Automation Boundary**: [Manual, queued, automated with approval, or safe automatic action]
+
 ### Edge Cases
 
 <!--

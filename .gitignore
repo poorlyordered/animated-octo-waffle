@@ -1,0 +1,22 @@
+# Dependencies and build outputs
+node_modules/
+dist/
+build/
+.netlify/
+netlify/functions-dist/
+coverage/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Agent/runtime local state
+.codex/
+.claude/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
