@@ -27,7 +27,7 @@ function queuePathId(event: FunctionEvent): string | null {
 export async function handler(event: FunctionEvent) {
   try {
     const method = event.httpMethod ?? 'GET';
-    const { corporationId } = getAuthScope();
+    const { corporationId } = getAuthScope(event);
     const db = await getMongoDb();
 
     if (method === 'GET') {

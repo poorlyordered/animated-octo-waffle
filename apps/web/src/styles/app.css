@@ -10,9 +10,42 @@ a {
   color: #8fd6ff;
 }
 
+.session-status {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 32px;
+  border-bottom: 1px solid #2d3740;
+  background: #141b22;
+}
+
+.session-status div {
+  display: grid;
+  gap: 4px;
+}
+
+.session-status span,
+.session-status small {
+  color: #9fb0bd;
+}
+
+.session-status strong {
+  color: #f4f0e8;
+}
+
+.session-status-fallback strong {
+  color: #ffd58a;
+}
+
+.session-status-missing strong {
+  color: #ff9b9b;
+}
+
 .command-brief {
   box-sizing: border-box;
-  min-height: 100vh;
+  min-height: calc(100vh - 72px);
   padding: 32px;
   display: grid;
   gap: 24px;

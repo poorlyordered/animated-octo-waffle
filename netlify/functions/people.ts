@@ -39,7 +39,7 @@ function booleanFilter(value: string | undefined): boolean | undefined {
 export async function handler(event: FunctionEvent) {
   try {
     const method = event.httpMethod ?? 'GET';
-    const { corporationId } = getAuthScope();
+    const { corporationId } = getAuthScope(event);
     const db = await getMongoDb();
     const path = event.path ?? '';
 

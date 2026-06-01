@@ -5,6 +5,7 @@ build/
 .netlify/
 netlify/functions-dist/
 coverage/
+test-results/
 *.tsbuildinfo
 
 # Local environment

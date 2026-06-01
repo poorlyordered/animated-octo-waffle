@@ -6,3 +6,5 @@ export * from './automation-queue.js';
 export * from './automation-queue.schema.js';
 export * from './people.js';
 export * from './people.schema.js';
+export * from './auth-session.js';
+export * from './auth-session.schema.js';

@@ -137,14 +137,34 @@ Validation:
 - Spec: `specs/005-browser-workflow-smoke`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M6: EVE SSO Session Scope - Complete
+
+Goal: bind command API reads and writes to an authenticated commander session when one exists while preserving local fallback scope.
+
+Delivered capabilities:
+
+- Browser-safe EVE session state endpoint
+- EVE SSO start and callback endpoints with signed anti-forgery state
+- Signed HTTP-only command session scope cookie
+- Session-first command API scope resolution with `EVEONLINE_CORPORATION_ID` fallback
+- Sign-out flow that clears server-owned session state
+- Command shell scope indicator for signed-in, fallback, and missing states
+- Contract/unit coverage for signed cookies, callback state, fallback, missing scope, sign-out, and browser-controlled corporation identity rejection
+- Browser smoke coverage for signed-out/fallback and signed-in session states
+
+Validation:
+
+- Spec: `specs/006-eve-sso-scope`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M6 selection after M5 review.
+Proceed to M7 selection after M6 review.
 
-The next slice should build on the command surfaces and validation loop now in place.
+The next slice should build on authenticated command scope and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- EVE SSO/session-derived corporation scope.
 - Worker handoff for queued automation records.
 - Numbers operating layer for wallet/assets/logistics visibility.
+- Live EVE SSO identity validation and token handling through a server-side adapter.

@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: People Operating Layer implemented on `004-people-operating-layer`; next roadmap slice should be selected from the roadmap after M4 review.
+Current phase: EVE SSO Session Scope implemented on `006-eve-sso-scope`; next roadmap slice should be selected from the roadmap after M6 review.
 
 ## Local Development
 
@@ -42,7 +42,17 @@ Required Netlify/server environment variables:
 - `MONGODB_DB`
 - `EVEONLINE_CORPORATION_ID`
 
-The MVP is a single-corporation read surface. Corporation scope is server-owned through `EVEONLINE_CORPORATION_ID`; the browser does not send or choose corporation identity. A later EVE SSO slice should replace this configured scope with authenticated session-derived scope.
+`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
+
+Optional EVE SSO/session variables:
+
+- `EVE_SESSION_SECRET`: signs session and SSO state cookies. Production must configure this server-side.
+- `EVE_SSO_CLIENT_ID`: EVE SSO application client ID.
+- `EVE_SSO_REDIRECT_URI`: server callback URL for `/api/eve-sso-callback`.
+- `EVE_SSO_SCOPES`: optional SSO scopes; defaults to `publicData`.
+- `EVE_SSO_TEST_IDENTITY_JSON`: deterministic local/test callback identity fixture. Do not use this for production identity validation.
+
+M6 stores no OAuth tokens and performs no EVE writes, role changes, wallet/asset actions, worker dispatch, or long-running ESI sync in request paths.
 
 ## MongoDB Data Sources
 
