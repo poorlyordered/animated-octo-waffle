@@ -6,7 +6,6 @@ import {
 } from '@gryyk/contracts';
 
 interface RequestOptions {
-  corporationId: string;
   focus?: string;
 }
 
@@ -16,11 +15,7 @@ async function getJson<T>(path: string, schema: { parse(value: unknown): T }, op
     url.searchParams.set('focus', options.focus);
   }
 
-  const response = await fetch(url, {
-    headers: {
-      'x-corporation-id': options.corporationId
-    }
-  });
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);

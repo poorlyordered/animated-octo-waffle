@@ -71,15 +71,15 @@ As the corporation commander, I want Gryyk-47 to show which parts of the numbers
 - The latest request is failed and the latest processed brief is older than the failed request.
 - Brief data is partially malformed, such as missing confidence, source count, model, or createdAt.
 - Confidence is low or source count is zero.
-- The commander is authenticated but corporation identity is unavailable.
+- Server-configured corporation identity is unavailable.
 - The system receives data for a different corporation and must not show it.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST show the latest processed command brief for the authenticated commander's corporation.
-- **FR-002**: System MUST show the latest research request status for the authenticated commander's corporation.
+- **FR-001**: System MUST show the latest processed command brief for the server-owned corporation scope.
+- **FR-002**: System MUST show the latest research request status for the server-owned corporation scope.
 - **FR-003**: System MUST support request statuses `queued`, `raw_captured`, `processing`, `processed`, and `failed`.
 - **FR-004**: System MUST show a processing state when status is `queued`, `raw_captured`, or `processing`.
 - **FR-005**: System MUST show a failure state when status is `failed`, including a safe error message when one exists.
@@ -87,7 +87,7 @@ As the corporation commander, I want Gryyk-47 to show which parts of the numbers
 - **FR-007**: System MUST show executive summary, strategic impacts, recommended actions, watchlist, and memory when those fields are present.
 - **FR-008**: System MUST distinguish missing numbers, opportunity, and people data from present data.
 - **FR-009**: System MUST avoid starting long-running research or AI processing from the command brief view.
-- **FR-010**: System MUST only show data scoped to the authenticated commander's corporation.
+- **FR-010**: System MUST only show data scoped to the server-owned corporation identity and MUST NOT accept corporation identity from browser-controlled headers or query parameters.
 - **FR-011**: System MUST show an empty state when no brief or request exists.
 - **FR-012**: System MUST show a stale-data indication when the newest failed or processing request is newer than the displayed processed brief.
 - **FR-013**: System MUST keep observations and recommendations visually distinct from any future action controls.
@@ -97,7 +97,7 @@ As the corporation commander, I want Gryyk-47 to show which parts of the numbers
 - **Command Brief**: Latest processed intelligence artifact for a corporation. Includes executive summary, markdown brief, strategic impacts, recommended actions, watchlist, memory, confidence, model, prompt version, source count, source references, createdAt, corporationId, and focus.
 - **Research Request**: Latest background research status record for a corporation. Includes corporationId, focus, status, createdAt, updatedAt, requestedBy, and optional errorMessage.
 - **Operating Leg Coverage**: Derived indicator for whether numbers, opportunity, and people data are present, missing, or stale in the brief.
-- **Commander**: Authenticated user reviewing corporation state and recommendations.
+- **Commander**: User reviewing corporation state and recommendations through the MVP command surface. A later EVE SSO slice will bind this user to authenticated corporation scope.
 
 ## Success Criteria *(mandatory)*
 
@@ -107,12 +107,12 @@ As the corporation commander, I want Gryyk-47 to show which parts of the numbers
 - **SC-002**: 100% of displayed recommendations include visible context indicating whether numbers, opportunity, and people data are present or missing.
 - **SC-003**: The MVP never initiates long-running AI research processing from the web view during command brief loading.
 - **SC-004**: When a failed request exists, the commander can see the failure state and safe error message without opening developer tools.
-- **SC-005**: In seeded validation data, the screen always chooses the newest processed brief for the commander's corporation and never shows another corporation's brief.
+- **SC-005**: In seeded validation data, the screen always chooses the newest processed brief for the server-configured corporation and never shows another corporation's brief.
 
 ## Assumptions
 
 - Processed command briefs are produced by an external worker such as OvernightDesk.
 - The first MVP reads from existing command brief and request records rather than creating new research jobs.
 - MongoDB remains acceptable as the shared operational document store for this slice.
-- The authenticated user's corporation ID is available after EVE SSO.
+- The MVP uses one server-configured EVE corporation ID until a later EVE SSO slice derives corporation scope from the authenticated commander session.
 - Official EVE news research uses the focus value `grykk-47-eve-official-news` until a later spec generalizes focus selection.

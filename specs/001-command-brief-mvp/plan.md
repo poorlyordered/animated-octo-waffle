@@ -24,9 +24,9 @@ Build the first Gryyk-47 operating-system surface: a read-only command brief tha
 
 **Performance Goals**: Commander sees useful status or brief content within 10 seconds of opening the screen under normal network conditions
 
-**Constraints**: No long-running AI processing in request/response functions; MongoDB credentials remain server-side; all data scoped to the authenticated corporation; UI must show missing data instead of hiding it
+**Constraints**: No long-running AI processing in request/response functions; MongoDB credentials remain server-side; all data scoped to the server-owned corporation identity; UI must show missing data instead of hiding it
 
-**Scale/Scope**: Single authenticated commander view for one corporation in MVP, designed so additional focuses and corporations can be added later without changing the core contract
+**Scale/Scope**: Single commander view for one server-configured corporation in MVP, designed so authenticated EVE SSO scope, additional focuses, and additional corporations can be added later without changing the core contract
 
 ## Constitution Check
 
@@ -41,7 +41,7 @@ Build the first Gryyk-47 operating-system surface: a read-only command brief tha
 - Are source data, model/prompt metadata, confidence, timestamps, and failure states captured where AI output is stored?
   - Pass. Contracts require createdAt, model, prompt version, source count, source references, confidence, and request status/error metadata.
 - Are server-side secrets, EVE SSO tokens, MongoDB credentials, and player-impacting actions protected by server boundaries and explicit approval?
-  - Pass. MongoDB is server-side only; no player-impacting action is in scope.
+  - Pass. MongoDB and corporation scope are server-side only; no player-impacting action is in scope.
 
 ## Project Structure
 

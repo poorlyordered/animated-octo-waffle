@@ -5,14 +5,14 @@ This quickstart validates the Command Brief MVP after implementation.
 ## Prerequisites
 
 - Server-side MongoDB environment variables are configured.
-- A commander can authenticate and provide a corporation ID.
+- Server-side `EVEONLINE_CORPORATION_ID` is configured for the corporation under validation.
 - `research_requests` contains at least one record for corporation `917701062` and focus `grykk-47-eve-official-news`.
 - `research_briefs` contains at least one processed brief for the same corporation and focus.
 
 ## Validation Flow
 
-1. Start the application locally.
-2. Authenticate as a commander in corporation `917701062`.
+1. Start the application locally with `npm run dev:netlify` so `/api/*` routes to functions.
+2. Confirm server environment includes `EVEONLINE_CORPORATION_ID=917701062`.
 3. Open the command brief screen.
 4. Confirm the screen shows the latest processed brief.
 5. Confirm metadata is visible: createdAt, model, prompt version, source count, source references, and confidence.

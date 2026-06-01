@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: foundation. The next expected step is a Spec Kit feature spec for the Command Brief MVP.
+Current phase: Command Brief MVP implemented on `001-command-brief-mvp`.
 
 ## Local Development
 
@@ -21,6 +21,10 @@ Useful commands:
 - `npm run typecheck`
 - `npm run build`
 
+Use Netlify Dev, not plain Vite, when validating function-backed API calls locally:
+
+- `npm run dev:netlify`
+
 ## Server Environment
 
 MongoDB credentials are server-side only. Do not expose them as `VITE_*`.
@@ -29,5 +33,6 @@ Required Netlify/server environment variables:
 
 - `MONGODB_URI`
 - `MONGODB_DB`
+- `EVEONLINE_CORPORATION_ID`
 
-Local function requests also need a corporation scope. The development helper currently accepts `x-corporation-id` or `corporationId` for local testing; production auth should derive this from the authenticated EVE SSO session.
+The MVP is a single-corporation read surface. Corporation scope is server-owned through `EVEONLINE_CORPORATION_ID`; the browser does not send or choose corporation identity. A later EVE SSO slice should replace this configured scope with authenticated session-derived scope.

@@ -3,6 +3,10 @@ export interface ServerEnv {
   mongodbDb: string;
 }
 
+export interface ScopeEnv {
+  corporationId: string;
+}
+
 export function readServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
   const mongodbUri = env.MONGODB_URI;
   const mongodbDb = env.MONGODB_DB;
@@ -16,4 +20,14 @@ export function readServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
   }
 
   return { mongodbUri, mongodbDb };
+}
+
+export function readScopeEnv(env: NodeJS.ProcessEnv = process.env): ScopeEnv {
+  const corporationId = env.EVEONLINE_CORPORATION_ID;
+
+  if (!corporationId) {
+    throw new Error('EVEONLINE_CORPORATION_ID is required');
+  }
+
+  return { corporationId };
 }

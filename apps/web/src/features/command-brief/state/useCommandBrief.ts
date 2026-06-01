@@ -4,7 +4,6 @@ import { getCommandBrief, getResearchStatus } from '../services/commandBriefClie
 import { deriveDisplayState } from '../services/displayState';
 
 interface UseCommandBriefOptions {
-  corporationId: string | null;
   focus?: string;
 }
 
@@ -26,7 +25,7 @@ const emptyViewModel: CommandBriefViewModel = {
   displayState: 'empty'
 };
 
-export function useCommandBrief({ corporationId, focus }: UseCommandBriefOptions): UseCommandBriefState {
+export function useCommandBrief({ focus }: UseCommandBriefOptions): UseCommandBriefState {
   const [state, setState] = useState<CommandBriefState>({
     error: null,
     requestKey: null,
@@ -34,14 +33,10 @@ export function useCommandBrief({ corporationId, focus }: UseCommandBriefOptions
   });
 
   useEffect(() => {
-    if (!corporationId) {
-      return;
-    }
-
     let active = true;
-    const requestKey = `${corporationId}:${focus ?? ''}`;
+    const requestKey = focus ?? '';
 
-    Promise.all([getCommandBrief({ corporationId, focus }), getResearchStatus({ corporationId, focus })])
+    Promise.all([getCommandBrief({ focus }), getResearchStatus({ focus })])
       .then(([briefResponse, statusResponse]) => {
         if (!active) {
           return;
@@ -68,17 +63,9 @@ export function useCommandBrief({ corporationId, focus }: UseCommandBriefOptions
     return () => {
       active = false;
     };
-  }, [corporationId, focus]);
+  }, [focus]);
 
-  if (!corporationId) {
-    return {
-      loading: false,
-      error: 'Corporation identity is unavailable.',
-      viewModel: emptyViewModel
-    };
-  }
-
-  const currentRequestKey = `${corporationId}:${focus ?? ''}`;
+  const currentRequestKey = focus ?? '';
 
   return {
     loading: state.requestKey !== currentRequestKey,

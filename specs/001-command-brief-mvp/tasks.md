@@ -30,7 +30,7 @@
 - [x] T007 Define validation schemas for command brief API responses in packages/contracts/src/command-brief.schema.ts
 - [x] T008 Implement server-side environment validation for MongoDB and database names in netlify/functions/_shared/env.ts
 - [x] T009 Implement MongoDB connection helper with server-only credentials in netlify/functions/_shared/mongo.ts
-- [x] T010 Implement authenticated corporation scope helper interface in netlify/functions/_shared/auth-scope.ts
+- [x] T010 Implement server-owned corporation scope helper interface in netlify/functions/_shared/auth-scope.ts
 - [x] T011 Implement safe error response helper in netlify/functions/_shared/http.ts
 - [x] T012 Create command brief feature shell files in apps/web/src/features/command-brief/
 - [x] T013 Add route placeholder for command brief screen in apps/web/src/routes/CommandBriefRoute.tsx

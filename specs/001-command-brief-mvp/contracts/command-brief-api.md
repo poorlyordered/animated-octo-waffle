@@ -1,10 +1,10 @@
 # Contract: Command Brief API
 
-The MVP exposes read-only server endpoints. MongoDB credentials and stored document shapes stay server-side. Responses are sanitized and scoped to the authenticated commander's corporation.
+The MVP exposes read-only server endpoints. MongoDB credentials and stored document shapes stay server-side. Responses are sanitized and scoped to the server-owned corporation identity. Until the EVE SSO slice lands, this identity comes from `EVEONLINE_CORPORATION_ID`; clients do not send corporation scope.
 
 ## GET /api/research-status
 
-Returns the latest research request summary for the authenticated corporation and default focus.
+Returns the latest research request summary for the server-owned corporation scope and default focus.
 
 Query parameters:
 
@@ -45,7 +45,7 @@ Failure response:
 
 ## GET /api/command-brief
 
-Returns the latest processed command brief for the authenticated corporation and default focus.
+Returns the latest processed command brief for the server-owned corporation scope and default focus.
 
 Query parameters:
 

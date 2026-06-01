@@ -6,7 +6,7 @@ import { jsonResponse, safeErrorResponse } from './_shared/http';
 
 export async function handler(event: FunctionEvent) {
   try {
-    const { corporationId } = getAuthScope(event);
+    const { corporationId } = getAuthScope();
     const focus = event.queryStringParameters?.focus ?? defaultResearchFocus;
     const db = await getMongoDb();
     const document = await db
@@ -20,8 +20,8 @@ export async function handler(event: FunctionEvent) {
       brief: document ? normalizeCommandBriefDocument(document) : null
     });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Missing corporation scope') {
-      return safeErrorResponse('Missing corporation scope', 401);
+    if (error instanceof Error && error.message === 'EVEONLINE_CORPORATION_ID is required') {
+      return safeErrorResponse('Corporation scope is not configured', 500);
     }
 
     return safeErrorResponse('Unable to load command brief');
