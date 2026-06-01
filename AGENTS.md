@@ -4,7 +4,7 @@ Read these before changing product behavior:
 
 1. `.specify/memory/constitution.md`
 2. `docs/roadmap.md`
-3. `specs/001-command-brief-mvp/plan.md`
+3. `specs/002-decision-record-loop/plan.md`
 
 Use Spec Kit for major work: constitution, specify, clarify when needed, plan, tasks, analyze, implement. Keep generated specs and implementation in sync.
 
