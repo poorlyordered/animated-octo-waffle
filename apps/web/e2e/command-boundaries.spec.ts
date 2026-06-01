@@ -29,6 +29,16 @@ test('keeps automation queue visible as queued work rather than execution', asyn
   await assertNoBrowserDiagnostics();
 });
 
+test('keeps numbers recommendations read-only rather than wallet or asset execution', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  await expectVisibleText(page, 'Numbers findings are read-only recommendations. This surface does not move ISK, assets, contracts, workers, or EVE state.');
+  await expectForbiddenTextAbsent(page);
+  await assertNoBrowserDiagnostics();
+});
+
 test('keeps people follow-ups visible as records rather than role or EVE mutations', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
 

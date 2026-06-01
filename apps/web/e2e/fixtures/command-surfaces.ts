@@ -1,6 +1,7 @@
 import { completedItem, failedItem, queuedItem } from '../../tests/fixtures/automationQueue';
 import { processedBrief, processedRequest } from '../../tests/fixtures/commandBrief';
 import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
+import { numbersSnapshot } from '../../tests/fixtures/numbers';
 import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
 import { blockedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
 
@@ -17,6 +18,9 @@ export const commandSurfaceFixtures = {
   },
   researchStatus: {
     request: processedRequest
+  },
+  numbers: {
+    snapshot: numbersSnapshot
   },
   decisionRecords: {
     decisions: [

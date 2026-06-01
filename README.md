@@ -61,8 +61,15 @@ Use `MONGODB_DB` for the database the current app reads and writes at runtime. K
 Current notes:
 
 - The Command Brief MVP expects `research_briefs` and `research_requests` in `MONGODB_DB`.
+- The Numbers operating layer expects processed read-only `numbers_snapshots` records in `MONGODB_DB`.
 - The `gryyk47` database contains broader corporation context collections such as `corporation_context`, `strategic_decisions`, `asset_information`, and `research_briefs`.
 - There is no collection named `Gryyk-47` in the checked `gryyk47` database. Treat `Gryyk-47` as the product/corporation label unless a future data audit identifies a real database or collection with that exact name.
+
+## Numbers Operating Layer
+
+The Numbers Operating Layer reads processed corporation health snapshots from MongoDB `numbers_snapshots`. It shows wallet, assets, logistics, market, and activity sections, provenance, stale/missing data indicators, and display-only follow-up candidates.
+
+M8 is read-only. It does not call live EVE APIs, move ISK, move assets, change contracts, dispatch workers, retry work, or mutate external services. Follow-up candidates are planning recommendations only.
 
 ## Decision Record Loop
 
