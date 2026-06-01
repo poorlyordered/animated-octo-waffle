@@ -17,9 +17,16 @@ The default test suite uses Jest in Node for contract and unit tests. Jest is ca
 Useful commands:
 
 - `npm test`
+- `npm run test:e2e`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`
+
+`npm test` runs Jest in Node for contract and unit coverage. `npm run test:e2e` runs real-browser smoke validation for the command surfaces and uses deterministic local fixtures instead of live MongoDB, EVE, or Netlify credentials.
+
+If browser binaries are not installed yet, run:
+
+- `npx playwright install chromium`
 
 Use Netlify Dev, not plain Vite, when validating function-backed API calls locally:
 

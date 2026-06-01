@@ -120,15 +120,31 @@ Validation:
 - Local validation covered lint, typecheck, Jest contract/unit tests, and production build
 - Default tests now run without jsdom; UI/browser workflow coverage should be added as a future Playwright slice
 
+### M5: Browser Workflow Smoke Tests - Complete
+
+Goal: validate merged command operating surfaces in a real browser without reintroducing jsdom into default tests.
+
+Delivered capabilities:
+
+- Dedicated `npm run test:e2e` browser smoke command
+- Deterministic local fixtures and request interception for command surfaces
+- Browser checks for command brief, decision records, automation queue, and people surfaces
+- Command-boundary checks for player-impacting approval and no-execution language
+- Preserved fast Jest Node validation through `npm test`
+
+Validation:
+
+- Spec: `specs/005-browser-workflow-smoke`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M5 selection after M4 review.
+Proceed to M6 selection after M5 review.
 
-The next slice should build on the command surfaces now in place: brief, decisions, automation queue, and people.
+The next slice should build on the command surfaces and validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Browser workflow smoke tests for the command operating surfaces.
 - EVE SSO/session-derived corporation scope.
 - Worker handoff for queued automation records.
 - Numbers operating layer for wallet/assets/logistics visibility.
