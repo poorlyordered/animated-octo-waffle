@@ -8,11 +8,11 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Automation Queue implemented on `003-automation-queue`; next roadmap slice is M4 People Operating Layer.
+Current phase: People Operating Layer implemented on `004-people-operating-layer`; next roadmap slice should be selected from the roadmap after M4 review.
 
 ## Local Development
 
-The Command Brief MVP uses Vitest for unit, contract, and component tests. Vitest is capped at two workers in `apps/web/vitest.config.ts` to keep local test runs from overloading the machine.
+The default test suite uses Jest in Node for contract and unit tests. Jest is capped at two workers in `jest.config.cjs` to keep local test runs dependable.
 
 Useful commands:
 
@@ -62,3 +62,11 @@ The Automation Queue stores auditable queued work in MongoDB `automation_queue` 
 M3 supports creating and inspecting queue records only. It does not dispatch workers, retry failed work, perform EVE actions, change permissions, move assets, touch wallets/contracts/standings, or call external services. Player-impacting queue work requires approval metadata already present on the source decision.
 
 For write-flow validation, keep using the isolated MongoDB database `gryyk47_greenfield_test` and seed or reuse approved `strategic_decisions` records for the configured corporation scope before writing `automation_queue` records.
+
+## People Operating Layer
+
+The People Operating Layer reads grounded member context from MongoDB `member_profiles` and stores leadership follow-up records in `leadership_followups`.
+
+M4 supports member profile list/detail views, stale and missing people data indicators, leadership follow-up creation, optional links to `strategic_decisions` and `automation_queue`, and explicit approval metadata for player-impacting follow-ups. It does not mutate roles, access, permissions, standings, EVE state, decision records, or queue item status.
+
+For write-flow validation, keep using `gryyk47_greenfield_test` or another isolated MongoDB database before writing `leadership_followups` records.

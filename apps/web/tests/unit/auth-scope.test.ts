@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { readScopeEnv } from '../../../../netlify/functions/_shared/env';
 
 describe('readScopeEnv', () => {

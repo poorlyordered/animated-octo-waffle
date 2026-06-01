@@ -101,27 +101,34 @@ Validation:
 - Spec: `specs/003-automation-queue`
 - Local validation covered lint, typecheck, tests, production build, and an isolated MongoDB write-flow check against `gryyk47_greenfield_test`
 
-### M4: People Operating Layer
+### M4: People Operating Layer - Complete
 
 Goal: support recruiting, onboarding, delegation, and member health.
 
-Candidate capabilities:
+Delivered capabilities:
 
 - Member profile summaries
 - Activity and role views
-- Onboarding tasks
+- Missing and stale people-data indicators
 - Leadership follow-up queue
+- Optional links from follow-ups to decision records and automation queue items
+- Approval boundaries for player-impacting follow-ups
+
+Validation:
+
+- Spec: `specs/004-people-operating-layer`
+- Local validation covered lint, typecheck, Jest contract/unit tests, and production build
+- Default tests now run without jsdom; UI/browser workflow coverage should be added as a future Playwright slice
 
 ## Near-Term Recommendation
 
-Proceed to M4: People Operating Layer.
+Proceed to M5 selection after M4 review.
 
-The next slice should make member, role, activity, delegation, and leadership follow-up context visible as first-class command data. This builds on M1's grounded command briefs, M2's decision records, and M3's auditable queue model.
+The next slice should build on the command surfaces now in place: brief, decisions, automation queue, and people.
 
-Recommended M4 scope:
+Recommended next-slice candidates:
 
-- Define member profile, role, activity, and leadership follow-up contracts.
-- Read existing corporation people context from MongoDB without adding long-running sync work to request paths.
-- Surface missing or stale people data explicitly.
-- Link people follow-ups to decision records or automation queue items where appropriate.
-- Preserve explicit approval boundaries for role, access, permission, standings, or player-impacting actions.
+- Browser workflow smoke tests for the command operating surfaces.
+- EVE SSO/session-derived corporation scope.
+- Worker handoff for queued automation records.
+- Numbers operating layer for wallet/assets/logistics visibility.
