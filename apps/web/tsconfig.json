@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "composite": true,
+    "esModuleInterop": true,
     "jsx": "react-jsx",
     "lib": [
       "DOM",
@@ -13,9 +14,9 @@
     "strict": true,
     "target": "ES2022",
     "types": [
+      "jest",
       "node",
-      "vite/client",
-      "vitest/globals"
+      "vite/client"
     ]
   },
   "include": [

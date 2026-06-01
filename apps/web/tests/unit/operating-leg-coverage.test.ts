@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { deriveCoverage } from '../../src/features/command-brief/services/coverage';
 
 describe('deriveCoverage', () => {

@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { commandBriefResponseSchema } from '@gryyk/contracts';
 import { processedBrief } from '../fixtures/commandBrief';
 
