@@ -1,5 +1,6 @@
 import { CommandBriefRoute } from './routes/CommandBriefRoute';
 import { DecisionRecordsRoute } from './routes/DecisionRecordsRoute';
+import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
 import './styles/app.css';
 
 export function App() {
@@ -7,6 +8,7 @@ export function App() {
     <>
       <CommandBriefRoute />
       <DecisionRecordsRoute />
+      <AutomationQueueRoute />
     </>
   );
 }

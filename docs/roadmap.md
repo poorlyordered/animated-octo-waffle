@@ -85,15 +85,21 @@ Validation:
 - Quickstart write-flow validation committed in `f940034 test: validate decision record quickstart target`
 - Local validation covered lint, typecheck, tests, production build, and an isolated MongoDB write-flow check against `gryyk47_greenfield_test`
 
-### M3: Automation Queue
+### M3: Automation Queue - Complete
 
 Goal: model automation as auditable hands and feet.
 
-Candidate capabilities:
+Delivered capabilities:
 
 - Queue tasks for workers or external agents
 - Show status, owner, input, output, failure, and retry metadata
 - Require approval for player-impacting actions
+- Keep queue creation separate from worker dispatch, retries, EVE actions, and external-service mutations
+
+Validation:
+
+- Spec: `specs/003-automation-queue`
+- Local validation covered lint, typecheck, tests, production build, and an isolated MongoDB write-flow check against `gryyk47_greenfield_test`
 
 ### M4: People Operating Layer
 
@@ -108,14 +114,14 @@ Candidate capabilities:
 
 ## Near-Term Recommendation
 
-Proceed to M3: Automation Queue.
+Proceed to M4: People Operating Layer.
 
-The next slice should turn approved decision records into auditable work items without executing player-impacting actions automatically. This builds on M1's grounded command briefs and M2's approval boundary while keeping long-running work outside Netlify request/response paths.
+The next slice should make member, role, activity, delegation, and leadership follow-up context visible as first-class command data. This builds on M1's grounded command briefs, M2's decision records, and M3's auditable queue model.
 
-Recommended M3 scope:
+Recommended M4 scope:
 
-- Define an `automation_queue` contract for queued work, status, owner, input, output, failure, retry metadata, and provenance.
-- Add a command surface that can queue a task from an approved decision record.
-- Prevent unapproved player-impacting decisions from creating queue entries.
-- Keep queue processing out of the web request path; the MVP should create and inspect queue records only.
-- Add validation against an isolated MongoDB test database before enabling any real worker integration.
+- Define member profile, role, activity, and leadership follow-up contracts.
+- Read existing corporation people context from MongoDB without adding long-running sync work to request paths.
+- Surface missing or stale people data explicitly.
+- Link people follow-ups to decision records or automation queue items where appropriate.
+- Preserve explicit approval boundaries for role, access, permission, standings, or player-impacting actions.

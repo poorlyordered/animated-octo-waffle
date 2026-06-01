@@ -1,15 +1,29 @@
 import { useState, type FormEvent } from 'react';
-import type { DecisionRecord, DecisionStatus, UpdateDecisionStatusRequest } from '@gryyk/contracts';
+import type {
+  AutomationQueueItem,
+  CreateAutomationQueueItemRequest,
+  DecisionRecord,
+  DecisionStatus,
+  UpdateDecisionStatusRequest
+} from '@gryyk/contracts';
 import { OperatingLegCoverage } from '../../command-brief/components/OperatingLegCoverage';
+import { AutomationQueueCreate } from '../../automation-queue/components/AutomationQueueCreate';
 
 interface DecisionRecordDetailProps {
   decision: DecisionRecord | null;
   onUpdateStatus: (decisionId: string, request: UpdateDecisionStatusRequest) => Promise<DecisionRecord> | void;
+  queueItems?: AutomationQueueItem[];
+  onCreateQueueItem?: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem> | void;
 }
 
 const nextStatuses: DecisionStatus[] = ['approved', 'delegated', 'done', 'rejected'];
 
-export function DecisionRecordDetail({ decision, onUpdateStatus }: DecisionRecordDetailProps) {
+export function DecisionRecordDetail({
+  decision,
+  onUpdateStatus,
+  queueItems = [],
+  onCreateQueueItem
+}: DecisionRecordDetailProps) {
   const [status, setStatus] = useState<DecisionStatus>('approved');
   const [note, setNote] = useState('');
   const [approvalText, setApprovalText] = useState('');
@@ -60,9 +74,24 @@ export function DecisionRecordDetail({ decision, onUpdateStatus }: DecisionRecor
       {activeDecision.isPlayerImpacting ? (
         <p className="notice">Player-impacting: explicit approval is required before action-like progression.</p>
       ) : null}
-      <p className="notice">Decision records do not execute actions or create automation queue entries.</p>
+      <p className="notice">Decision records do not execute actions. Approved decisions can create queued work without dispatching workers.</p>
+
+      {queueItems.length > 0 ? (
+        <section aria-label="Linked queued work">
+          <h3>Linked queued work</h3>
+          <ul>
+            {queueItems.map((queueItem) => (
+              <li key={queueItem.id}>
+                {queueItem.taskIntent} - {queueItem.status}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <OperatingLegCoverage coverage={activeDecision.sourceProvenance.coverage} />
+
+      {onCreateQueueItem ? <AutomationQueueCreate decision={activeDecision} onCreate={onCreateQueueItem} /> : null}
 
       <form onSubmit={submitStatus}>
         <label>
