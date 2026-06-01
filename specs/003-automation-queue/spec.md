@@ -28,7 +28,7 @@ As the commander, I want to turn an approved decision record into a queued work 
 
 ### User Story 2 - Inspect Queue State And Failures (Priority: P2)
 
-As the commander, I want to inspect automation queue state so that I can see what work is waiting, blocked, failed, or completed by future workers.
+As the commander, I want to inspect automation queue state so that I can see what work is queued, blocked, failed, or completed by future workers.
 
 **Why this priority**: The queue must be inspectable before worker execution is introduced; otherwise automation becomes opaque.
 
@@ -36,7 +36,7 @@ As the commander, I want to inspect automation queue state so that I can see wha
 
 **Acceptance Scenarios**:
 
-1. **Given** queue records with different statuses, **When** the commander opens the automation queue, **Then** the system groups or filters records by status and clearly distinguishes waiting work from failed or completed work.
+1. **Given** queue records with different statuses, **When** the commander opens the automation queue, **Then** the system groups or filters records by status and clearly distinguishes queued work from failed or completed work.
 2. **Given** a failed queue record, **When** the commander opens its detail, **Then** the system shows failure message, attempt count, last attempted timestamp, and retry eligibility without retrying automatically.
 3. **Given** a completed queue record written by a future worker, **When** the commander opens its detail, **Then** the system shows output summary, completion timestamp, and source provenance.
 
@@ -94,6 +94,7 @@ As the commander, I want player-impacting work to remain blocked unless explicit
 - **FR-011**: System MUST keep storage credentials and server secrets server-side only.
 - **FR-012**: System MUST NOT run long-running work, external AI processing, EVE writes, retries, or worker execution inside interactive web request paths.
 - **FR-013**: System MUST provide validation evidence using an isolated write target before any real worker integration is enabled.
+- **FR-014**: System MUST reject or clearly surface duplicate queue creation attempts for the same source decision and task intent without creating ambiguous duplicate work.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -109,7 +110,7 @@ As the commander, I want player-impacting work to remain blocked unless explicit
 - **SC-001**: A commander can create a queue item from an approved decision in under one minute using existing decision context.
 - **SC-002**: 100% of queue items created through the app include source decision linkage, task intent, expected output, status, timestamps, and provenance.
 - **SC-003**: 100% of attempts to queue unapproved or approval-missing player-impacting decisions are rejected without creating a queue record.
-- **SC-004**: Queue list and detail views make waiting, failed, completed, and blocked work distinguishable without requiring logs or database inspection.
+- **SC-004**: Queue list and detail views make queued, failed, completed, and blocked work distinguishable without requiring logs or database inspection.
 - **SC-005**: Validation demonstrates that queue creation does not create worker execution metadata or external action side effects.
 
 ## Assumptions
