@@ -36,3 +36,13 @@ Required Netlify/server environment variables:
 - `EVEONLINE_CORPORATION_ID`
 
 The MVP is a single-corporation read surface. Corporation scope is server-owned through `EVEONLINE_CORPORATION_ID`; the browser does not send or choose corporation identity. A later EVE SSO slice should replace this configured scope with authenticated session-derived scope.
+
+## MongoDB Data Sources
+
+Use `MONGODB_DB` for the database the current app reads and writes at runtime. Keep additional MongoDB database names as explicitly named future integration variables rather than overloading `MONGODB_DB`.
+
+Current notes:
+
+- The Command Brief MVP expects `research_briefs` and `research_requests` in `MONGODB_DB`.
+- The `gryyk47` database contains broader corporation context collections such as `corporation_context`, `strategic_decisions`, `asset_information`, and `research_briefs`.
+- There is no collection named `Gryyk-47` in the checked `gryyk47` database. Treat `Gryyk-47` as the product/corporation label unless a future data audit identifies a real database or collection with that exact name.
