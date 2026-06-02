@@ -19,7 +19,7 @@ function sessionCookie(corporationId = '123456789') {
       corporationId,
       corporationName: 'Session Corp',
       issuedAt: new Date('2026-06-01T00:00:00.000Z').toISOString(),
-      expiresAt: new Date('2026-06-02T00:00:00.000Z').toISOString(),
+      expiresAt: new Date('2099-06-02T00:00:00.000Z').toISOString(),
       source: 'eve-sso'
     },
     env.EVE_SESSION_SECRET

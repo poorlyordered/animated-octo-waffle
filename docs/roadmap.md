@@ -199,14 +199,34 @@ Validation:
 - Spec: `specs/008-numbers-layer`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M9: Live EVE SSO - Complete
+
+Goal: validate live EVE SSO identity through a server-side adapter while keeping command-session scope browser-safe.
+
+Delivered capabilities:
+
+- Server-side authorization-code token exchange for EVE SSO callbacks
+- EVE access-token JWT validation through SSO metadata/JWKS
+- Issuer, audience, expiry, signature, and character-subject checks
+- Read-only ESI character and corporation identity resolution
+- Signed command session scope containing only character and corporation identity
+- Deterministic local identity fixture preserved for contract and browser validation
+- Safe callback failures that clear transient SSO state without exposing secrets, token material, or raw provider payloads
+- Contract/unit coverage for live success, invalid token claims, credential non-exposure, safe errors, deterministic fixture precedence, token exchange, JWT validation, and ESI lookup failures
+
+Validation:
+
+- Spec: `specs/009-live-eve-sso`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M9 selection after M8 review.
+Proceed to M10 selection after M9 review.
 
-The next slice should build on authenticated command scope, the numbers/people/opportunity operating surfaces, auditable queue handoff, and the validation loop now in place.
+The next slice should build on live authenticated command scope, the numbers/people/opportunity operating surfaces, auditable queue handoff, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Live EVE SSO identity validation and token handling through a server-side adapter.
 - Worker polling/claim/completion callbacks for prepared handoff records.
 - Decision or queue creation from Numbers follow-up candidates.
+- Explicit-consent ESI token vaulting and scoped read sync for future live data ingestion.
