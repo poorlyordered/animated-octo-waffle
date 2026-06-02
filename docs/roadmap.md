@@ -280,14 +280,35 @@ Validation:
 - Spec: `specs/012-esi-token-vault-sync`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M13: Worker Numbers ESI Ingestion - Complete
+
+Goal: let trusted workers process prepared Numbers ESI sync requests and write processed Numbers snapshots.
+
+Delivered capabilities:
+
+- Worker-authorized ready, claim, run, and fail paths for `esi_sync_requests`
+- Atomic queued-to-claimed sync request transition with worker identity
+- Server-only token unsealing inside Numbers ingestion helpers
+- Read-only ESI Numbers source fetches for wallet, assets, industry/logistics, and market data
+- Processed `numbers_snapshots` writes with wallet, assets, logistics, market, and activity sections
+- Partial ESI failure handling through missing/stale section states and safe failure summaries
+- Completed and failed sync request metadata with snapshot linkage or failure reason
+- No raw ESI payload retention, browser token exposure, worker dispatch, retry scheduling, EVE writes, wallet/asset movement, contract mutation, role mutation, or external-service execution
+- Contract/unit coverage for worker request schemas, store transitions, ingestion normalization, partial failures, and secret-free responses
+
+Validation:
+
+- Spec: `specs/013-worker-numbers-esi-ingestion`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M13 selection after M12 review.
+Proceed to M14 selection after M13 review.
 
-The next slice should build on live authenticated command scope, explicit ESI consent, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
+The next slice should build on live authenticated command scope, explicit ESI consent, worker-side Numbers ingestion, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Worker-side Numbers ESI ingestion from prepared sync requests.
 - Worker retry policy and commander-approved retry scheduling for failed handoffs.
 - Browser-visible approval handoff from Numbers-created decisions into queued work.
+- Browser-visible sync history and latest live Numbers provenance from completed ESI syncs.

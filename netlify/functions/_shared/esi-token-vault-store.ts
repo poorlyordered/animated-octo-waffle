@@ -15,6 +15,18 @@ export async function findActiveOrLatestVault(db: Db, corporationId: string): Pr
   return document ? normalizeVaultDocument(document as unknown as EsiTokenVaultDocument) : null;
 }
 
+export async function findActiveVaultById(
+  db: Db,
+  corporationId: string,
+  vaultId: string
+): Promise<EsiTokenVaultDocument | null> {
+  const filter = ObjectId.isValid(vaultId)
+    ? { _id: new ObjectId(vaultId), corporationId, status: 'active' }
+    : { id: vaultId, corporationId, status: 'active' };
+  const document = await db.collection(collectionName).findOne(filter);
+  return document ? normalizeVaultDocument(document as unknown as EsiTokenVaultDocument) : null;
+}
+
 export async function upsertActiveVault(
   db: Db,
   corporationId: string,
