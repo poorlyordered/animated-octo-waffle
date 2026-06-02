@@ -237,7 +237,9 @@ Delivered capabilities:
 Validation:
 
 - Spec: `specs/010-worker-callbacks`
+- Implementation merged in `00566a9 Merge pull request #8 from poorlyordered/010-worker-callbacks`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+- Post-merge sanity check covered targeted worker handoff/callback Jest tests on `master`
 
 ## Near-Term Recommendation
 
