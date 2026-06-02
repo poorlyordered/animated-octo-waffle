@@ -61,7 +61,10 @@ describe('live EVE SSO adapter', () => {
     });
 
     await expect(exchangeAuthorizationCode('callback-code', config, fetchMock)).resolves.toEqual({
-      accessToken: 'jwt-token'
+      accessToken: 'jwt-token',
+      refreshToken: 'refresh-token',
+      accessTokenExpiresAt: expect.any(String),
+      grantedScopes: ['publicData']
     });
 
     expect(fetchMock).toHaveBeenCalledWith(

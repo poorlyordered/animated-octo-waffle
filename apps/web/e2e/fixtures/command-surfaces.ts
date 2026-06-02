@@ -9,6 +9,14 @@ import {
   numbersFollowUpOrigin,
   numbersFollowUpQueueItem
 } from '../../tests/fixtures/numbersFollowUpActions';
+import {
+  activeEsiSyncStatus,
+  duplicatePrepareEsiSyncResponse,
+  missingEsiSyncStatus,
+  prepareEsiSyncResponse,
+  revokeEsiVaultResponse,
+  startEsiSyncConsentResponse
+} from '../../tests/fixtures/esiSync';
 
 export const commandSurfaceFixtures = {
   commandBrief: {
@@ -164,5 +172,13 @@ export const commandSurfaceFixtures = {
         id: 'member-browser-stale'
       }
     ]
+  },
+  esiSync: {
+    missing: missingEsiSyncStatus,
+    active: activeEsiSyncStatus,
+    startConsent: startEsiSyncConsentResponse,
+    revoke: revokeEsiVaultResponse,
+    prepare: prepareEsiSyncResponse,
+    duplicatePrepare: duplicatePrepareEsiSyncResponse
   }
 };

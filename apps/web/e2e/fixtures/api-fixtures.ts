@@ -41,6 +41,33 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     return json(route, commandSurfaceFixtures.numbers);
   });
 
+  let esiSyncStatus = commandSurfaceFixtures.esiSync.active;
+  let preparedOnce = false;
+  await page.route('**/api/esi-sync/**', (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/consent/start')) {
+      esiSyncStatus = commandSurfaceFixtures.esiSync.active;
+      return json(route, commandSurfaceFixtures.esiSync.startConsent);
+    }
+
+    if (url.pathname.endsWith('/revoke')) {
+      esiSyncStatus = {
+        ...commandSurfaceFixtures.esiSync.active,
+        vault: commandSurfaceFixtures.esiSync.revoke.vault,
+        domains: commandSurfaceFixtures.esiSync.missing.domains
+      };
+      return json(route, commandSurfaceFixtures.esiSync.revoke);
+    }
+
+    if (url.pathname.endsWith('/prepare')) {
+      const response = preparedOnce ? commandSurfaceFixtures.esiSync.duplicatePrepare : commandSurfaceFixtures.esiSync.prepare;
+      preparedOnce = true;
+      return json(route, response);
+    }
+
+    return json(route, esiSyncStatus);
+  });
+
   await page.route('**/api/decision-records**', (route) => {
     if (route.request().method() !== 'GET') {
       return json(route, { decision: commandSurfaceFixtures.decisionRecords.decisions[0] });

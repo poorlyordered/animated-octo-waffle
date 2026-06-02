@@ -3,6 +3,7 @@ import { NumbersRoute } from './routes/NumbersRoute';
 import { DecisionRecordsRoute } from './routes/DecisionRecordsRoute';
 import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
 import { PeopleRoute } from './routes/PeopleRoute';
+import { EsiSyncRoute } from './routes/EsiSyncRoute';
 import { SessionStatus } from './features/session/components/SessionStatus';
 import './styles/app.css';
 
@@ -15,6 +16,7 @@ export function App() {
       <DecisionRecordsRoute />
       <AutomationQueueRoute />
       <PeopleRoute />
+      <EsiSyncRoute />
     </>
   );
 }

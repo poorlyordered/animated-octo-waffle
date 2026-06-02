@@ -60,14 +60,19 @@ export function isLocalReturnPath(returnTo: string | undefined): returnTo is str
   return Boolean(returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') && !returnTo.includes('://'));
 }
 
-export function createEveSsoState(returnTo: string | undefined, now = new Date()): EveSsoState {
+export function createEveSsoState(
+  returnTo: string | undefined,
+  now = new Date(),
+  purpose: EveSsoState['purpose'] = 'session'
+): EveSsoState {
   const issuedAt = now.toISOString();
   const expiresAt = new Date(now.getTime() + 10 * 60 * 1000).toISOString();
   return eveSsoStateSchema.parse({
     state: randomState(),
     returnTo: isLocalReturnPath(returnTo) ? returnTo : '/',
     issuedAt,
-    expiresAt
+    expiresAt,
+    purpose
   });
 }
 

@@ -259,14 +259,35 @@ Validation:
 - Spec: `specs/011-numbers-followup-actions`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M12: ESI Token Vault Sync - Complete
+
+Goal: add explicit-consent ESI token vaulting and scoped read-sync preparation for future live data ingestion.
+
+Delivered capabilities:
+
+- Browser-safe ESI vault status for missing, active, and revoked consent
+- Read-sync consent start using configured read-only ESI scopes
+- EVE SSO callback support for creating sealed server-side token vault records
+- Server-side token sealing through `ESI_TOKEN_VAULT_SEALING_KEY`
+- Commander revocation of vaulted consent
+- Queued Numbers read-sync request preparation from active vault consent
+- Missing-scope, revoked-vault, duplicate-sync, and unsafe-field boundaries
+- No ESI data fetching, worker dispatch, retry scheduling, EVE writes, wallet/asset movement, contract mutation, role mutation, or external-service execution in request paths
+- Contract/unit coverage and browser smoke coverage for the vault and sync preparation path
+
+Validation:
+
+- Spec: `specs/012-esi-token-vault-sync`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M12 selection after M11 review.
+Proceed to M13 selection after M12 review.
 
-The next slice should build on live authenticated command scope, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
+The next slice should build on live authenticated command scope, explicit ESI consent, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Explicit-consent ESI token vaulting and scoped read sync for future live data ingestion.
+- Worker-side Numbers ESI ingestion from prepared sync requests.
 - Worker retry policy and commander-approved retry scheduling for failed handoffs.
 - Browser-visible approval handoff from Numbers-created decisions into queued work.

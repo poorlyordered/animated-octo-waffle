@@ -1,0 +1,161 @@
+import { useState } from 'react';
+import type {
+  EsiSyncDomain,
+  EsiSyncStatusResponse,
+  PrepareEsiSyncResponse,
+  RevokeEsiVaultResponse,
+  StartEsiSyncConsentResponse
+} from '@gryyk/contracts';
+
+interface EsiSyncPanelProps {
+  error: string | null;
+  loading: boolean;
+  status: EsiSyncStatusResponse | null;
+  onPrepareSync: (domain: EsiSyncDomain) => Promise<PrepareEsiSyncResponse>;
+  onRevokeVault: () => Promise<RevokeEsiVaultResponse>;
+  onStartConsent: () => Promise<StartEsiSyncConsentResponse>;
+}
+
+export function EsiSyncPanel({
+  error,
+  loading,
+  status,
+  onPrepareSync,
+  onRevokeVault,
+  onStartConsent
+}: EsiSyncPanelProps) {
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+
+  async function handleStartConsent() {
+    setBusyAction('consent');
+    try {
+      const response = await onStartConsent();
+      setActionStatus(`${response.boundary} Requested scopes: ${response.requestedScopes.join(', ')}.`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to start ESI consent.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleRevoke() {
+    setBusyAction('revoke');
+    try {
+      const response = await onRevokeVault();
+      setActionStatus(`Vault status: ${response.vault.status}. ${response.vault.boundaries.join(' ')}`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to revoke ESI consent.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handlePrepare(domain: EsiSyncDomain) {
+    setBusyAction(`prepare-${domain}`);
+    try {
+      const response = await onPrepareSync(domain);
+      setActionStatus(
+        `${response.syncRequest.boundary} Sync status: ${response.syncRequest.status}. Duplicate: ${
+          response.duplicate ? 'yes' : 'no'
+        }.`
+      );
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to prepare ESI sync.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  if (loading) {
+    return <main className="command-brief">Loading ESI sync...</main>;
+  }
+
+  if (error) {
+    return <main className="command-brief error-state">{error}</main>;
+  }
+
+  if (!status) {
+    return null;
+  }
+
+  const vault = status.vault;
+
+  return (
+    <main className="command-brief">
+      <header className="brief-header">
+        <div>
+          <p className="eyebrow">Gryyk-47 ESI Sync</p>
+          <h1>ESI token vault</h1>
+        </div>
+        <span className="status-pill">{vault.status}</span>
+      </header>
+
+      <section className="summary" aria-label="ESI vault status">
+        <h2>Vault status</h2>
+        <dl className="metadata-grid">
+          <div className="metadata-item">
+            <dt>Character</dt>
+            <dd>{vault.character ? vault.character.name : 'No consent'}</dd>
+          </div>
+          <div className="metadata-item">
+            <dt>Corporation</dt>
+            <dd>{vault.corporation ? vault.corporation.name : 'No consent'}</dd>
+          </div>
+          <div className="metadata-item">
+            <dt>Granted scopes</dt>
+            <dd>{vault.grantedScopes.length}</dd>
+          </div>
+          <div className="metadata-item">
+            <dt>Consented</dt>
+            <dd>{vault.consentedAt ? new Date(vault.consentedAt).toLocaleString() : 'Missing'}</dd>
+          </div>
+          <div className="metadata-item">
+            <dt>Revoked</dt>
+            <dd>{vault.revokedAt ? new Date(vault.revokedAt).toLocaleString() : 'No'}</dd>
+          </div>
+        </dl>
+        {vault.boundaries.map((boundary) => (
+          <p className="notice" key={boundary}>
+            {boundary}
+          </p>
+        ))}
+      </section>
+
+      <section aria-label="ESI sync domains">
+        <h2>Read-sync domains</h2>
+        <div className="coverage-grid">
+          {status.domains.map((domain) => (
+            <article className={`coverage-item coverage-item-${domain.available ? 'present' : 'missing'}`} key={domain.domain}>
+              <span>{domain.label}</span>
+              <strong>{domain.available ? 'available' : 'blocked'}</strong>
+              <p>Required scopes: {domain.requiredScopes.join(', ')}</p>
+              {domain.missingScopes.length > 0 ? <p className="missing-reasons">Missing scopes: {domain.missingScopes.join(', ')}</p> : null}
+              <button
+                type="button"
+                onClick={() => void handlePrepare(domain.domain)}
+                disabled={!domain.available || busyAction === `prepare-${domain.domain}`}
+              >
+                {busyAction === `prepare-${domain.domain}` ? 'Preparing...' : 'Prepare read sync'}
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section aria-label="ESI consent controls">
+        <h2>Consent controls</h2>
+        <div className="form-actions">
+          <button type="button" onClick={() => void handleStartConsent()} disabled={busyAction === 'consent'}>
+            {busyAction === 'consent' ? 'Starting...' : 'Start read-sync consent'}
+          </button>
+          <button type="button" onClick={() => void handleRevoke()} disabled={vault.status !== 'active' || busyAction === 'revoke'}>
+            {busyAction === 'revoke' ? 'Revoking...' : 'Revoke consent'}
+          </button>
+        </div>
+        {actionStatus ? <p className="notice">{actionStatus}</p> : null}
+        <p className="notice">This surface prepares read-only sync requests only. It does not fetch ESI data, dispatch workers, schedule retries, write to EVE, or move wallets, assets, contracts, or roles.</p>
+      </section>
+    </main>
+  );
+}
