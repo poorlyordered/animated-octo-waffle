@@ -67,6 +67,11 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
               status: handoff.status,
               createdAt: handoff.createdAt,
               updatedAt: handoff.updatedAt,
+              claimedBy: handoff.claimedBy,
+              claimedAt: handoff.claimedAt,
+              completedAt: handoff.completedAt,
+              progress: handoff.progress,
+              result: handoff.result,
               failure: handoff.failure
             }
           : undefined

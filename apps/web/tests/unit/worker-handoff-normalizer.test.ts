@@ -32,7 +32,13 @@ describe('worker handoff normalizer', () => {
       id: readyHandoff.id,
       status: 'ready',
       createdAt: readyHandoff.createdAt,
-      updatedAt: readyHandoff.updatedAt
+      updatedAt: readyHandoff.updatedAt,
+      claimedBy: undefined,
+      claimedAt: undefined,
+      completedAt: undefined,
+      progress: [],
+      result: undefined,
+      failure: undefined
     });
   });
 });

@@ -219,14 +219,34 @@ Validation:
 - Spec: `specs/009-live-eve-sso`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M10: Worker Handoff Callbacks - Complete
+
+Goal: let trusted workers poll, claim, report progress, complete, and fail prepared handoff records while preserving auditable non-execution boundaries.
+
+Delivered capabilities:
+
+- Worker callback request schemas for claim, progress, completion, and failure
+- Server-side worker callback secret validation
+- MongoDB-backed atomic claim transition from ready to claimed
+- Worker-owned progress, completion, and failure state transitions
+- Browser-safe handoff summaries with claimed worker, progress events, result summary, and failure metadata
+- Commander handoff list/detail and queue-detail APIs preserved
+- Browser smoke coverage for claimed, completed, and failed handoff states
+- Contract/unit coverage for callback schemas, authorization, state transitions, duplicate claim prevention, safe metadata, and secret-free responses
+
+Validation:
+
+- Spec: `specs/010-worker-callbacks`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M10 selection after M9 review.
+Proceed to M11 selection after M10 review.
 
-The next slice should build on live authenticated command scope, the numbers/people/opportunity operating surfaces, auditable queue handoff, and the validation loop now in place.
+The next slice should build on live authenticated command scope, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Worker polling/claim/completion callbacks for prepared handoff records.
 - Decision or queue creation from Numbers follow-up candidates.
 - Explicit-consent ESI token vaulting and scoped read sync for future live data ingestion.
+- Worker retry policy and commander-approved retry scheduling for failed handoffs.

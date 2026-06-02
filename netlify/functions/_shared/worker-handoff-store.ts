@@ -1,5 +1,11 @@
-import { ObjectId, type Db } from 'mongodb';
-import type { WorkerHandoff, WorkerHandoffStatus } from '../../../packages/contracts/src/index';
+import { ObjectId, type Db, type UpdateFilter } from 'mongodb';
+import type {
+  WorkerCompleteRequest,
+  WorkerFailRequest,
+  WorkerHandoff,
+  WorkerHandoffStatus,
+  WorkerProgressRequest
+} from '../../../packages/contracts/src/index';
 import { findAutomationQueueItem } from './automation-queue-store';
 import {
   normalizeWorkerHandoffDocument,
@@ -38,7 +44,7 @@ export async function listWorkerHandoffs(
     query.queueItemId = filters.queueItemId;
   }
 
-  const documents = await db.collection(collectionName).find(query).sort({ updatedAt: -1, createdAt: -1 }).toArray();
+  const documents = await db.collection<WorkerHandoffDocument>(collectionName).find(query).sort({ updatedAt: -1, createdAt: -1 }).toArray();
   return documents.map((document) => normalizeWorkerHandoffDocument(document as WorkerHandoffDocument));
 }
 
@@ -47,7 +53,7 @@ export async function findWorkerHandoff(
   corporationId: string,
   id: string
 ): Promise<WorkerHandoff | null> {
-  const document = await db.collection(collectionName).findOne(idFilter(id, corporationId));
+  const document = await db.collection<WorkerHandoffDocument>(collectionName).findOne(idFilter(id, corporationId));
   return document ? normalizeWorkerHandoffDocument(document as WorkerHandoffDocument) : null;
 }
 
@@ -56,7 +62,7 @@ export async function findActiveWorkerHandoff(
   corporationId: string,
   queueItemId: string
 ): Promise<WorkerHandoff | null> {
-  const document = await db.collection(collectionName).findOne({
+  const document = await db.collection<WorkerHandoffDocument>(collectionName).findOne({
     corporationId,
     queueItemId,
     status: { $in: activeStatuses }
@@ -70,7 +76,7 @@ export async function findLatestWorkerHandoff(
   queueItemId: string
 ): Promise<WorkerHandoff | null> {
   const document = await db
-    .collection(collectionName)
+    .collection<WorkerHandoffDocument>(collectionName)
     .find({ corporationId, queueItemId })
     .sort({ updatedAt: -1, createdAt: -1 })
     .limit(1)
@@ -106,11 +112,131 @@ export async function prepareWorkerHandoff(
     payloadSummary: payloadSummaryFromQueueItem(queueItem),
     createdBy,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
+    progress: []
   };
 
-  const result = await db.collection(collectionName).insertOne(document);
+  const result = await db.collection<WorkerHandoffDocument>(collectionName).insertOne(document);
   return normalizeWorkerHandoffDocument({ ...document, _id: result.insertedId } as WorkerHandoffDocument);
+}
+
+export async function claimWorkerHandoff(
+  db: Db,
+  corporationId: string,
+  id: string,
+  workerId: string
+): Promise<WorkerHandoff | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection<WorkerHandoffDocument>(collectionName).findOneAndUpdate(
+    {
+      ...idFilter(id, corporationId),
+      status: 'ready'
+    },
+    {
+      $set: {
+        status: 'claimed' satisfies WorkerHandoffStatus,
+        claimedBy: workerId,
+        claimedAt: now,
+        updatedAt: now
+      },
+      $setOnInsert: {
+        progress: []
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeWorkerHandoffDocument(result as WorkerHandoffDocument) : null;
+}
+
+export async function recordWorkerProgress(
+  db: Db,
+  corporationId: string,
+  id: string,
+  request: WorkerProgressRequest
+): Promise<WorkerHandoff | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection<WorkerHandoffDocument>(collectionName).findOneAndUpdate(
+    claimedByWorkerFilter(id, corporationId, request.workerId),
+    {
+      $push: {
+        progress: {
+          workerId: request.workerId,
+          message: request.message,
+          code: request.code,
+          createdAt: now
+        }
+      },
+      $set: { updatedAt: now }
+    } as unknown as UpdateFilter<WorkerHandoffDocument>,
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeWorkerHandoffDocument(result as WorkerHandoffDocument) : null;
+}
+
+export async function completeWorkerHandoff(
+  db: Db,
+  corporationId: string,
+  id: string,
+  request: WorkerCompleteRequest
+): Promise<WorkerHandoff | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection<WorkerHandoffDocument>(collectionName).findOneAndUpdate(
+    claimedByWorkerFilter(id, corporationId, request.workerId),
+    {
+      $set: {
+        status: 'completed' satisfies WorkerHandoffStatus,
+        completedAt: now,
+        updatedAt: now,
+        result: {
+          workerId: request.workerId,
+          summary: request.summary,
+          artifactRefs: request.artifactRefs ?? [],
+          completedAt: now
+        }
+      },
+      $unset: { failure: '' }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeWorkerHandoffDocument(result as WorkerHandoffDocument) : null;
+}
+
+export async function failWorkerHandoff(
+  db: Db,
+  corporationId: string,
+  id: string,
+  request: WorkerFailRequest
+): Promise<WorkerHandoff | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection<WorkerHandoffDocument>(collectionName).findOneAndUpdate(
+    claimedByWorkerFilter(id, corporationId, request.workerId),
+    {
+      $set: {
+        status: 'failed' satisfies WorkerHandoffStatus,
+        updatedAt: now,
+        failure: {
+          workerId: request.workerId,
+          message: request.message,
+          code: request.code,
+          failedAt: now
+        }
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeWorkerHandoffDocument(result as WorkerHandoffDocument) : null;
+}
+
+function claimedByWorkerFilter(id: string, corporationId: string, workerId: string) {
+  return {
+    ...idFilter(id, corporationId),
+    status: 'claimed',
+    claimedBy: workerId
+  };
 }
 
 export { workerHandoffSummaryFromHandoff };

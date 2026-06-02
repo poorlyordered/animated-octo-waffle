@@ -2,6 +2,7 @@ import type {
   AutomationQueueItem,
   HandoffPayloadSummary,
   WorkerHandoff,
+  WorkerProgressEvent,
   WorkerHandoffStatus,
   WorkerHandoffSummary
 } from '../../../packages/contracts/src/index';
@@ -15,6 +16,8 @@ export type WorkerHandoffDocument = Record<string, unknown> & {
   _id?: { toString(): string };
   id?: string;
   payloadSummary?: unknown;
+  progress?: WorkerProgressEvent[];
+  result?: unknown;
   failure?: unknown;
 };
 
@@ -71,8 +74,11 @@ export function normalizeWorkerHandoffDocument(document: WorkerHandoffDocument):
     createdBy: stringValue(document.createdBy, 'commander'),
     createdAt,
     updatedAt,
+    claimedBy: stringValue(document.claimedBy) || undefined,
     claimedAt: optionalIsoDate(document.claimedAt),
     completedAt: optionalIsoDate(document.completedAt),
+    progress: Array.isArray(document.progress) ? document.progress : [],
+    result: document.result,
     failure: document.failure
   });
 }
@@ -83,6 +89,11 @@ export function workerHandoffSummaryFromHandoff(handoff: WorkerHandoff): WorkerH
     status: handoff.status,
     createdAt: handoff.createdAt,
     updatedAt: handoff.updatedAt,
+    claimedBy: handoff.claimedBy,
+    claimedAt: handoff.claimedAt,
+    completedAt: handoff.completedAt,
+    progress: handoff.progress,
+    result: handoff.result,
     failure: handoff.failure
   });
 }

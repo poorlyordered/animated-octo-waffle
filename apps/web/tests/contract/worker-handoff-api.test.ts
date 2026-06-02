@@ -1,10 +1,14 @@
 import {
   automationQueueItemResponseSchema,
+  workerClaimRequestSchema,
+  workerCompleteRequestSchema,
+  workerFailRequestSchema,
   workerHandoffListResponseSchema,
-  workerHandoffResponseSchema
+  workerHandoffResponseSchema,
+  workerProgressRequestSchema
 } from '@gryyk/contracts';
 import { queuedItem } from '../fixtures/automationQueue';
-import { blockedHandoff, readyHandoff } from '../fixtures/workerHandoff';
+import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../fixtures/workerHandoff';
 
 describe('Worker Handoff API contract', () => {
   it('accepts handoff preparation responses', () => {
@@ -15,9 +19,17 @@ describe('Worker Handoff API contract', () => {
   });
 
   it('accepts scoped handoff list responses across statuses', () => {
-    const parsed = workerHandoffListResponseSchema.parse({ handoffs: [readyHandoff, blockedHandoff] });
+    const parsed = workerHandoffListResponseSchema.parse({
+      handoffs: [readyHandoff, blockedHandoff, claimedHandoff, completedHandoff, failedHandoff]
+    });
 
-    expect(parsed.handoffs.map((handoff) => handoff.status)).toEqual(['ready', 'blocked']);
+    expect(parsed.handoffs.map((handoff) => handoff.status)).toEqual([
+      'ready',
+      'blocked',
+      'claimed',
+      'completed',
+      'failed'
+    ]);
   });
 
   it('accepts queue detail responses with latest handoff summary', () => {
@@ -27,7 +39,8 @@ describe('Worker Handoff API contract', () => {
         id: readyHandoff.id,
         status: readyHandoff.status,
         createdAt: readyHandoff.createdAt,
-        updatedAt: readyHandoff.updatedAt
+        updatedAt: readyHandoff.updatedAt,
+        progress: []
       }
     });
 
@@ -35,11 +48,63 @@ describe('Worker Handoff API contract', () => {
   });
 
   it('does not include secrets or dispatch targets in browser-visible handoff JSON', () => {
-    const body = JSON.stringify({ handoff: readyHandoff });
+    const body = JSON.stringify({ handoff: completedHandoff });
 
     expect(body).not.toContain('token');
     expect(body).not.toContain('secret');
     expect(body).not.toContain('credential');
     expect(body).not.toContain('dispatchTarget');
+    expect(body).not.toContain('rawPayload');
+  });
+
+  it('accepts worker callback request payloads', () => {
+    expect(workerClaimRequestSchema.parse({ workerId: 'overnightdesk-worker-1' })).toEqual({
+      workerId: 'overnightdesk-worker-1'
+    });
+    expect(
+      workerProgressRequestSchema.parse({
+        workerId: 'overnightdesk-worker-1',
+        message: 'Fetched source documents',
+        code: 'sources_fetched'
+      })
+    ).toEqual({
+      workerId: 'overnightdesk-worker-1',
+      message: 'Fetched source documents',
+      code: 'sources_fetched'
+    });
+    expect(
+      workerCompleteRequestSchema.parse({
+        workerId: 'overnightdesk-worker-1',
+        summary: 'Prepared safe output summary',
+        artifactRefs: ['brief:abc123']
+      })
+    ).toEqual({
+      workerId: 'overnightdesk-worker-1',
+      summary: 'Prepared safe output summary',
+      artifactRefs: ['brief:abc123']
+    });
+    expect(
+      workerFailRequestSchema.parse({
+        workerId: 'overnightdesk-worker-1',
+        message: 'Source data unavailable',
+        code: 'source_unavailable'
+      })
+    ).toEqual({
+      workerId: 'overnightdesk-worker-1',
+      message: 'Source data unavailable',
+      code: 'source_unavailable'
+    });
+  });
+
+  it('rejects unsafe callback payload fields', () => {
+    expect(() =>
+      workerCompleteRequestSchema.parse({
+        workerId: 'overnightdesk-worker-1',
+        summary: 'Prepared safe output summary',
+        token: 'secret-token',
+        dispatchTarget: 'external-system',
+        rawPayload: { secret: 'value' }
+      })
+    ).toThrow();
   });
 });
