@@ -17,8 +17,10 @@ test('shows active ESI vault status and prepares queued read sync', async ({ pag
   await expectVisibleText(page, 'Recent sync history');
   await expectVisibleText(page, 'numbers sync: completed');
   await expectVisibleText(page, 'Failed: ESI market endpoint returned a safe fixture failure.');
-  await expectVisibleText(page, 'Scheduled retry: Commander approved retry scheduling for failed ESI sync.');
-  await page.getByLabel('ESI sync history').getByRole('button', { name: 'Schedule retry' }).click();
+  await expectVisibleText(page, 'Retry scheduled: Commander approved retry scheduling for failed ESI sync.');
+  await expectVisibleText(page, 'Retry blocked: Commander approved retry scheduling for failed ESI sync.');
+  await expectVisibleText(page, 'Blocked: Active ESI consent is required before this sync retry can be queued.');
+  await page.getByLabel('ESI sync history').getByRole('button', { name: 'Schedule retry' }).first().click();
   await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
   await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).click();
   await expectVisibleText(page, 'Queued for future read-only worker sync. No ESI data was fetched and no worker was dispatched.');

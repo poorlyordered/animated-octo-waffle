@@ -10,7 +10,14 @@ import {
 } from '@gryyk/contracts';
 import { queuedItem } from '../fixtures/automationQueue';
 import { handoffRetryResponse } from '../fixtures/retry';
-import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../fixtures/workerHandoff';
+import {
+  blockedHandoff,
+  claimedHandoff,
+  completedHandoff,
+  failedHandoff,
+  failedHandoffWithCompletedRetry,
+  readyHandoff
+} from '../fixtures/workerHandoff';
 
 describe('Worker Handoff API contract', () => {
   it('accepts scheduled handoff retry responses', () => {
@@ -41,6 +48,13 @@ describe('Worker Handoff API contract', () => {
       'completed',
       'failed'
     ]);
+  });
+
+  it('accepts completed retry execution summaries on failed handoffs', () => {
+    const parsed = workerHandoffResponseSchema.parse({ handoff: failedHandoffWithCompletedRetry });
+
+    expect(parsed.handoff.retry?.status).toBe('completed');
+    expect(parsed.handoff.retry?.result?.replacementTargetStatus).toBe('ready');
   });
 
   it('accepts queue detail responses with latest handoff summary', () => {

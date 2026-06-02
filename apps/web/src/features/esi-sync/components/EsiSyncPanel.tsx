@@ -194,7 +194,15 @@ export function EsiSyncPanel({
                   <p>Sections: {item.sectionStatuses.map((section) => `${section.key} ${section.status}`).join(', ')}</p>
                 ) : null}
                 {item.failure ? <p className="missing-reasons">Failed: {item.failure.reason}</p> : null}
-                {item.retry ? <p>Scheduled retry: {item.retry.reason}</p> : null}
+                {item.retry ? (
+                  <p>
+                    Retry {item.retry.status}: {item.retry.reason}
+                    {item.retry.claimedBy ? ` Claimed by ${item.retry.claimedBy}.` : ''}
+                    {item.retry.completedAt ? ` Completed ${new Date(item.retry.completedAt).toLocaleString()}.` : ''}
+                    {item.retry.result ? ` Replacement ${item.retry.result.replacementTargetId} is ${item.retry.result.replacementTargetStatus}.` : ''}
+                    {item.retry.blockedReason ? ` Blocked: ${item.retry.blockedReason}` : ''}
+                  </p>
+                ) : null}
                 {item.status === 'failed' ? (
                   <button type="button" disabled={!onScheduleRetry || busyAction === `retry-${item.id}`} onClick={() => void handleScheduleRetry(item.id)}>
                     {busyAction === `retry-${item.id}` ? 'Scheduling...' : 'Schedule retry'}

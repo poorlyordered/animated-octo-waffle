@@ -10,6 +10,7 @@ import {
   activeEsiSyncStatus,
   duplicatePrepareEsiSyncResponse,
   activeEsiSyncStatusWithHistory,
+  failedEsiSyncHistoryItemWithBlockedRetry,
   missingEsiSyncStatus,
   prepareEsiSyncResponse,
   revokeEsiVaultResponse,
@@ -21,7 +22,7 @@ describe('ESI sync API contract', () => {
   it('accepts missing and active vault status responses', () => {
     expect(esiSyncStatusResponseSchema.parse(missingEsiSyncStatus).vault.status).toBe('missing');
     expect(esiSyncStatusResponseSchema.parse(activeEsiSyncStatus).vault.status).toBe('active');
-    expect(esiSyncStatusResponseSchema.parse(activeEsiSyncStatusWithHistory).history).toHaveLength(2);
+    expect(esiSyncStatusResponseSchema.parse(activeEsiSyncStatusWithHistory).history).toHaveLength(3);
   });
 
   it('accepts consent start responses without token material', () => {
@@ -53,6 +54,16 @@ describe('ESI sync API contract', () => {
     expect(parsed.retry.status).toBe('scheduled');
     expect(JSON.stringify(parsed)).not.toContain('accessToken');
     expect(JSON.stringify(parsed)).not.toContain('dispatchTarget');
+  });
+
+  it('accepts blocked ESI sync retry execution summaries in history', () => {
+    const parsed = esiSyncStatusResponseSchema.parse({
+      ...activeEsiSyncStatus,
+      history: [failedEsiSyncHistoryItemWithBlockedRetry]
+    });
+
+    expect(parsed.history?.[0].retry?.status).toBe('blocked');
+    expect(parsed.history?.[0].retry?.blockedReason).toContain('Active ESI consent');
   });
 
   it('accepts missing-scope blocked responses', () => {

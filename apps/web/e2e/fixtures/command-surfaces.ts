@@ -3,7 +3,13 @@ import { processedBrief, processedRequest } from '../../tests/fixtures/commandBr
 import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
 import { numbersLiveProvenance, numbersSnapshot } from '../../tests/fixtures/numbers';
 import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
-import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
+import {
+  blockedHandoff,
+  claimedHandoff,
+  completedHandoff,
+  failedHandoffWithCompletedRetry,
+  readyHandoff
+} from '../../tests/fixtures/workerHandoff';
 import {
   numbersFollowUpDecision,
   numbersFollowUpOrigin,
@@ -132,7 +138,7 @@ export const commandSurfaceFixtures = {
         queueItemId: 'queue-browser-callback-completed'
       },
       {
-        ...failedHandoff,
+        ...failedHandoffWithCompletedRetry,
         id: 'handoff-browser-failed',
         queueItemId: 'queue-browser-callback-failed'
       }

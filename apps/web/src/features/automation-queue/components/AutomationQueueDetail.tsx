@@ -118,8 +118,14 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, on
             ) : null}
             {handoff.retry ? (
               <div>
-                <dt>Scheduled retry</dt>
-                <dd>{handoff.retry.reason}</dd>
+                <dt>Retry</dt>
+                <dd>
+                  {handoff.retry.status}: {handoff.retry.reason}
+                  {handoff.retry.claimedBy ? ` Claimed by ${handoff.retry.claimedBy}.` : ''}
+                  {handoff.retry.completedAt ? ` Completed ${new Date(handoff.retry.completedAt).toLocaleString()}.` : ''}
+                  {handoff.retry.result ? ` Replacement ${handoff.retry.result.replacementTargetId} is ${handoff.retry.result.replacementTargetStatus}.` : ''}
+                  {handoff.retry.blockedReason ? ` Blocked: ${handoff.retry.blockedReason}` : ''}
+                </dd>
               </div>
             ) : null}
           </dl>

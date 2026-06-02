@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Worker Numbers ESI Ingestion in progress on `013-worker-numbers-esi-ingestion`.
+Current phase: Retry Execution Worker in progress on `016-retry-execution-worker`.
 
 ## Local Development
 
@@ -88,6 +88,8 @@ M13 adds a trusted worker path for prepared Numbers sync requests. Worker-authen
 M14 makes worker-produced sync state inspectable in the browser. The Numbers surface shows whether the latest snapshot came from completed read-only ESI sync or historical processed data, including source count, section health, sync request linkage, and no-execution provenance language. The ESI sync surface shows bounded recent sync history with queued, claimed, completed, failed, and partial outcome summaries. This remains read-only: no retry scheduling, worker dispatch, token refresh, EVE writes, wallet/asset movement, contract mutation, role mutation, or external-service execution occurs in browser or request paths.
 
 M15 adds commander-approved retry scheduling records for failed worker handoffs and failed Numbers ESI sync requests. Scheduling a retry creates an auditable `retry_requests` record and surfaces existing scheduled retries next to failed handoffs and failed sync history. It does not claim handoffs, dispatch workers, run retries immediately, refresh tokens, fetch ESI in request paths, write to EVE, move wallets/assets/contracts, change roles, or execute external-service actions.
+
+M16 adds a trusted retry worker path for due scheduled retries. Worker-authenticated requests can list due retry requests, atomically claim one retry, prepare a replacement ready worker handoff for failed handoff retries, or prepare a replacement queued Numbers ESI sync request for failed sync retries. Retry execution outcomes are browser-visible as safe scheduled, claimed, completed, or blocked summaries. This still does not dispatch external workers, claim replacement handoffs, refresh tokens, fetch ESI data, write to EVE, move wallets/assets/contracts, change roles, or execute external-service actions in browser/request paths.
 
 ## Decision Record Loop
 

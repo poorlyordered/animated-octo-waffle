@@ -120,6 +120,34 @@ export async function prepareWorkerHandoff(
   return normalizeWorkerHandoffDocument({ ...document, _id: result.insertedId } as WorkerHandoffDocument);
 }
 
+export async function createRetryReplacementWorkerHandoff(
+  db: Db,
+  corporationId: string,
+  failedHandoff: WorkerHandoff,
+  retryRequestId: string,
+  workerId: string
+): Promise<WorkerHandoff> {
+  const now = new Date().toISOString();
+  const document = {
+    corporationId,
+    queueItemId: failedHandoff.queueItemId,
+    sourceDecisionId: failedHandoff.sourceDecisionId,
+    status: 'ready' satisfies WorkerHandoffStatus,
+    payloadSummary: failedHandoff.payloadSummary,
+    createdBy: `retry-worker:${workerId}`,
+    createdAt: now,
+    updatedAt: now,
+    retrySource: {
+      retryRequestId,
+      originalHandoffId: failedHandoff.id
+    },
+    progress: []
+  };
+
+  const result = await db.collection<WorkerHandoffDocument>(collectionName).insertOne(document);
+  return normalizeWorkerHandoffDocument({ ...document, _id: result.insertedId } as WorkerHandoffDocument);
+}
+
 export async function claimWorkerHandoff(
   db: Db,
   corporationId: string,

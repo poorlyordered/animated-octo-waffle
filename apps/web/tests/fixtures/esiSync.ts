@@ -1,5 +1,5 @@
 import type { EsiSyncHistoryItem, EsiSyncStatusResponse, PrepareEsiSyncResponse, RevokeEsiVaultResponse, StartEsiSyncConsentResponse } from '@gryyk/contracts';
-import { esiSyncRetry } from './retry';
+import { blockedEsiSyncRetry, esiSyncRetry } from './retry';
 
 export const esiRequiredScopes = [
   'esi-wallet.read_corporation_wallets.v1',
@@ -91,9 +91,15 @@ export const failedEsiSyncHistoryItem: EsiSyncHistoryItem = {
   boundary: 'Read-only sync history. No worker was dispatched and no retry was scheduled.'
 };
 
+export const failedEsiSyncHistoryItemWithBlockedRetry: EsiSyncHistoryItem = {
+  ...failedEsiSyncHistoryItem,
+  id: 'sync-request-failed-blocked',
+  retry: blockedEsiSyncRetry
+};
+
 export const activeEsiSyncStatusWithHistory: EsiSyncStatusResponse = {
   ...activeEsiSyncStatus,
-  history: [completedEsiSyncHistoryItem, failedEsiSyncHistoryItem]
+  history: [completedEsiSyncHistoryItem, failedEsiSyncHistoryItem, failedEsiSyncHistoryItemWithBlockedRetry]
 };
 
 export const revokedEsiSyncStatus: EsiSyncStatusResponse = {

@@ -49,7 +49,9 @@ test('shows claimed completed and failed worker callback metadata', async ({ pag
   await page.getByRole('button', { name: /Browser smoke callback failed work item/ }).click();
   await expect(page.getByLabel('Worker handoff').getByText('failed', { exact: true }).first()).toBeVisible();
   await expectVisibleText(page, 'Source data unavailable.');
-  await expectVisibleText(page, 'Scheduled retry');
+  await expectVisibleText(page, 'Retry');
+  await expectVisibleText(page, 'completed: Commander approved retry scheduling for failed worker handoff.');
+  await expectVisibleText(page, 'Replacement handoff-browser-retry-ready is ready.');
   await page.getByLabel('Worker handoff').getByRole('button', { name: 'Schedule retry' }).click();
   await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
 

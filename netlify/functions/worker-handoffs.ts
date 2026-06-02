@@ -20,7 +20,7 @@ import {
 import {
   assertNoUnsafeRetryFields,
   createOrFindScheduledRetryRequest,
-  findScheduledRetryRequest,
+  findLatestRetryRequest,
   retryRequestSummary
 } from './_shared/retry-request-store';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
@@ -131,7 +131,7 @@ export async function handler(event: FunctionEvent) {
         return safeErrorResponse('Worker handoff not found', 404);
       }
 
-      const retry = await findScheduledRetryRequest(db, corporationId, 'worker_handoff', handoff.id);
+      const retry = await findLatestRetryRequest(db, corporationId, 'worker_handoff', handoff.id);
       if (retry) {
         handoff.retry = retryRequestSummary(retry);
       }

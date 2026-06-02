@@ -341,12 +341,32 @@ Validation:
 - Spec: `specs/015-retry-scheduling`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M16: Retry Execution Worker - Complete
+
+Goal: let trusted workers consume scheduled retry requests under commander-approved policy.
+
+Delivered capabilities:
+
+- Browser-safe retry execution contracts and schemas for scheduled, claimed, completed, and blocked retry states
+- Worker-authorized due retry listing, atomic retry claim, and retry execution paths
+- Failed worker handoff retry execution that creates a linked replacement ready handoff
+- Failed Numbers ESI sync retry execution that creates a linked replacement queued sync request
+- Consent and scope blocking for ESI sync retry execution without token exposure
+- Completed and blocked retry outcome display in automation queue detail and ESI sync history
+- Duplicate execution prevention through claim-before-execute state transitions
+- No browser-triggered retry execution, external worker dispatch, replacement handoff claim, token refresh, ESI fetch, EVE write, wallet/asset movement, contract mutation, role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/016-retry-execution-worker`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M16 selection after M15 review.
+Proceed to M17 selection after M16 review.
 
 Recommended next-slice candidates:
 
 - Browser-visible approval handoff from Numbers-created decisions into queued work.
-- Retry execution worker that consumes scheduled retry requests under commander-approved policy.
 - People or Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.
+- Retry cancellation and retry policy controls for scheduled or blocked retry requests.
