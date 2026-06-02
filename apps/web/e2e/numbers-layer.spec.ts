@@ -17,6 +17,9 @@ test('renders numbers operating layer with health sections and provenance', asyn
   await expectVisibleText(page, 'Doctrine stock is below threshold.');
   await expectVisibleText(page, 'processed-numbers-v1');
   await expectVisibleText(page, 'numbers-snapshot-v1');
+  await expectVisibleText(page, 'Latest Numbers snapshot was produced by a completed read-only ESI sync.');
+  await expectVisibleText(page, 'sync-request-completed');
+  await expectVisibleText(page, 'Read-only provenance. No ESI write, worker dispatch, retry, wallet, asset, contract, role, or external-service action was performed.');
   await assertNoBrowserDiagnostics();
 });
 

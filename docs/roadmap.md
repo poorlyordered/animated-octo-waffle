@@ -301,14 +301,34 @@ Validation:
 - Spec: `specs/013-worker-numbers-esi-ingestion`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M14: Sync History Provenance - Complete
+
+Goal: show browser-visible sync history and latest live Numbers provenance from completed ESI syncs.
+
+Delivered capabilities:
+
+- Browser-safe latest live Numbers provenance for snapshots produced by completed ESI syncs
+- Historical snapshot and unavailable provenance modes when live sync linkage is missing
+- Bounded recent Numbers sync history in ESI sync settings
+- Queued, claimed, completed, failed, and partial sync outcome summaries
+- Section-level health, source count, sync request linkage, timestamps, and safe failure reasons
+- Read-only no-execution boundary language for Numbers provenance and sync history
+- No retry scheduling, worker dispatch, token refresh, ESI fetch in browser/request paths, EVE writes, wallet/asset movement, contract mutation, role mutation, or external-service execution
+- Contract/unit coverage and browser smoke coverage for provenance and history display
+
+Validation:
+
+- Spec: `specs/014-sync-history-provenance`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M14 selection after M13 review.
+Proceed to M15 selection after M14 review.
 
-The next slice should build on live authenticated command scope, explicit ESI consent, worker-side Numbers ingestion, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
+The next slice should build on live authenticated command scope, explicit ESI consent, worker-side Numbers ingestion, browser-visible sync provenance, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Worker retry policy and commander-approved retry scheduling for failed handoffs.
+- Worker retry policy and commander-approved retry scheduling for failed handoffs and failed ESI syncs.
 - Browser-visible approval handoff from Numbers-created decisions into queued work.
-- Browser-visible sync history and latest live Numbers provenance from completed ESI syncs.
+- People or Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.

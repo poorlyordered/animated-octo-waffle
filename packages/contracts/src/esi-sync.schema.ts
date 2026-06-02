@@ -36,11 +36,6 @@ export const esiSyncDomainSummarySchema = z.object({
   missingScopes: z.array(z.string().min(1))
 });
 
-export const esiSyncStatusResponseSchema = z.object({
-  vault: esiVaultSummarySchema,
-  domains: z.array(esiSyncDomainSummarySchema)
-});
-
 export const startEsiSyncConsentRequestSchema = z.object({
   returnTo: z.string().startsWith('/').optional()
 });
@@ -89,6 +84,32 @@ export const esiSyncWorkerResultSummarySchema = z.object({
 export const esiSyncWorkerFailureSummarySchema = z.object({
   reason: z.string().min(1),
   failedAt: z.string().datetime()
+});
+
+export const esiSyncSectionStatusSummarySchema = z.object({
+  key: z.string().min(1),
+  status: z.string().min(1)
+});
+
+export const esiSyncHistoryItemSchema = z.object({
+  id: z.string().min(1),
+  domain: esiSyncDomainSchema,
+  status: esiSyncRequestStatusSchema,
+  requestedAt: z.string().datetime(),
+  claimedBy: z.string().optional(),
+  claimedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+  snapshotId: z.string().min(1).optional(),
+  sourceCount: z.number().int().nonnegative().optional(),
+  sectionStatuses: z.array(esiSyncSectionStatusSummarySchema),
+  failure: esiSyncWorkerFailureSummarySchema.optional(),
+  boundary: z.string().min(1)
+});
+
+export const esiSyncStatusResponseSchema = z.object({
+  vault: esiVaultSummarySchema,
+  domains: z.array(esiSyncDomainSummarySchema),
+  history: z.array(esiSyncHistoryItemSchema).optional()
 });
 
 export const esiSyncWorkerRequestSummarySchema = z.object({

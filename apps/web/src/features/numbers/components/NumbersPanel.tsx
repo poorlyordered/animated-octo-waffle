@@ -4,11 +4,13 @@ import type {
   CreateNumbersFollowUpQueueRequest,
   NumbersFollowUpDecisionResponse,
   NumbersFollowUpQueueResponse,
+  NumbersLiveProvenance,
   NumbersSnapshot
 } from '@gryyk/contracts';
 
 interface NumbersPanelProps {
   error: string | null;
+  liveProvenance: NumbersLiveProvenance | null;
   loading: boolean;
   snapshot: NumbersSnapshot | null;
   onCreateDecision?: (
@@ -18,7 +20,7 @@ interface NumbersPanelProps {
   onCreateQueue?: (candidateId: string, request: CreateNumbersFollowUpQueueRequest) => Promise<NumbersFollowUpQueueResponse>;
 }
 
-export function NumbersPanel({ error, loading, snapshot, onCreateDecision, onCreateQueue }: NumbersPanelProps) {
+export function NumbersPanel({ error, liveProvenance, loading, snapshot, onCreateDecision, onCreateQueue }: NumbersPanelProps) {
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
   const [decisionByCandidate, setDecisionByCandidate] = useState<Record<string, NumbersFollowUpDecisionResponse['decision']>>({});
   const [busyCandidateId, setBusyCandidateId] = useState<string | null>(null);
@@ -137,6 +139,30 @@ export function NumbersPanel({ error, loading, snapshot, onCreateDecision, onCre
             <dd>{snapshot.provenance.promptVersion ?? 'Unavailable'}</dd>
           </div>
         </dl>
+        {liveProvenance ? (
+          <div className="notice">
+            <p>{liveProvenance.message}</p>
+            <p>{liveProvenance.boundary}</p>
+            <dl className="metadata-grid">
+              <div className="metadata-item">
+                <dt>Sync mode</dt>
+                <dd>{liveProvenance.mode}</dd>
+              </div>
+              <div className="metadata-item">
+                <dt>Sync request</dt>
+                <dd>{liveProvenance.syncRequestId ?? 'Unavailable'}</dd>
+              </div>
+              <div className="metadata-item">
+                <dt>Completed</dt>
+                <dd>{liveProvenance.completedAt ? new Date(liveProvenance.completedAt).toLocaleString() : 'Unavailable'}</dd>
+              </div>
+              <div className="metadata-item">
+                <dt>Live sources</dt>
+                <dd>{liveProvenance.sourceCount}</dd>
+              </div>
+            </dl>
+          </div>
+        ) : null}
       </section>
 
       <section aria-label="Numbers sections">

@@ -1,4 +1,4 @@
-import type { EsiSyncStatusResponse, PrepareEsiSyncResponse, RevokeEsiVaultResponse, StartEsiSyncConsentResponse } from '@gryyk/contracts';
+import type { EsiSyncHistoryItem, EsiSyncStatusResponse, PrepareEsiSyncResponse, RevokeEsiVaultResponse, StartEsiSyncConsentResponse } from '@gryyk/contracts';
 
 export const esiRequiredScopes = [
   'esi-wallet.read_corporation_wallets.v1',
@@ -50,7 +50,48 @@ export const activeEsiSyncStatus: EsiSyncStatusResponse = {
       available: true,
       missingScopes: []
     }
-  ]
+  ],
+  history: []
+};
+
+export const completedEsiSyncHistoryItem: EsiSyncHistoryItem = {
+  id: 'sync-request-completed',
+  domain: 'numbers',
+  status: 'completed',
+  requestedAt: '2026-06-02T12:45:00.000Z',
+  claimedBy: 'worker-a',
+  claimedAt: '2026-06-02T12:46:00.000Z',
+  completedAt: '2026-06-02T12:48:00.000Z',
+  snapshotId: 'numbers-1',
+  sourceCount: 4,
+  sectionStatuses: [
+    { key: 'wallet', status: 'healthy' },
+    { key: 'assets', status: 'watch' },
+    { key: 'logistics', status: 'critical' },
+    { key: 'market', status: 'stale' },
+    { key: 'activity', status: 'missing' }
+  ],
+  boundary: 'Read-only sync history. No worker was dispatched and no retry was scheduled.'
+};
+
+export const failedEsiSyncHistoryItem: EsiSyncHistoryItem = {
+  id: 'sync-request-failed',
+  domain: 'numbers',
+  status: 'failed',
+  requestedAt: '2026-06-02T12:35:00.000Z',
+  claimedBy: 'worker-a',
+  claimedAt: '2026-06-02T12:36:00.000Z',
+  failure: {
+    reason: 'ESI market endpoint returned a safe fixture failure.',
+    failedAt: '2026-06-02T12:37:00.000Z'
+  },
+  sectionStatuses: [],
+  boundary: 'Read-only sync history. No worker was dispatched and no retry was scheduled.'
+};
+
+export const activeEsiSyncStatusWithHistory: EsiSyncStatusResponse = {
+  ...activeEsiSyncStatus,
+  history: [completedEsiSyncHistoryItem, failedEsiSyncHistoryItem]
 };
 
 export const revokedEsiSyncStatus: EsiSyncStatusResponse = {

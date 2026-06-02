@@ -1,6 +1,7 @@
 import { ObjectId, type Db } from 'mongodb';
 import type {
   EsiSyncDomain,
+  EsiSyncHistoryItem,
   EsiSyncRequestSummary,
   EsiSyncWorkerFailureSummary,
   EsiSyncWorkerRequestSummary,
@@ -68,6 +69,41 @@ export async function listQueuedSyncRequests(
 
   const documents = await db.collection(collectionName).find(query).sort({ requestedAt: 1, createdAt: 1 }).toArray();
   return documents.map((document) => normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument));
+}
+
+export async function listRecentSyncRequests(
+  db: Db,
+  corporationId: string,
+  domain: EsiSyncDomain,
+  limit = 5
+): Promise<EsiSyncRequestDocument[]> {
+  const documents = await db
+    .collection(collectionName)
+    .find({ corporationId, domain })
+    .sort({ requestedAt: -1, createdAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  return documents.map((document) => normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument));
+}
+
+export async function findCompletedSyncRequestForSnapshot(
+  db: Db,
+  corporationId: string,
+  domain: EsiSyncDomain,
+  snapshotId: string
+): Promise<EsiSyncRequestDocument | null> {
+  const document = await db.collection(collectionName).findOne(
+    {
+      corporationId,
+      domain,
+      status: 'completed',
+      'result.snapshotId': snapshotId
+    },
+    { sort: { completedAt: -1, requestedAt: -1 } }
+  );
+
+  return document ? normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument) : null;
 }
 
 export async function claimQueuedSyncRequest(
@@ -216,6 +252,26 @@ export function workerSyncRequestSummary(syncRequest: EsiSyncRequestDocument): E
   if (syncRequest.failure) summary.failure = syncRequest.failure;
 
   return summary;
+}
+
+export function syncHistoryItem(syncRequest: EsiSyncRequestDocument): EsiSyncHistoryItem {
+  const item: EsiSyncHistoryItem = {
+    id: syncRequest.id ?? syncRequest._id?.toString() ?? '',
+    domain: syncRequest.domain,
+    status: syncRequest.status,
+    requestedAt: syncRequest.requestedAt,
+    sectionStatuses: syncRequest.result?.sectionStatuses ?? [],
+    boundary: 'Read-only sync history. No worker was dispatched and no retry was scheduled.'
+  };
+
+  if (syncRequest.claimedBy) item.claimedBy = syncRequest.claimedBy;
+  if (syncRequest.claimedAt) item.claimedAt = syncRequest.claimedAt;
+  if (syncRequest.completedAt) item.completedAt = syncRequest.completedAt;
+  if (syncRequest.result?.snapshotId) item.snapshotId = syncRequest.result.snapshotId;
+  if (syncRequest.result) item.sourceCount = syncRequest.result.sourceCount;
+  if (syncRequest.failure) item.failure = syncRequest.failure;
+
+  return item;
 }
 
 function normalizeSyncRequestDocument(document: EsiSyncRequestDocument): EsiSyncRequestDocument {

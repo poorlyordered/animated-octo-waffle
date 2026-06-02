@@ -4,6 +4,7 @@ import {
   startEsiSyncConsentRequestSchema
 } from '../../packages/contracts/src/index';
 import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { syncHistoryItems } from './_shared/esi-sync-history';
 import { getMongoDb } from './_shared/mongo';
 import {
   allRequiredReadOnlyScopes,
@@ -13,7 +14,7 @@ import {
   requiredScopesForDomain,
   vaultSummary
 } from './_shared/esi-token-vault';
-import { createOrFindQueuedSyncRequest, syncRequestSummary } from './_shared/esi-sync-request-store';
+import { createOrFindQueuedSyncRequest, listRecentSyncRequests, syncRequestSummary } from './_shared/esi-sync-request-store';
 import { findActiveOrLatestVault, revokeActiveVault } from './_shared/esi-token-vault-store';
 import {
   buildEveSsoAuthorizationUrl,
@@ -46,10 +47,12 @@ export async function handler(event: FunctionEvent) {
       const { corporationId } = getAuthScope(event);
       const db = await getMongoDb();
       const vault = await findActiveOrLatestVault(db, corporationId);
+      const history = await listRecentSyncRequests(db, corporationId, 'numbers');
 
       return jsonResponse(200, {
         vault: vaultSummary(vault),
-        domains: domainSummaries(vault)
+        domains: domainSummaries(vault),
+        history: syncHistoryItems(history)
       });
     }
 

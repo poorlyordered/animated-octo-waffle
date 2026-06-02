@@ -1,6 +1,7 @@
 import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
 import type { AutomationQueueItem } from './automation-queue.js';
 import type { DecisionRecord } from './decision-record.js';
+import type { EsiSyncRequestStatus, EsiSyncSectionStatusSummary } from './esi-sync.js';
 
 export const numbersSectionKeys = ['wallet', 'assets', 'logistics', 'market', 'activity'] as const;
 export type NumbersSectionKey = (typeof numbersSectionKeys)[number];
@@ -66,8 +67,25 @@ export interface NumbersSnapshot {
   updatedAt: string;
 }
 
+export type NumbersLiveProvenanceMode = 'live_sync' | 'historical_snapshot' | 'unavailable';
+
+export interface NumbersLiveProvenance {
+  mode: NumbersLiveProvenanceMode;
+  syncRequestId?: string;
+  snapshotId?: string;
+  status?: EsiSyncRequestStatus;
+  requestedAt?: string;
+  completedAt?: string;
+  snapshotCreatedAt?: string;
+  sourceCount: number;
+  sectionStatuses: EsiSyncSectionStatusSummary[];
+  message: string;
+  boundary: string;
+}
+
 export interface NumbersSnapshotResponse {
   snapshot: NumbersSnapshot | null;
+  liveProvenance?: NumbersLiveProvenance;
 }
 
 export interface NumbersFollowUpOrigin {

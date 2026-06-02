@@ -42,6 +42,7 @@ export interface EsiSyncDomainSummary {
 export interface EsiSyncStatusResponse {
   vault: EsiVaultSummary;
   domains: EsiSyncDomainSummary[];
+  history?: EsiSyncHistoryItem[];
 }
 
 export interface StartEsiSyncConsentRequest {
@@ -90,6 +91,26 @@ export interface EsiSyncWorkerResultSummary {
 export interface EsiSyncWorkerFailureSummary {
   reason: string;
   failedAt: string;
+}
+
+export interface EsiSyncSectionStatusSummary {
+  key: string;
+  status: string;
+}
+
+export interface EsiSyncHistoryItem {
+  id: string;
+  domain: EsiSyncDomain;
+  status: EsiSyncRequestStatus;
+  requestedAt: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  completedAt?: string;
+  snapshotId?: string;
+  sourceCount?: number;
+  sectionStatuses: EsiSyncSectionStatusSummary[];
+  failure?: EsiSyncWorkerFailureSummary;
+  boundary: string;
 }
 
 export interface EsiSyncWorkerRequestSummary {

@@ -11,6 +11,8 @@ import {
   findDecisionRecordByNumbersFollowUpOrigin
 } from './_shared/decision-record-store';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
+import { latestNumbersLiveProvenance } from './_shared/esi-sync-history';
+import { findCompletedSyncRequestForSnapshot } from './_shared/esi-sync-request-store';
 import { assertNoUnsafeNumbersFollowUpFields } from './_shared/numbers-followup-actions';
 import { findLatestNumbersSnapshot, findNumbersFollowUpCandidate } from './_shared/numbers-store';
 
@@ -43,8 +45,9 @@ export async function handler(event: FunctionEvent) {
       const db = await getMongoDb();
       const focus = event.queryStringParameters?.focus ?? 'corporation';
       const snapshot = await findLatestNumbersSnapshot(db, corporationId, focus);
+      const syncRequest = snapshot ? await findCompletedSyncRequestForSnapshot(db, corporationId, 'numbers', snapshot.id) : null;
 
-      return jsonResponse(200, { snapshot });
+      return jsonResponse(200, { snapshot, liveProvenance: latestNumbersLiveProvenance(snapshot, syncRequest) });
     }
 
     if (method !== 'POST') {

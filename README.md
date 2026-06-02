@@ -85,6 +85,8 @@ Vault token material is sealed server-side before persistence in `esi_token_vaul
 
 M13 adds a trusted worker path for prepared Numbers sync requests. Worker-authenticated requests can list queued sync work, claim one request, run read-only ESI ingestion, write a processed `numbers_snapshots` record, and mark the sync request completed or failed with safe metadata. Raw ESI payloads and token material are not returned to the browser or persisted as command-surface data.
 
+M14 makes worker-produced sync state inspectable in the browser. The Numbers surface shows whether the latest snapshot came from completed read-only ESI sync or historical processed data, including source count, section health, sync request linkage, and no-execution provenance language. The ESI sync surface shows bounded recent sync history with queued, claimed, completed, failed, and partial outcome summaries. This remains read-only: no retry scheduling, worker dispatch, token refresh, EVE writes, wallet/asset movement, contract mutation, role mutation, or external-service execution occurs in browser or request paths.
+
 ## Decision Record Loop
 
 The Decision Record Loop stores normalized decision records in the existing MongoDB `strategic_decisions` collection. Existing strategic decision fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `gryykSynthesis`, and `timestamp` are treated as legacy-compatible inputs and normalized at the app boundary.

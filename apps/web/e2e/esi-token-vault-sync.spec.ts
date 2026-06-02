@@ -14,6 +14,9 @@ test('shows active ESI vault status and prepares queued read sync', async ({ pag
 
   await expectHeading(page, 'ESI token vault');
   await expectVisibleText(page, 'Vaulted consent can prepare read-only sync requests.');
+  await expectVisibleText(page, 'Recent sync history');
+  await expectVisibleText(page, 'numbers sync: completed');
+  await expectVisibleText(page, 'Failed: ESI market endpoint returned a safe fixture failure.');
   await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).click();
   await expectVisibleText(page, 'Queued for future read-only worker sync. No ESI data was fetched and no worker was dispatched.');
   await expectVisibleText(page, 'Sync status: queued.');
