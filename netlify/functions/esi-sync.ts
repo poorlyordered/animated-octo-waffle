@@ -19,7 +19,7 @@ import { createOrFindQueuedSyncRequest, findSyncRequest, listRecentSyncRequests,
 import {
   assertNoUnsafeRetryFields,
   createOrFindScheduledRetryRequest,
-  findScheduledRetryRequest,
+  findLatestRetryRequest,
   retryRequestSummary
 } from './_shared/retry-request-store';
 import { findActiveOrLatestVault, revokeActiveVault } from './_shared/esi-token-vault-store';
@@ -56,7 +56,7 @@ export async function handler(event: FunctionEvent) {
       const vault = await findActiveOrLatestVault(db, corporationId);
       const history = await listRecentSyncRequests(db, corporationId, 'numbers');
       for (const item of history) {
-        const retry = await findScheduledRetryRequest(db, corporationId, 'esi_sync_request', item.id ?? item._id?.toString() ?? '');
+        const retry = await findLatestRetryRequest(db, corporationId, 'esi_sync_request', item.id ?? item._id?.toString() ?? '');
         if (retry) {
           item.retry = retry;
         }

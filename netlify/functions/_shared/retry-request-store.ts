@@ -1,12 +1,15 @@
 import { ObjectId, type Db } from 'mongodb';
 import type {
+  RetryExecutionResult,
   RetryRequestSummary,
+  RetryRequestStatus,
   RetryTargetType,
   ScheduleRetryRequest
 } from '../../../packages/contracts/src/index';
 
 const collectionName = 'retry_requests';
-const retryBoundary = 'Retry scheduled only. No worker was dispatched and no execution occurred.';
+const retryScheduledBoundary = 'Retry scheduled only. No worker was dispatched and no execution occurred.';
+const retryWorkerBoundary = 'Retry execution is worker-only and uses prior commander approval.';
 const unsafeRetryFields = new Set([
   'accessToken',
   'refreshToken',
@@ -31,11 +34,17 @@ export interface RetryRequestDocument {
   corporationId: string;
   targetType: RetryTargetType;
   targetId: string;
-  status: 'scheduled';
+  status: RetryRequestStatus;
   reason: string;
   notBefore?: string;
   createdBy: string;
   createdAt: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  completedAt?: string;
+  blockedAt?: string;
+  blockedReason?: string;
+  result?: RetryExecutionResult;
   updatedAt: string;
 }
 
@@ -65,6 +74,42 @@ export async function findScheduledRetryRequest(
   });
 
   return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
+}
+
+export async function findLatestRetryRequest(
+  db: Db,
+  corporationId: string,
+  targetType: RetryTargetType,
+  targetId: string
+): Promise<RetryRequestDocument | null> {
+  const document = await db
+    .collection(collectionName)
+    .find({ corporationId, targetType, targetId })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(1)
+    .next();
+
+  return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
+}
+
+export async function findRetryRequest(db: Db, id: string): Promise<RetryRequestDocument | null> {
+  const document = await db.collection(collectionName).findOne(retryTargetIdFilter(id));
+  return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
+}
+
+export async function listDueScheduledRetryRequests(db: Db, now = new Date()): Promise<RetryRequestDocument[]> {
+  const nowIso = now.toISOString();
+  const documents = await db
+    .collection(collectionName)
+    .find({
+      status: 'scheduled',
+      $or: [{ notBefore: { $exists: false } }, { notBefore: { $lte: nowIso } }]
+    })
+    .sort({ notBefore: 1, createdAt: 1 })
+    .limit(25)
+    .toArray();
+
+  return documents.map((document) => normalizeRetryRequestDocument(document as unknown as RetryRequestDocument));
 }
 
 export async function createOrFindScheduledRetryRequest(
@@ -111,14 +156,135 @@ export function retryRequestSummary(retry: RetryRequestDocument): RetryRequestSu
     status: retry.status,
     reason: retry.reason,
     createdAt: retry.createdAt,
-    boundary: retryBoundary
+    boundary: retry.status === 'scheduled' ? retryScheduledBoundary : retryWorkerBoundary
   };
 
   if (retry.notBefore) {
     summary.notBefore = retry.notBefore;
   }
+  if (retry.claimedBy) {
+    summary.claimedBy = retry.claimedBy;
+  }
+  if (retry.claimedAt) {
+    summary.claimedAt = retry.claimedAt;
+  }
+  if (retry.completedAt) {
+    summary.completedAt = retry.completedAt;
+  }
+  if (retry.blockedAt) {
+    summary.blockedAt = retry.blockedAt;
+  }
+  if (retry.blockedReason) {
+    summary.blockedReason = retry.blockedReason;
+  }
+  if (retry.result) {
+    summary.result = retry.result;
+  }
 
   return summary;
+}
+
+export async function claimRetryRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  now = new Date()
+): Promise<RetryRequestDocument | null> {
+  const nowIso = now.toISOString();
+  const result = await db.collection(collectionName).findOneAndUpdate(
+    {
+      ...retryTargetIdFilter(id),
+      status: 'scheduled',
+      $or: [{ notBefore: { $exists: false } }, { notBefore: { $lte: nowIso } }]
+    },
+    {
+      $set: {
+        status: 'claimed' satisfies RetryRequestStatus,
+        claimedBy: workerId,
+        claimedAt: nowIso,
+        updatedAt: nowIso
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeRetryRequestDocument(result as unknown as RetryRequestDocument) : null;
+}
+
+export async function findClaimedRetryRequest(
+  db: Db,
+  id: string,
+  workerId: string
+): Promise<RetryRequestDocument | null> {
+  const document = await db.collection(collectionName).findOne({
+    ...retryTargetIdFilter(id),
+    status: 'claimed',
+    claimedBy: workerId
+  });
+
+  return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
+}
+
+export async function completeRetryRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  resultSummary: Omit<RetryExecutionResult, 'workerId' | 'executedAt'>,
+  now = new Date()
+): Promise<RetryRequestDocument | null> {
+  const nowIso = now.toISOString();
+  const result: RetryExecutionResult = {
+    ...resultSummary,
+    workerId,
+    executedAt: nowIso
+  };
+  const document = await db.collection(collectionName).findOneAndUpdate(
+    {
+      ...retryTargetIdFilter(id),
+      status: 'claimed',
+      claimedBy: workerId
+    },
+    {
+      $set: {
+        status: 'completed' satisfies RetryRequestStatus,
+        completedAt: nowIso,
+        result,
+        updatedAt: nowIso
+      },
+      $unset: { blockedReason: '', blockedAt: '' }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
+}
+
+export async function blockRetryRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  reason: string,
+  now = new Date()
+): Promise<RetryRequestDocument | null> {
+  const nowIso = now.toISOString();
+  const result = await db.collection(collectionName).findOneAndUpdate(
+    {
+      ...retryTargetIdFilter(id),
+      status: 'claimed',
+      claimedBy: workerId
+    },
+    {
+      $set: {
+        status: 'blocked' satisfies RetryRequestStatus,
+        blockedAt: nowIso,
+        blockedReason: reason,
+        updatedAt: nowIso
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeRetryRequestDocument(result as unknown as RetryRequestDocument) : null;
 }
 
 function normalizeRetryRequestDocument(document: RetryRequestDocument): RetryRequestDocument {

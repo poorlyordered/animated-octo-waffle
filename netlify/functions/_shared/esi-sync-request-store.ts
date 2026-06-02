@@ -225,6 +225,31 @@ export async function createOrFindQueuedSyncRequest(
   return { syncRequest, duplicate: false };
 }
 
+export async function createRetryReplacementSyncRequest(
+  db: Db,
+  failedSyncRequest: EsiSyncRequestDocument,
+  retryRequestId: string,
+  workerId: string
+): Promise<EsiSyncRequestDocument> {
+  const now = new Date().toISOString();
+  const document: Omit<EsiSyncRequestDocument, '_id' | 'id'> = {
+    corporationId: failedSyncRequest.corporationId,
+    characterId: failedSyncRequest.characterId,
+    vaultId: failedSyncRequest.vaultId,
+    domain: failedSyncRequest.domain,
+    requiredScopes: failedSyncRequest.requiredScopes,
+    status: 'queued',
+    requestedBy: `retry-worker:${workerId}`,
+    requestedAt: now,
+    source: `Worker retry execution from retry request ${retryRequestId}.`,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const result = await db.collection(collectionName).insertOne(document);
+  return normalizeSyncRequestDocument({ ...document, _id: result.insertedId } as EsiSyncRequestDocument);
+}
+
 export function syncRequestSummary(syncRequest: EsiSyncRequestDocument, duplicate = false): EsiSyncRequestSummary {
   return {
     id: syncRequest.id ?? syncRequest._id?.toString() ?? '',
