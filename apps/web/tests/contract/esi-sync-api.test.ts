@@ -8,6 +8,7 @@ import {
 import {
   activeEsiSyncStatus,
   duplicatePrepareEsiSyncResponse,
+  activeEsiSyncStatusWithHistory,
   missingEsiSyncStatus,
   prepareEsiSyncResponse,
   revokeEsiVaultResponse,
@@ -18,6 +19,7 @@ describe('ESI sync API contract', () => {
   it('accepts missing and active vault status responses', () => {
     expect(esiSyncStatusResponseSchema.parse(missingEsiSyncStatus).vault.status).toBe('missing');
     expect(esiSyncStatusResponseSchema.parse(activeEsiSyncStatus).vault.status).toBe('active');
+    expect(esiSyncStatusResponseSchema.parse(activeEsiSyncStatusWithHistory).history).toHaveLength(2);
   });
 
   it('accepts consent start responses without token material', () => {
@@ -56,6 +58,7 @@ describe('ESI sync API contract', () => {
   it('does not include secrets or execution handles in browser-visible ESI sync JSON', () => {
     const body = JSON.stringify({
       status: activeEsiSyncStatus,
+      history: activeEsiSyncStatusWithHistory.history,
       prepare: prepareEsiSyncResponse,
       revoke: revokeEsiVaultResponse
     });

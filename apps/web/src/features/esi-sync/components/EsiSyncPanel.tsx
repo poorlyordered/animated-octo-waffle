@@ -156,6 +156,33 @@ export function EsiSyncPanel({
         {actionStatus ? <p className="notice">{actionStatus}</p> : null}
         <p className="notice">This surface prepares read-only sync requests only. It does not fetch ESI data, dispatch workers, schedule retries, write to EVE, or move wallets, assets, contracts, or roles.</p>
       </section>
+
+      <section aria-label="ESI sync history">
+        <h2>Recent sync history</h2>
+        {status.history && status.history.length > 0 ? (
+          <ul>
+            {status.history.map((item) => (
+              <li key={item.id}>
+                <strong>
+                  {item.domain} sync: {item.status}
+                </strong>
+                <p>Requested: {new Date(item.requestedAt).toLocaleString()}</p>
+                {item.claimedBy ? <p>Worker: {item.claimedBy}</p> : null}
+                {item.completedAt ? <p>Completed: {new Date(item.completedAt).toLocaleString()}</p> : null}
+                {item.snapshotId ? <p>Snapshot: {item.snapshotId}</p> : null}
+                {item.sourceCount !== undefined ? <p>Sources: {item.sourceCount}</p> : null}
+                {item.sectionStatuses.length > 0 ? (
+                  <p>Sections: {item.sectionStatuses.map((section) => `${section.key} ${section.status}`).join(', ')}</p>
+                ) : null}
+                {item.failure ? <p className="missing-reasons">Failed: {item.failure.reason}</p> : null}
+                <p className="notice">{item.boundary}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No recent Numbers sync attempts are visible for this corporation scope.</p>
+        )}
+      </section>
     </main>
   );
 }

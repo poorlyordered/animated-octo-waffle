@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { automationQueueItemSchema } from './automation-queue.schema.js';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
 import { decisionRecordSchema } from './decision-record.schema.js';
+import { esiSyncRequestStatusSchema, esiSyncSectionStatusSummarySchema } from './esi-sync.schema.js';
 
 export const numbersSectionKeySchema = z.enum(['wallet', 'assets', 'logistics', 'market', 'activity']);
 export const numbersSectionStatusSchema = z.enum(['healthy', 'watch', 'critical', 'stale', 'missing']);
@@ -60,8 +61,23 @@ export const numbersSnapshotSchema = z.object({
   updatedAt: z.string().datetime()
 });
 
+export const numbersLiveProvenanceSchema = z.object({
+  mode: z.enum(['live_sync', 'historical_snapshot', 'unavailable']),
+  syncRequestId: z.string().min(1).optional(),
+  snapshotId: z.string().min(1).optional(),
+  status: esiSyncRequestStatusSchema.optional(),
+  requestedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+  snapshotCreatedAt: z.string().datetime().optional(),
+  sourceCount: z.number().int().nonnegative(),
+  sectionStatuses: z.array(esiSyncSectionStatusSummarySchema),
+  message: z.string().min(1),
+  boundary: z.string().min(1)
+});
+
 export const numbersSnapshotResponseSchema = z.object({
-  snapshot: numbersSnapshotSchema.nullable()
+  snapshot: numbersSnapshotSchema.nullable(),
+  liveProvenance: numbersLiveProvenanceSchema.optional()
 });
 
 export const numbersFollowUpOriginSchema = z.object({

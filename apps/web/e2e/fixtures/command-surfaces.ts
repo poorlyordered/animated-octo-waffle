@@ -1,7 +1,7 @@
 import { completedItem, failedItem, queuedItem } from '../../tests/fixtures/automationQueue';
 import { processedBrief, processedRequest } from '../../tests/fixtures/commandBrief';
 import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
-import { numbersSnapshot } from '../../tests/fixtures/numbers';
+import { numbersLiveProvenance, numbersSnapshot } from '../../tests/fixtures/numbers';
 import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
 import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
 import {
@@ -10,7 +10,7 @@ import {
   numbersFollowUpQueueItem
 } from '../../tests/fixtures/numbersFollowUpActions';
 import {
-  activeEsiSyncStatus,
+  activeEsiSyncStatusWithHistory,
   duplicatePrepareEsiSyncResponse,
   missingEsiSyncStatus,
   prepareEsiSyncResponse,
@@ -33,7 +33,8 @@ export const commandSurfaceFixtures = {
     request: processedRequest
   },
   numbers: {
-    snapshot: numbersSnapshot
+    snapshot: numbersSnapshot,
+    liveProvenance: numbersLiveProvenance
   },
   numbersFollowUpActions: {
     decision: {
@@ -175,7 +176,7 @@ export const commandSurfaceFixtures = {
   },
   esiSync: {
     missing: missingEsiSyncStatus,
-    active: activeEsiSyncStatus,
+    active: activeEsiSyncStatusWithHistory,
     startConsent: startEsiSyncConsentResponse,
     revoke: revokeEsiVaultResponse,
     prepare: prepareEsiSyncResponse,

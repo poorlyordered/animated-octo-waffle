@@ -1,4 +1,4 @@
-import type { NumbersSnapshot } from '@gryyk/contracts';
+import type { NumbersLiveProvenance, NumbersSnapshot } from '@gryyk/contracts';
 
 export const numbersSnapshot: NumbersSnapshot = {
   id: 'numbers-1',
@@ -84,4 +84,25 @@ export const numbersSnapshot: NumbersSnapshot = {
   },
   createdAt: '2026-06-01T12:00:00.000Z',
   updatedAt: '2026-06-01T12:00:00.000Z'
+};
+
+export const numbersLiveProvenance: NumbersLiveProvenance = {
+  mode: 'live_sync',
+  syncRequestId: 'sync-request-completed',
+  snapshotId: 'numbers-1',
+  status: 'completed',
+  requestedAt: '2026-06-02T12:45:00.000Z',
+  completedAt: '2026-06-02T12:48:00.000Z',
+  snapshotCreatedAt: '2026-06-01T12:00:00.000Z',
+  sourceCount: 4,
+  sectionStatuses: [
+    { key: 'wallet', status: 'healthy' },
+    { key: 'assets', status: 'watch' },
+    { key: 'logistics', status: 'critical' },
+    { key: 'market', status: 'stale' },
+    { key: 'activity', status: 'missing' }
+  ],
+  message: 'Latest Numbers snapshot was produced by a completed read-only ESI sync.',
+  boundary:
+    'Read-only provenance. No ESI write, worker dispatch, retry, wallet, asset, contract, role, or external-service action was performed.'
 };
