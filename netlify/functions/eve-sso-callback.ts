@@ -1,4 +1,5 @@
 import { createSessionScope, readDeterministicIdentity } from './_shared/eve-sso';
+import { resolveLiveEveSsoIdentity } from './_shared/eve-sso-live';
 import type { FunctionEvent } from './_shared/auth-scope';
 import { redirectResponse, safeErrorResponse } from './_shared/http';
 import {
@@ -20,7 +21,10 @@ export async function handler(event: FunctionEvent) {
     const state = event.queryStringParameters?.state;
 
     if (!code || !state) {
-      return safeErrorResponse('Missing EVE SSO callback values', 400);
+      return {
+        ...safeErrorResponse('Missing EVE SSO callback values', 400),
+        multiValueHeaders: { 'set-cookie': [clearCookie(ssoStateCookieName)] }
+      };
     }
 
     const secret = readSessionSecret();
@@ -34,13 +38,7 @@ export async function handler(event: FunctionEvent) {
       };
     }
 
-    const identity = readDeterministicIdentity();
-    if (!identity) {
-      return {
-        ...safeErrorResponse('EVE SSO identity validation is not configured', 500),
-        multiValueHeaders: { 'set-cookie': [clearCookie(ssoStateCookieName)] }
-      };
-    }
+    const identity = readDeterministicIdentity() ?? await resolveLiveEveSsoIdentity(code);
 
     const session = createSessionScope(identity);
     const sessionCookie = serializeCookie(

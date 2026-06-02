@@ -1,20 +1,95 @@
+import { jest } from '@jest/globals';
 import { handler as callbackHandler } from '../../../../netlify/functions/eve-sso-callback';
 import { handler as startHandler } from '../../../../netlify/functions/eve-sso-start';
+import { signEveToken, createEveTokenFixture, type EveTokenClaims } from '../helpers/eve-sso-token';
 import {
   createSignedCookieValue,
+  readSignedCookieValue,
   ssoStateCookieName,
   sessionCookieName
 } from '../../../../netlify/functions/_shared/session-cookie';
 
 const originalEnv = process.env;
+const originalFetch = global.fetch;
 
 function setEnv(nextEnv: NodeJS.ProcessEnv) {
   process.env = { ...originalEnv, ...nextEnv };
 }
 
+function setLiveEnv(nextEnv: NodeJS.ProcessEnv = {}) {
+  setEnv({
+    EVE_SESSION_SECRET: 'test-secret',
+    EVE_SSO_CLIENT_ID: 'client-id',
+    EVE_SSO_CLIENT_SECRET: 'client-secret-value',
+    EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback',
+    EVE_SSO_METADATA_URL: 'https://sso.test/metadata',
+    EVE_SSO_TOKEN_URL: 'https://sso.test/token',
+    EVE_ESI_BASE_URL: 'https://esi.test/latest',
+    ...nextEnv
+  });
+}
+
+function signedStateCookie() {
+  const statePayload = {
+    state: 'state-value-with-enough-length',
+    returnTo: '/after-sign-in',
+    issuedAt: '2026-06-01T00:00:00.000Z',
+    expiresAt: '2099-06-01T00:00:00.000Z'
+  };
+  const signedState = createSignedCookieValue(statePayload, 'test-secret');
+
+  return {
+    cookie: `${ssoStateCookieName}=${encodeURIComponent(signedState)}`,
+    state: statePayload.state
+  };
+}
+
+function createLiveFetchMock(accessToken: string, publicJwk: JsonWebKey) {
+  return jest.fn(async (input: RequestInfo | URL) => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (url === 'https://sso.test/token') {
+      return new Response(
+        JSON.stringify({
+          access_token: accessToken,
+          refresh_token: 'refresh-token-secret-value',
+          token_type: 'Bearer'
+        }),
+        { status: 200 }
+      );
+    }
+
+    if (url === 'https://sso.test/metadata') {
+      return new Response(JSON.stringify({ jwks_uri: 'https://sso.test/jwks' }), { status: 200 });
+    }
+
+    if (url === 'https://sso.test/jwks') {
+      return new Response(JSON.stringify({ keys: [publicJwk] }), { status: 200 });
+    }
+
+    if (url.includes('/characters/2110000001/')) {
+      return new Response(JSON.stringify({ corporation_id: 123456789 }), { status: 200 });
+    }
+
+    if (url.includes('/corporations/123456789/')) {
+      return new Response(JSON.stringify({ name: 'Session Corp' }), { status: 200 });
+    }
+
+    return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+  }) as jest.MockedFunction<typeof fetch>;
+}
+
+function sessionCookieValue(response: Awaited<ReturnType<typeof callbackHandler>>) {
+  const sessionCookie = response.multiValueHeaders?.['set-cookie']?.find((cookie) =>
+    cookie.startsWith(`${sessionCookieName}=`)
+  );
+  const match = sessionCookie?.match(new RegExp(`${sessionCookieName}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 describe('EVE SSO API contract', () => {
   afterEach(() => {
     process.env = originalEnv;
+    global.fetch = originalFetch;
   });
 
   it('redirects to EVE SSO with a signed state cookie', async () => {
@@ -83,6 +158,139 @@ describe('EVE SSO API contract', () => {
     expect(response.headers?.location).toBe('/after-sign-in');
     expect(response.multiValueHeaders?.['set-cookie']?.join('\n')).toContain(`${sessionCookieName}=`);
     expect(response.multiValueHeaders?.['set-cookie']?.join('\n')).toContain(`${ssoStateCookieName}=`);
+  });
+
+  it('creates a session cookie after valid live EVE SSO validation', async () => {
+    const fixture = createEveTokenFixture();
+    const token = signEveToken(fixture);
+    global.fetch = createLiveFetchMock(token, fixture.publicJwk);
+    setLiveEnv();
+    const state = signedStateCookie();
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers?.location).toBe('/after-sign-in');
+    const session = readSignedCookieValue<Record<string, unknown>>(sessionCookieValue(response), 'test-secret');
+    expect(session).toEqual(
+      expect.objectContaining({
+        characterId: '2110000001',
+        characterName: 'Ari Voss',
+        corporationId: '123456789',
+        corporationName: 'Session Corp',
+        source: 'eve-sso'
+      })
+    );
+  });
+
+  it.each([
+    ['issuer', { iss: 'https://attacker.test' }],
+    ['audience', { aud: ['client-id'] }],
+    ['expiry', { exp: 1 }],
+    ['subject', { sub: 'USER:2110000001' }]
+  ])('rejects live callback tokens with invalid %s', async (_caseName, claims: EveTokenClaims) => {
+    const fixture = createEveTokenFixture();
+    const token = signEveToken(fixture, claims);
+    global.fetch = createLiveFetchMock(token, fixture.publicJwk);
+    setLiveEnv();
+    const state = signedStateCookie();
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.body).not.toContain('client-secret-value');
+    expect(response.multiValueHeaders?.['set-cookie']?.join('\n')).not.toContain(`${sessionCookieName}=`);
+    expect(response.multiValueHeaders?.['set-cookie']?.join('\n')).toContain(`${ssoStateCookieName}=`);
+  });
+
+  it('keeps live token material and raw claims out of browser-visible callback state', async () => {
+    const fixture = createEveTokenFixture();
+    const token = signEveToken(fixture, { name: 'Sensitive Claim Name' });
+    global.fetch = createLiveFetchMock(token, fixture.publicJwk);
+    setLiveEnv();
+    const state = signedStateCookie();
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+    const responseText = JSON.stringify(response);
+    const session = readSignedCookieValue<Record<string, unknown>>(sessionCookieValue(response), 'test-secret');
+
+    expect(responseText).not.toContain(token);
+    expect(responseText).not.toContain('refresh-token-secret-value');
+    expect(responseText).not.toContain('client-secret-value');
+    expect(JSON.stringify(session)).not.toContain(token);
+    expect(JSON.stringify(session)).not.toContain('refresh-token-secret-value');
+    expect(JSON.stringify(session)).not.toContain('client-secret-value');
+    expect(session).not.toHaveProperty('aud');
+    expect(session).not.toHaveProperty('sub');
+  });
+
+  it('returns a safe error when live configuration is incomplete', async () => {
+    const fixture = createEveTokenFixture();
+    const token = signEveToken(fixture);
+    global.fetch = createLiveFetchMock(token, fixture.publicJwk);
+    setLiveEnv({ EVE_SSO_CLIENT_SECRET: undefined });
+    const state = signedStateCookie();
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.body).toContain('Unable to complete EVE SSO sign-in');
+    expect(response.body).not.toContain('EVE_SSO_CLIENT_SECRET');
+  });
+
+  it('does not require live adapter calls when deterministic identity is configured', async () => {
+    const state = signedStateCookie();
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    setEnv({
+      EVE_SESSION_SECRET: 'test-secret',
+      EVE_SSO_TEST_IDENTITY_JSON: JSON.stringify({
+        characterId: '2110000001',
+        characterName: 'Ari Voss',
+        corporationId: '123456789',
+        corporationName: 'Session Corp'
+      })
+    });
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(302);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('rejects invalid callback state safely', async () => {

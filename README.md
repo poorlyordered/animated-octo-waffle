@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: EVE SSO Session Scope implemented on `006-eve-sso-scope`; next roadmap slice should be selected from the roadmap after M6 review.
+Current phase: Live EVE SSO implemented on `009-live-eve-sso`; next roadmap slice should be selected from the roadmap after M9 review.
 
 ## Local Development
 
@@ -48,11 +48,15 @@ Optional EVE SSO/session variables:
 
 - `EVE_SESSION_SECRET`: signs session and SSO state cookies. Production must configure this server-side.
 - `EVE_SSO_CLIENT_ID`: EVE SSO application client ID.
+- `EVE_SSO_CLIENT_SECRET`: server-only EVE SSO application secret used by the live callback token exchange.
 - `EVE_SSO_REDIRECT_URI`: server callback URL for `/api/eve-sso-callback`.
 - `EVE_SSO_SCOPES`: optional SSO scopes; defaults to `publicData`.
+- `EVE_SSO_METADATA_URL`: optional override for the EVE SSO metadata endpoint.
+- `EVE_SSO_TOKEN_URL`: optional override for the EVE SSO token endpoint.
+- `EVE_ESI_BASE_URL`: optional override for the ESI base URL used by read-only identity lookup.
 - `EVE_SSO_TEST_IDENTITY_JSON`: deterministic local/test callback identity fixture. Do not use this for production identity validation.
 
-M6 stores no OAuth tokens and performs no EVE writes, role changes, wallet/asset actions, worker dispatch, or long-running ESI sync in request paths.
+The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Gryyk-47 stores no EVE OAuth tokens in M9 and performs no EVE writes, role changes, wallet/asset actions, worker dispatch, or long-running ESI sync in request paths.
 
 ## MongoDB Data Sources
 

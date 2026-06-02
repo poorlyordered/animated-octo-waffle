@@ -10,6 +10,13 @@ export interface EveSsoConfig {
   scopes: string;
 }
 
+export interface EveSsoLiveConfig extends EveSsoConfig {
+  clientSecret: string;
+  metadataUrl: string;
+  tokenUrl: string;
+  esiBaseUrl: string;
+}
+
 export interface EveSsoIdentity {
   characterId: string;
   characterName: string;
@@ -29,6 +36,23 @@ export function readEveSsoConfig(env: NodeJS.ProcessEnv = process.env): EveSsoCo
     clientId,
     redirectUri,
     scopes: env.EVE_SSO_SCOPES ?? defaultScopes
+  };
+}
+
+export function readEveSsoLiveConfig(env: NodeJS.ProcessEnv = process.env): EveSsoLiveConfig {
+  const config = readEveSsoConfig(env);
+  const clientSecret = env.EVE_SSO_CLIENT_SECRET;
+
+  if (!clientSecret) {
+    throw new Error('EVE SSO live configuration is required');
+  }
+
+  return {
+    ...config,
+    clientSecret,
+    metadataUrl: env.EVE_SSO_METADATA_URL ?? 'https://login.eveonline.com/.well-known/oauth-authorization-server',
+    tokenUrl: env.EVE_SSO_TOKEN_URL ?? 'https://login.eveonline.com/v2/oauth/token',
+    esiBaseUrl: env.EVE_ESI_BASE_URL ?? 'https://esi.evetech.net/latest'
   };
 }
 
