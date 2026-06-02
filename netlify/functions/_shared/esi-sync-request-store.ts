@@ -9,6 +9,8 @@ import type {
 } from '../../../packages/contracts/src/index';
 import type { EsiTokenVaultDocument } from './esi-token-vault';
 import { markVaultLastSync } from './esi-token-vault-store';
+import type { RetryRequestDocument } from './retry-request-store';
+import { retryRequestSummary } from './retry-request-store';
 
 const collectionName = 'esi_sync_requests';
 
@@ -29,6 +31,7 @@ export interface EsiSyncRequestDocument {
   completedAt?: string;
   failure?: EsiSyncWorkerFailureSummary;
   result?: EsiSyncWorkerResultSummary;
+  retry?: RetryRequestDocument;
   createdAt: string;
   updatedAt: string;
 }
@@ -270,6 +273,7 @@ export function syncHistoryItem(syncRequest: EsiSyncRequestDocument): EsiSyncHis
   if (syncRequest.result?.snapshotId) item.snapshotId = syncRequest.result.snapshotId;
   if (syncRequest.result) item.sourceCount = syncRequest.result.sourceCount;
   if (syncRequest.failure) item.failure = syncRequest.failure;
+  if (syncRequest.retry) item.retry = retryRequestSummary(syncRequest.retry);
 
   return item;
 }

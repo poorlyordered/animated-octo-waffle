@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { retryRequestSummarySchema } from './retry.schema.js';
 
 export const esiSyncDomainSchema = z.enum(['numbers']);
 export const esiVaultStatusSchema = z.enum(['missing', 'active', 'revoked', 'unavailable']);
@@ -103,6 +104,7 @@ export const esiSyncHistoryItemSchema = z.object({
   sourceCount: z.number().int().nonnegative().optional(),
   sectionStatuses: z.array(esiSyncSectionStatusSummarySchema),
   failure: esiSyncWorkerFailureSummarySchema.optional(),
+  retry: retryRequestSummarySchema.optional(),
   boundary: z.string().min(1)
 });
 

@@ -1,18 +1,40 @@
-import type { AutomationQueueItem, WorkerHandoffSummary } from '@gryyk/contracts';
+import { useState } from 'react';
+import type { AutomationQueueItem, ScheduleRetryResponse, WorkerHandoffSummary } from '@gryyk/contracts';
 import { OperatingLegCoverage } from '../../command-brief/components/OperatingLegCoverage';
 
 interface AutomationQueueDetailProps {
   queueItem: AutomationQueueItem | null;
   handoff?: WorkerHandoffSummary;
   onPrepareHandoff: (queueItemId: string) => Promise<unknown>;
+  onScheduleHandoffRetry?: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
 }
 
-export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff }: AutomationQueueDetailProps) {
+export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, onScheduleHandoffRetry }: AutomationQueueDetailProps) {
+  const [retryStatus, setRetryStatus] = useState<string | null>(null);
+  const [retryBusy, setRetryBusy] = useState(false);
+
   if (!queueItem) {
     return <section className="empty-state">Select queued work.</section>;
   }
 
   const canPrepareHandoff = queueItem.status !== 'completed' && queueItem.status !== 'canceled';
+  const canScheduleRetry = handoff?.status === 'failed' && Boolean(onScheduleHandoffRetry);
+
+  async function handleScheduleRetry() {
+    if (!handoff || !onScheduleHandoffRetry) {
+      return;
+    }
+
+    setRetryBusy(true);
+    try {
+      const response = await onScheduleHandoffRetry(handoff.id, 'Commander approved retry scheduling for failed worker handoff.');
+      setRetryStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Duplicate: ${response.duplicate ? 'yes' : 'no'}.`);
+    } catch (error) {
+      setRetryStatus(error instanceof Error ? error.message : 'Unable to schedule retry.');
+    } finally {
+      setRetryBusy(false);
+    }
+  }
 
   return (
     <section className="decision-detail" aria-label="Automation queue detail">
@@ -94,6 +116,12 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff }: 
                 <dd>{handoff.failure.message}</dd>
               </div>
             ) : null}
+            {handoff.retry ? (
+              <div>
+                <dt>Scheduled retry</dt>
+                <dd>{handoff.retry.reason}</dd>
+              </div>
+            ) : null}
           </dl>
         ) : (
           <p>No worker handoff has been prepared for this queued work.</p>
@@ -101,6 +129,12 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff }: 
         <button type="button" disabled={!canPrepareHandoff} onClick={() => void onPrepareHandoff(queueItem.id)}>
           Prepare handoff
         </button>
+        {handoff?.status === 'failed' ? (
+          <button type="button" disabled={!canScheduleRetry || retryBusy} onClick={() => void handleScheduleRetry()}>
+            {retryBusy ? 'Scheduling...' : 'Schedule retry'}
+          </button>
+        ) : null}
+        {retryStatus ? <p className="notice">{retryStatus}</p> : null}
         <p className="notice">Preparing handoff creates a durable record only. It does not dispatch, retry, or execute work.</p>
       </section>
 

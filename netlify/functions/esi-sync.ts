@@ -1,6 +1,7 @@
 import {
   prepareEsiSyncRequestSchema,
   revokeEsiVaultRequestSchema,
+  scheduleRetryRequestSchema,
   startEsiSyncConsentRequestSchema
 } from '../../packages/contracts/src/index';
 import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
@@ -14,7 +15,13 @@ import {
   requiredScopesForDomain,
   vaultSummary
 } from './_shared/esi-token-vault';
-import { createOrFindQueuedSyncRequest, listRecentSyncRequests, syncRequestSummary } from './_shared/esi-sync-request-store';
+import { createOrFindQueuedSyncRequest, findSyncRequest, listRecentSyncRequests, syncRequestSummary } from './_shared/esi-sync-request-store';
+import {
+  assertNoUnsafeRetryFields,
+  createOrFindScheduledRetryRequest,
+  findScheduledRetryRequest,
+  retryRequestSummary
+} from './_shared/retry-request-store';
 import { findActiveOrLatestVault, revokeActiveVault } from './_shared/esi-token-vault-store';
 import {
   buildEveSsoAuthorizationUrl,
@@ -48,6 +55,12 @@ export async function handler(event: FunctionEvent) {
       const db = await getMongoDb();
       const vault = await findActiveOrLatestVault(db, corporationId);
       const history = await listRecentSyncRequests(db, corporationId, 'numbers');
+      for (const item of history) {
+        const retry = await findScheduledRetryRequest(db, corporationId, 'esi_sync_request', item.id ?? item._id?.toString() ?? '');
+        if (retry) {
+          item.retry = retry;
+        }
+      }
 
       return jsonResponse(200, {
         vault: vaultSummary(vault),
@@ -141,6 +154,27 @@ export async function handler(event: FunctionEvent) {
       });
     }
 
+    const retryMatch = path.match(/\/esi-sync\/([^/]+)\/retry$/);
+    if (retryMatch) {
+      assertNoUnsafeRetryFields(body);
+      const request = scheduleRetryRequestSchema.parse(body);
+      const syncRequest = await findSyncRequest(db, decodeURIComponent(retryMatch[1]));
+      if (!syncRequest || syncRequest.corporationId !== corporationId) {
+        return safeErrorResponse('ESI sync request not found', 404);
+      }
+      if (syncRequest.status !== 'failed') {
+        return safeErrorResponse('Only failed ESI sync requests are retry-eligible', 409);
+      }
+      const { retry, duplicate } = await createOrFindScheduledRetryRequest(
+        db,
+        corporationId,
+        'esi_sync_request',
+        syncRequest.id ?? syncRequest._id?.toString() ?? '',
+        request
+      );
+      return jsonResponse(duplicate ? 200 : 201, { retry: retryRequestSummary(retry), duplicate });
+    }
+
     return safeErrorResponse('ESI sync path is invalid', 404);
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -156,6 +190,10 @@ export async function handler(event: FunctionEvent) {
     }
 
     if (error instanceof Error && error.message.startsWith('Unsafe ESI sync field rejected')) {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (error instanceof Error && error.message.startsWith('Unsafe retry field rejected')) {
       return safeErrorResponse(error.message, 400);
     }
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
+import { retryRequestSummarySchema } from './retry.schema.js';
 
 export const workerHandoffStatusSchema = z.enum(['ready', 'claimed', 'completed', 'blocked', 'failed', 'cancelled']);
 export const activeWorkerHandoffStatusSchema = z.enum(['ready', 'claimed', 'blocked']);
@@ -50,7 +51,8 @@ export const workerHandoffSchema = z.object({
   completedAt: z.string().datetime().optional(),
   progress: z.array(workerProgressEventSchema).default([]),
   result: workerCompletionResultSchema.optional(),
-  failure: handoffFailureSchema.optional()
+  failure: handoffFailureSchema.optional(),
+  retry: retryRequestSummarySchema.optional()
 });
 
 export const workerHandoffSummarySchema = z.object({
@@ -63,7 +65,8 @@ export const workerHandoffSummarySchema = z.object({
   completedAt: z.string().datetime().optional(),
   progress: z.array(workerProgressEventSchema).default([]),
   result: workerCompletionResultSchema.optional(),
-  failure: handoffFailureSchema.optional()
+  failure: handoffFailureSchema.optional(),
+  retry: retryRequestSummarySchema.optional()
 });
 
 export const prepareWorkerHandoffRequestSchema = z.object({

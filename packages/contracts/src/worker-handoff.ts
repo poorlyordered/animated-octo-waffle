@@ -1,4 +1,5 @@
 import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
+import type { RetryRequestSummary } from './retry.js';
 
 export const workerHandoffStatuses = ['ready', 'claimed', 'completed', 'blocked', 'failed', 'cancelled'] as const;
 export type WorkerHandoffStatus = (typeof workerHandoffStatuses)[number];
@@ -53,6 +54,7 @@ export interface WorkerHandoff {
   progress: WorkerProgressEvent[];
   result?: WorkerCompletionResult;
   failure?: HandoffFailure;
+  retry?: RetryRequestSummary;
 }
 
 export interface WorkerHandoffSummary {
@@ -66,6 +68,7 @@ export interface WorkerHandoffSummary {
   progress: WorkerProgressEvent[];
   result?: WorkerCompletionResult;
   failure?: HandoffFailure;
+  retry?: RetryRequestSummary;
 }
 
 export interface PrepareWorkerHandoffRequest {

@@ -9,6 +9,7 @@ import {
   numbersFollowUpOrigin,
   numbersFollowUpQueueItem
 } from '../../tests/fixtures/numbersFollowUpActions';
+import { esiSyncRetryResponse, handoffRetryResponse } from '../../tests/fixtures/retry';
 import {
   activeEsiSyncStatusWithHistory,
   duplicatePrepareEsiSyncResponse,
@@ -181,5 +182,9 @@ export const commandSurfaceFixtures = {
     revoke: revokeEsiVaultResponse,
     prepare: prepareEsiSyncResponse,
     duplicatePrepare: duplicatePrepareEsiSyncResponse
+  },
+  retries: {
+    handoff: handoffRetryResponse,
+    esiSync: esiSyncRetryResponse
   }
 };

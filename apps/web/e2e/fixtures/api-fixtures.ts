@@ -65,6 +65,10 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
       return json(route, response);
     }
 
+    if (url.pathname.endsWith('/retry')) {
+      return json(route, commandSurfaceFixtures.retries.esiSync);
+    }
+
     return json(route, esiSyncStatus);
   });
 
@@ -121,6 +125,8 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
 
     return json(route, commandSurfaceFixtures.automationQueue);
   });
+
+  await page.route('**/api/worker-handoffs/*/retry', (route) => json(route, commandSurfaceFixtures.retries.handoff));
 
   await page.route('**/api/people/members/*', (route) => {
     const member = commandSurfaceFixtures.people.members[0];

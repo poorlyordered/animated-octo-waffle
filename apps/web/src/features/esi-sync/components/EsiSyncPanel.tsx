@@ -4,6 +4,7 @@ import type {
   EsiSyncStatusResponse,
   PrepareEsiSyncResponse,
   RevokeEsiVaultResponse,
+  ScheduleRetryResponse,
   StartEsiSyncConsentResponse
 } from '@gryyk/contracts';
 
@@ -13,6 +14,7 @@ interface EsiSyncPanelProps {
   status: EsiSyncStatusResponse | null;
   onPrepareSync: (domain: EsiSyncDomain) => Promise<PrepareEsiSyncResponse>;
   onRevokeVault: () => Promise<RevokeEsiVaultResponse>;
+  onScheduleRetry?: (syncRequestId: string, reason: string) => Promise<ScheduleRetryResponse>;
   onStartConsent: () => Promise<StartEsiSyncConsentResponse>;
 }
 
@@ -22,6 +24,7 @@ export function EsiSyncPanel({
   status,
   onPrepareSync,
   onRevokeVault,
+  onScheduleRetry,
   onStartConsent
 }: EsiSyncPanelProps) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
@@ -62,6 +65,22 @@ export function EsiSyncPanel({
       );
     } catch (actionError) {
       setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to prepare ESI sync.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleScheduleRetry(syncRequestId: string) {
+    if (!onScheduleRetry) {
+      return;
+    }
+
+    setBusyAction(`retry-${syncRequestId}`);
+    try {
+      const response = await onScheduleRetry(syncRequestId, 'Commander approved retry scheduling for failed ESI sync.');
+      setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Duplicate: ${response.duplicate ? 'yes' : 'no'}.`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to schedule ESI sync retry.');
     } finally {
       setBusyAction(null);
     }
@@ -175,6 +194,12 @@ export function EsiSyncPanel({
                   <p>Sections: {item.sectionStatuses.map((section) => `${section.key} ${section.status}`).join(', ')}</p>
                 ) : null}
                 {item.failure ? <p className="missing-reasons">Failed: {item.failure.reason}</p> : null}
+                {item.retry ? <p>Scheduled retry: {item.retry.reason}</p> : null}
+                {item.status === 'failed' ? (
+                  <button type="button" disabled={!onScheduleRetry || busyAction === `retry-${item.id}`} onClick={() => void handleScheduleRetry(item.id)}>
+                    {busyAction === `retry-${item.id}` ? 'Scheduling...' : 'Schedule retry'}
+                  </button>
+                ) : null}
                 <p className="notice">{item.boundary}</p>
               </li>
             ))}

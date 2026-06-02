@@ -11,6 +11,7 @@ export function EsiSyncRoute() {
       status={esiSync.status}
       onPrepareSync={esiSync.prepareSync}
       onRevokeVault={esiSync.revokeVault}
+      onScheduleRetry={esiSync.scheduleRetry}
       onStartConsent={esiSync.startConsent}
     />
   );

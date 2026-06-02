@@ -1,3 +1,5 @@
+import type { RetryRequestSummary } from './retry.js';
+
 export const esiSyncDomains = ['numbers'] as const;
 export type EsiSyncDomain = (typeof esiSyncDomains)[number];
 
@@ -110,6 +112,7 @@ export interface EsiSyncHistoryItem {
   sourceCount?: number;
   sectionStatuses: EsiSyncSectionStatusSummary[];
   failure?: EsiSyncWorkerFailureSummary;
+  retry?: RetryRequestSummary;
   boundary: string;
 }
 

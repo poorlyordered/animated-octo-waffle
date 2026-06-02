@@ -1,8 +1,12 @@
 import {
   prepareWorkerHandoffRequestSchema,
+  scheduleRetryRequestSchema,
+  scheduleRetryResponseSchema,
   workerHandoffListResponseSchema,
   workerHandoffResponseSchema,
   type PrepareWorkerHandoffRequest,
+  type ScheduleRetryRequest,
+  type ScheduleRetryResponse,
   type WorkerHandoffListResponse,
   type WorkerHandoffResponse,
   type WorkerHandoffStatus
@@ -29,6 +33,21 @@ export async function prepareWorkerHandoff(
   });
 
   return parseJson(response, workerHandoffResponseSchema);
+}
+
+export async function scheduleWorkerHandoffRetry(
+  handoffId: string,
+  request: ScheduleRetryRequest
+): Promise<ScheduleRetryResponse> {
+  const response = await fetch(`/api/worker-handoffs/${encodeURIComponent(handoffId)}/retry`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(scheduleRetryRequestSchema.parse(request))
+  });
+
+  return parseJson(response, scheduleRetryResponseSchema);
 }
 
 export async function listWorkerHandoffs(filters: {
