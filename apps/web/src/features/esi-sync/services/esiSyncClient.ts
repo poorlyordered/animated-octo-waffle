@@ -2,11 +2,15 @@ import {
   esiSyncStatusResponseSchema,
   prepareEsiSyncResponseSchema,
   revokeEsiVaultResponseSchema,
+  scheduleRetryRequestSchema,
+  scheduleRetryResponseSchema,
   startEsiSyncConsentResponseSchema,
   type EsiSyncStatusResponse,
   type PrepareEsiSyncRequest,
   type PrepareEsiSyncResponse,
   type RevokeEsiVaultResponse,
+  type ScheduleRetryRequest,
+  type ScheduleRetryResponse,
   type StartEsiSyncConsentRequest,
   type StartEsiSyncConsentResponse
 } from '@gryyk/contracts';
@@ -19,6 +23,25 @@ export async function getEsiSyncStatus(): Promise<EsiSyncStatusResponse> {
   }
 
   return esiSyncStatusResponseSchema.parse(await response.json());
+}
+
+export async function scheduleEsiSyncRetry(
+  syncRequestId: string,
+  request: ScheduleRetryRequest
+): Promise<ScheduleRetryResponse> {
+  const response = await fetch(`/api/esi-sync/${encodeURIComponent(syncRequestId)}/retry`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(scheduleRetryRequestSchema.parse(request))
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const message = body && typeof body === 'object' && 'message' in body ? String(body.message) : `Request failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return scheduleRetryResponseSchema.parse(await response.json());
 }
 
 export async function startEsiSyncConsent(

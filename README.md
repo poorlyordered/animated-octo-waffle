@@ -87,6 +87,8 @@ M13 adds a trusted worker path for prepared Numbers sync requests. Worker-authen
 
 M14 makes worker-produced sync state inspectable in the browser. The Numbers surface shows whether the latest snapshot came from completed read-only ESI sync or historical processed data, including source count, section health, sync request linkage, and no-execution provenance language. The ESI sync surface shows bounded recent sync history with queued, claimed, completed, failed, and partial outcome summaries. This remains read-only: no retry scheduling, worker dispatch, token refresh, EVE writes, wallet/asset movement, contract mutation, role mutation, or external-service execution occurs in browser or request paths.
 
+M15 adds commander-approved retry scheduling records for failed worker handoffs and failed Numbers ESI sync requests. Scheduling a retry creates an auditable `retry_requests` record and surfaces existing scheduled retries next to failed handoffs and failed sync history. It does not claim handoffs, dispatch workers, run retries immediately, refresh tokens, fetch ESI in request paths, write to EVE, move wallets/assets/contracts, change roles, or execute external-service actions.
+
 ## Decision Record Loop
 
 The Decision Record Loop stores normalized decision records in the existing MongoDB `strategic_decisions` collection. Existing strategic decision fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `gryykSynthesis`, and `timestamp` are treated as legacy-compatible inputs and normalized at the app boundary.

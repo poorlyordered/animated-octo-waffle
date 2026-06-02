@@ -3,7 +3,8 @@ import {
   workerCompleteRequestSchema,
   workerFailRequestSchema,
   workerHandoffStatusSchema,
-  workerProgressRequestSchema
+  workerProgressRequestSchema,
+  scheduleRetryRequestSchema
 } from '../../packages/contracts/src/index';
 import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { getMongoDb } from './_shared/mongo';
@@ -16,6 +17,12 @@ import {
   listWorkerHandoffs,
   recordWorkerProgress
 } from './_shared/worker-handoff-store';
+import {
+  assertNoUnsafeRetryFields,
+  createOrFindScheduledRetryRequest,
+  findScheduledRetryRequest,
+  retryRequestSummary
+} from './_shared/retry-request-store';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 
 function handoffPathId(event: FunctionEvent): string | null {
@@ -24,7 +31,7 @@ function handoffPathId(event: FunctionEvent): string | null {
 }
 
 function handoffActionPath(event: FunctionEvent): { id: string; action: string } | null {
-  const match = event.path?.match(/\/worker-handoffs\/([^/]+)\/(claim|progress|complete|fail)$/);
+  const match = event.path?.match(/\/worker-handoffs\/([^/]+)\/(claim|progress|complete|fail|retry)$/);
   return match ? { id: match[1], action: match[2] } : null;
 }
 
@@ -53,7 +60,6 @@ export async function handler(event: FunctionEvent) {
     const db = await getMongoDb();
 
     if (method === 'POST') {
-      assertWorkerCallbackAuthorized(event);
       const actionPath = handoffActionPath(event);
 
       if (!actionPath) {
@@ -61,6 +67,27 @@ export async function handler(event: FunctionEvent) {
       }
 
       const body = parseJsonBody(event);
+      if (actionPath.action === 'retry') {
+        assertNoUnsafeRetryFields(body);
+        const request = scheduleRetryRequestSchema.parse(body);
+        const handoff = await findWorkerHandoff(db, corporationId, actionPath.id);
+        if (!handoff) {
+          return safeErrorResponse('Worker handoff not found', 404);
+        }
+        if (handoff.status !== 'failed') {
+          return safeErrorResponse('Only failed worker handoffs are retry-eligible', 409);
+        }
+        const { retry, duplicate } = await createOrFindScheduledRetryRequest(
+          db,
+          corporationId,
+          'worker_handoff',
+          handoff.id,
+          request
+        );
+        return jsonResponse(duplicate ? 200 : 201, { retry: retryRequestSummary(retry), duplicate });
+      }
+
+      assertWorkerCallbackAuthorized(event);
       if (actionPath.action === 'claim') {
         const request = workerClaimRequestSchema.parse(body);
         const handoff = await claimWorkerHandoff(db, corporationId, actionPath.id, request.workerId);
@@ -104,6 +131,11 @@ export async function handler(event: FunctionEvent) {
         return safeErrorResponse('Worker handoff not found', 404);
       }
 
+      const retry = await findScheduledRetryRequest(db, corporationId, 'worker_handoff', handoff.id);
+      if (retry) {
+        handoff.retry = retryRequestSummary(retry);
+      }
+
       return jsonResponse(200, { handoff });
     }
 
@@ -130,6 +162,10 @@ export async function handler(event: FunctionEvent) {
 
     if (error instanceof Error && error.message === 'Worker callback is not authorized') {
       return safeErrorResponse('Worker callback is not authorized', 401);
+    }
+
+    if (error instanceof Error && error.message.startsWith('Unsafe retry field rejected')) {
+      return safeErrorResponse(error.message, 400);
     }
 
     if (error && typeof error === 'object' && 'issues' in error) {

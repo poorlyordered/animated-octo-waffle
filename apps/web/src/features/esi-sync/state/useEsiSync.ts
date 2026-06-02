@@ -4,9 +4,10 @@ import type {
   EsiSyncStatusResponse,
   PrepareEsiSyncResponse,
   RevokeEsiVaultResponse,
+  ScheduleRetryResponse,
   StartEsiSyncConsentResponse
 } from '@gryyk/contracts';
-import { getEsiSyncStatus, prepareEsiSync, revokeEsiVault, startEsiSyncConsent } from '../services/esiSyncClient';
+import { getEsiSyncStatus, prepareEsiSync, revokeEsiVault, scheduleEsiSyncRetry, startEsiSyncConsent } from '../services/esiSyncClient';
 
 interface EsiSyncState {
   error: string | null;
@@ -14,11 +15,12 @@ interface EsiSyncState {
   status: EsiSyncStatusResponse | null;
   prepareSync: (domain: EsiSyncDomain) => Promise<PrepareEsiSyncResponse>;
   revokeVault: () => Promise<RevokeEsiVaultResponse>;
+  scheduleRetry: (syncRequestId: string, reason: string) => Promise<ScheduleRetryResponse>;
   startConsent: () => Promise<StartEsiSyncConsentResponse>;
 }
 
 export function useEsiSync(): EsiSyncState {
-  const [state, setState] = useState<Omit<EsiSyncState, 'prepareSync' | 'revokeVault' | 'startConsent'>>({
+  const [state, setState] = useState<Omit<EsiSyncState, 'prepareSync' | 'revokeVault' | 'scheduleRetry' | 'startConsent'>>({
     error: null,
     loading: true,
     status: null
@@ -67,6 +69,11 @@ export function useEsiSync(): EsiSyncState {
         ...current,
         status: current.status ? { ...current.status, vault: response.vault } : current.status
       }));
+      return response;
+    },
+    scheduleRetry: async (syncRequestId, reason) => {
+      const response = await scheduleEsiSyncRetry(syncRequestId, { reason });
+      await refresh();
       return response;
     },
     startConsent: () => startEsiSyncConsent({ returnTo: '/' })

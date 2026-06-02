@@ -4,14 +4,15 @@ import type {
   WorkerHandoff,
   WorkerHandoffSummary,
   CreateAutomationQueueItemRequest,
-  QueueStatus
+  QueueStatus,
+  ScheduleRetryResponse
 } from '@gryyk/contracts';
 import {
   createAutomationQueueItem,
   getAutomationQueueItem,
   listAutomationQueueItems
 } from '../services/automationQueueClient';
-import { prepareWorkerHandoff } from '../services/workerHandoffClient';
+import { prepareWorkerHandoff, scheduleWorkerHandoffRetry } from '../services/workerHandoffClient';
 
 export interface SelectedAutomationQueueItem {
   queueItem: AutomationQueueItem;
@@ -30,6 +31,7 @@ interface UseAutomationQueueState extends AutomationQueueState {
   createQueueItem: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem>;
   loadQueueItem: (id: string) => Promise<SelectedAutomationQueueItem>;
   prepareHandoff: (queueItemId: string) => Promise<WorkerHandoff>;
+  scheduleHandoffRetry: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
   selectQueueItem: (queueItem: AutomationQueueItem | null) => void;
   setStatusFilter: (status: QueueStatus | 'all') => void;
   queueItemsForDecision: (decisionId: string) => AutomationQueueItem[];
@@ -113,6 +115,15 @@ export function useAutomationQueue(): UseAutomationQueueState {
     return handoff;
   }
 
+  async function scheduleHandoffRetry(handoffId: string, reason: string): Promise<ScheduleRetryResponse> {
+    const response = await scheduleWorkerHandoffRetry(handoffId, { reason });
+    const selected = state.selectedQueueItem;
+    if (selected) {
+      await loadQueueItem(selected.queueItem.id);
+    }
+    return response;
+  }
+
   const queueItemsByDecision = useMemo(() => {
     return state.queueItems.reduce<Record<string, AutomationQueueItem[]>>((index, item) => {
       index[item.sourceDecisionId] = [...(index[item.sourceDecisionId] ?? []), item];
@@ -125,6 +136,7 @@ export function useAutomationQueue(): UseAutomationQueueState {
     createQueueItem,
     loadQueueItem,
     prepareHandoff,
+    scheduleHandoffRetry,
     selectQueueItem: (queueItem) => {
       setState((current) => ({ ...current, selectedQueueItem: queueItem ? { queueItem } : null }));
       if (queueItem) {

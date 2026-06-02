@@ -32,6 +32,7 @@ export function AutomationQueueRoute() {
         queueItem={automationQueue.selectedQueueItem?.queueItem ?? null}
         handoff={automationQueue.selectedQueueItem?.handoff}
         onPrepareHandoff={automationQueue.prepareHandoff}
+        onScheduleHandoffRetry={automationQueue.scheduleHandoffRetry}
       />
     </main>
   );

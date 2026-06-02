@@ -1,5 +1,6 @@
 import type { WorkerHandoff } from '@gryyk/contracts';
 import { queuedItem } from './automationQueue';
+import { handoffRetry } from './retry';
 
 export const readyHandoff: WorkerHandoff = {
   id: 'handoff-1',
@@ -76,5 +77,6 @@ export const failedHandoff: WorkerHandoff = {
     message: 'Source data unavailable.',
     code: 'source_unavailable',
     failedAt: '2026-06-01T15:25:00.000Z'
-  }
+  },
+  retry: handoffRetry
 };

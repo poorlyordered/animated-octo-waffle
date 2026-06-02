@@ -321,14 +321,32 @@ Validation:
 - Spec: `specs/014-sync-history-provenance`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M15: Retry Scheduling - Complete
+
+Goal: let commanders schedule auditable retry intent for failed worker handoffs and failed Numbers ESI syncs without executing the retry.
+
+Delivered capabilities:
+
+- Browser-safe retry scheduling contracts and schemas
+- MongoDB-backed `retry_requests` records for failed worker handoffs and failed ESI sync requests
+- Duplicate scheduled retry surfacing for the same failed target
+- Failed handoff retry scheduling from automation queue detail
+- Failed ESI sync retry scheduling from ESI sync history
+- Scheduled retry status display next to failed handoffs and failed syncs
+- Unsafe retry field rejection for dispatch/run-now/token/action-like browser inputs
+- No handoff claim, worker dispatch, immediate retry, token refresh, ESI fetch in request paths, EVE write, wallet/asset movement, contract mutation, role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/015-retry-scheduling`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M15 selection after M14 review.
-
-The next slice should build on live authenticated command scope, explicit ESI consent, worker-side Numbers ingestion, browser-visible sync provenance, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
+Proceed to M16 selection after M15 review.
 
 Recommended next-slice candidates:
 
-- Worker retry policy and commander-approved retry scheduling for failed handoffs and failed ESI syncs.
 - Browser-visible approval handoff from Numbers-created decisions into queued work.
+- Retry execution worker that consumes scheduled retry requests under commander-approved policy.
 - People or Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.

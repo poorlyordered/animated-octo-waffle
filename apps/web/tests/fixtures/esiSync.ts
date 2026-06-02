@@ -1,4 +1,5 @@
 import type { EsiSyncHistoryItem, EsiSyncStatusResponse, PrepareEsiSyncResponse, RevokeEsiVaultResponse, StartEsiSyncConsentResponse } from '@gryyk/contracts';
+import { esiSyncRetry } from './retry';
 
 export const esiRequiredScopes = [
   'esi-wallet.read_corporation_wallets.v1',
@@ -85,6 +86,7 @@ export const failedEsiSyncHistoryItem: EsiSyncHistoryItem = {
     reason: 'ESI market endpoint returned a safe fixture failure.',
     failedAt: '2026-06-02T12:37:00.000Z'
   },
+  retry: esiSyncRetry,
   sectionStatuses: [],
   boundary: 'Read-only sync history. No worker was dispatched and no retry was scheduled.'
 };

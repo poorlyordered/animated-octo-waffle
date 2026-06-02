@@ -3,6 +3,7 @@ import {
   esiSyncStatusResponseSchema,
   prepareEsiSyncResponseSchema,
   revokeEsiVaultResponseSchema,
+  scheduleRetryResponseSchema,
   startEsiSyncConsentResponseSchema
 } from '@gryyk/contracts';
 import {
@@ -14,6 +15,7 @@ import {
   revokeEsiVaultResponse,
   startEsiSyncConsentResponse
 } from '../fixtures/esiSync';
+import { esiSyncRetryResponse } from '../fixtures/retry';
 
 describe('ESI sync API contract', () => {
   it('accepts missing and active vault status responses', () => {
@@ -42,6 +44,15 @@ describe('ESI sync API contract', () => {
   it('accepts prepare sync success and duplicate responses', () => {
     expect(prepareEsiSyncResponseSchema.parse(prepareEsiSyncResponse).duplicate).toBe(false);
     expect(prepareEsiSyncResponseSchema.parse(duplicatePrepareEsiSyncResponse).duplicate).toBe(true);
+  });
+
+  it('accepts scheduled ESI sync retry responses', () => {
+    const parsed = scheduleRetryResponseSchema.parse(esiSyncRetryResponse);
+
+    expect(parsed.retry.targetType).toBe('esi_sync_request');
+    expect(parsed.retry.status).toBe('scheduled');
+    expect(JSON.stringify(parsed)).not.toContain('accessToken');
+    expect(JSON.stringify(parsed)).not.toContain('dispatchTarget');
   });
 
   it('accepts missing-scope blocked responses', () => {

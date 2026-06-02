@@ -1,5 +1,6 @@
 import {
   automationQueueItemResponseSchema,
+  scheduleRetryResponseSchema,
   workerClaimRequestSchema,
   workerCompleteRequestSchema,
   workerFailRequestSchema,
@@ -8,9 +9,19 @@ import {
   workerProgressRequestSchema
 } from '@gryyk/contracts';
 import { queuedItem } from '../fixtures/automationQueue';
+import { handoffRetryResponse } from '../fixtures/retry';
 import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../fixtures/workerHandoff';
 
 describe('Worker Handoff API contract', () => {
+  it('accepts scheduled handoff retry responses', () => {
+    const parsed = scheduleRetryResponseSchema.parse(handoffRetryResponse);
+
+    expect(parsed.retry.targetType).toBe('worker_handoff');
+    expect(parsed.retry.status).toBe('scheduled');
+    expect(JSON.stringify(parsed)).not.toContain('dispatchTarget');
+    expect(JSON.stringify(parsed)).not.toContain('token');
+  });
+
   it('accepts handoff preparation responses', () => {
     const parsed = workerHandoffResponseSchema.parse({ handoff: readyHandoff });
 
