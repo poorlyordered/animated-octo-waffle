@@ -54,6 +54,21 @@ export async function findAutomationQueueItem(
   return document ? normalizeAutomationQueueDocument(document as QueueDocument) : null;
 }
 
+export async function findAutomationQueueItemByDecisionAndIntent(
+  db: Db,
+  corporationId: string,
+  sourceDecisionId: string,
+  taskIntent: string
+): Promise<AutomationQueueItem | null> {
+  const document = await db.collection(collectionName).findOne({
+    corporationId,
+    sourceDecisionId,
+    taskIntent: taskIntent.trim()
+  });
+
+  return document ? normalizeAutomationQueueDocument(document as QueueDocument) : null;
+}
+
 export async function createAutomationQueueItem(
   db: Db,
   corporationId: string,
@@ -67,11 +82,7 @@ export async function createAutomationQueueItem(
 
   assertQueueEligibleDecision(decision);
 
-  const duplicate = await db.collection(collectionName).findOne({
-    corporationId,
-    sourceDecisionId: decision.id,
-    taskIntent: request.taskIntent.trim()
-  });
+  const duplicate = await findAutomationQueueItemByDecisionAndIntent(db, corporationId, decision.id, request.taskIntent);
 
   if (duplicate) {
     throw new Error('Automation queue item already exists for this decision and task intent');

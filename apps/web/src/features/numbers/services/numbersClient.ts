@@ -1,4 +1,13 @@
-import { numbersSnapshotResponseSchema, type NumbersSnapshotResponse } from '@gryyk/contracts';
+import {
+  numbersFollowUpDecisionResponseSchema,
+  numbersFollowUpQueueResponseSchema,
+  numbersSnapshotResponseSchema,
+  type CreateNumbersFollowUpDecisionRequest,
+  type CreateNumbersFollowUpQueueRequest,
+  type NumbersFollowUpDecisionResponse,
+  type NumbersFollowUpQueueResponse,
+  type NumbersSnapshotResponse
+} from '@gryyk/contracts';
 
 export async function getNumbersSnapshot(focus = 'corporation'): Promise<NumbersSnapshotResponse> {
   const params = new URLSearchParams({ focus });
@@ -9,4 +18,38 @@ export async function getNumbersSnapshot(focus = 'corporation'): Promise<Numbers
   }
 
   return numbersSnapshotResponseSchema.parse(await response.json());
+}
+
+export async function createNumbersFollowUpDecision(
+  candidateId: string,
+  request: CreateNumbersFollowUpDecisionRequest
+): Promise<NumbersFollowUpDecisionResponse> {
+  const response = await fetch(`/api/numbers/follow-ups/${encodeURIComponent(candidateId)}/decision`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return numbersFollowUpDecisionResponseSchema.parse(await response.json());
+}
+
+export async function createNumbersFollowUpQueue(
+  candidateId: string,
+  request: CreateNumbersFollowUpQueueRequest
+): Promise<NumbersFollowUpQueueResponse> {
+  const response = await fetch(`/api/numbers/follow-ups/${encodeURIComponent(candidateId)}/queue`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return numbersFollowUpQueueResponseSchema.parse(await response.json());
 }

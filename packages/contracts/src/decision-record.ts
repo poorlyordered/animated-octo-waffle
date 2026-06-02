@@ -29,12 +29,21 @@ export interface ApprovalRecord {
   approvalText: string;
 }
 
+export interface DecisionSourceContext {
+  sourceType: 'research_brief' | 'numbers_follow_up';
+  snapshotId?: string;
+  candidateId?: string;
+  relatedSection?: string;
+  suggestedPath?: string;
+}
+
 export interface DecisionRecord {
   id: string;
   corporationId: string;
   sourceBriefId: string;
   sourceRecommendation: string;
   sourceProvenance: SourceProvenanceSnapshot;
+  sourceContext?: DecisionSourceContext;
   status: DecisionStatus;
   rationale: string;
   expectedResult: string;

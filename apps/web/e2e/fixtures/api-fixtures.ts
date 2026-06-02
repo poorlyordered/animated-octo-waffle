@@ -29,7 +29,17 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
 
   await page.route('**/api/command-brief**', (route) => json(route, commandSurfaceFixtures.commandBrief));
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
-  await page.route('**/api/numbers**', (route) => json(route, commandSurfaceFixtures.numbers));
+  await page.route('**/api/numbers**', (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/decision')) {
+      return json(route, commandSurfaceFixtures.numbersFollowUpActions.decision);
+    }
+    if (url.pathname.endsWith('/queue')) {
+      return json(route, commandSurfaceFixtures.numbersFollowUpActions.queue);
+    }
+
+    return json(route, commandSurfaceFixtures.numbers);
+  });
 
   await page.route('**/api/decision-records**', (route) => {
     if (route.request().method() !== 'GET') {

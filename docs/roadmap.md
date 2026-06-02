@@ -241,14 +241,32 @@ Validation:
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 - Post-merge sanity check covered targeted worker handoff/callback Jest tests on `master`
 
+### M11: Numbers Follow-Up Actions - Complete
+
+Goal: let the commander convert Numbers follow-up candidates into auditable command artifacts without bypassing approval or execution boundaries.
+
+Delivered capabilities:
+
+- Create proposed decision records from eligible Numbers follow-up candidates
+- Preserve Numbers snapshot provenance and follow-up origin context
+- Surface existing decisions instead of creating duplicate decision records
+- Create queued work only from approved Numbers follow-up decisions
+- Preserve no-execution boundaries for worker dispatch, retry scheduling, EVE writes, wallet/asset movement, contracts, and external services
+- Add contract/unit coverage and browser smoke coverage for the decision path
+
+Validation:
+
+- Spec: `specs/011-numbers-followup-actions`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M11 selection after M10 review.
+Proceed to M12 selection after M11 review.
 
 The next slice should build on live authenticated command scope, worker callback state, the numbers/people/opportunity operating surfaces, and the validation loop now in place.
 
 Recommended next-slice candidates:
 
-- Decision or queue creation from Numbers follow-up candidates.
 - Explicit-consent ESI token vaulting and scoped read sync for future live data ingestion.
 - Worker retry policy and commander-approved retry scheduling for failed handoffs.
+- Browser-visible approval handoff from Numbers-created decisions into queued work.

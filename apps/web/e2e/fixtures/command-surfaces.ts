@@ -4,6 +4,11 @@ import { approvedDecision, playerImpactingDecision, proposedDecision } from '../
 import { numbersSnapshot } from '../../tests/fixtures/numbers';
 import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
 import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
+import {
+  numbersFollowUpDecision,
+  numbersFollowUpOrigin,
+  numbersFollowUpQueueItem
+} from '../../tests/fixtures/numbersFollowUpActions';
 
 export const commandSurfaceFixtures = {
   commandBrief: {
@@ -21,6 +26,20 @@ export const commandSurfaceFixtures = {
   },
   numbers: {
     snapshot: numbersSnapshot
+  },
+  numbersFollowUpActions: {
+    decision: {
+      decision: numbersFollowUpDecision,
+      origin: numbersFollowUpOrigin,
+      message:
+        'Decision recorded. No EVE action, wallet action, asset action, worker dispatch, or external execution was performed.'
+    },
+    queue: {
+      queueItem: numbersFollowUpQueueItem,
+      origin: numbersFollowUpOrigin,
+      message:
+        'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
+    }
   },
   decisionRecords: {
     decisions: [

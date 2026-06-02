@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { automationQueueItemSchema } from './automation-queue.schema.js';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
+import { decisionRecordSchema } from './decision-record.schema.js';
 
 export const numbersSectionKeySchema = z.enum(['wallet', 'assets', 'logistics', 'market', 'activity']);
 export const numbersSectionStatusSchema = z.enum(['healthy', 'watch', 'critical', 'stale', 'missing']);
@@ -60,4 +62,40 @@ export const numbersSnapshotSchema = z.object({
 
 export const numbersSnapshotResponseSchema = z.object({
   snapshot: numbersSnapshotSchema.nullable()
+});
+
+export const numbersFollowUpOriginSchema = z.object({
+  sourceType: z.literal('numbers_follow_up'),
+  snapshotId: z.string().min(1),
+  candidateId: z.string().min(1),
+  relatedSection: numbersSectionKeySchema.optional(),
+  suggestedPath: z.enum(['decision', 'queue'])
+});
+
+export const createNumbersFollowUpDecisionRequestSchema = z.object({
+  snapshotId: z.string().min(1),
+  expectedResult: z.string().min(1).optional()
+});
+
+export const numbersFollowUpDecisionResponseSchema = z.object({
+  decision: decisionRecordSchema,
+  origin: numbersFollowUpOriginSchema,
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1)
+});
+
+export const createNumbersFollowUpQueueRequestSchema = z.object({
+  snapshotId: z.string().min(1),
+  sourceDecisionId: z.string().min(1),
+  taskIntent: z.string().min(1),
+  inputSummary: z.string().min(1),
+  expectedOutput: z.string().min(1),
+  owner: z.string().optional()
+});
+
+export const numbersFollowUpQueueResponseSchema = z.object({
+  queueItem: automationQueueItemSchema,
+  origin: numbersFollowUpOriginSchema,
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1)
 });

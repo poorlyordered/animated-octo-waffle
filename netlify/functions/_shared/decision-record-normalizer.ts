@@ -134,6 +134,7 @@ export function normalizeDecisionRecordDocument(document: DecisionDocument): Dec
     sourceBriefId,
     sourceRecommendation,
     sourceProvenance: normalizeSourceProvenance(document),
+    sourceContext: document.sourceContext,
     status,
     rationale,
     expectedResult,

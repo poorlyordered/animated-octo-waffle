@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
-import type { NumbersSnapshot } from '@gryyk/contracts';
-import { getNumbersSnapshot } from '../services/numbersClient';
+import type {
+  CreateNumbersFollowUpDecisionRequest,
+  CreateNumbersFollowUpQueueRequest,
+  NumbersFollowUpDecisionResponse,
+  NumbersFollowUpQueueResponse,
+  NumbersSnapshot
+} from '@gryyk/contracts';
+import { createNumbersFollowUpDecision, createNumbersFollowUpQueue, getNumbersSnapshot } from '../services/numbersClient';
 
 interface NumbersState {
   error: string | null;
   loading: boolean;
   snapshot: NumbersSnapshot | null;
+  createDecision: (
+    candidateId: string,
+    request: CreateNumbersFollowUpDecisionRequest
+  ) => Promise<NumbersFollowUpDecisionResponse>;
+  createQueue: (candidateId: string, request: CreateNumbersFollowUpQueueRequest) => Promise<NumbersFollowUpQueueResponse>;
 }
 
 export function useNumbersSnapshot(focus = 'corporation'): NumbersState {
-  const [state, setState] = useState<NumbersState>({
+  const [state, setState] = useState<Omit<NumbersState, 'createDecision' | 'createQueue'>>({
     error: null,
     loading: true,
     snapshot: null
@@ -43,5 +54,9 @@ export function useNumbersSnapshot(focus = 'corporation'): NumbersState {
     };
   }, [focus]);
 
-  return state;
+  return {
+    ...state,
+    createDecision: createNumbersFollowUpDecision,
+    createQueue: createNumbersFollowUpQueue
+  };
 }

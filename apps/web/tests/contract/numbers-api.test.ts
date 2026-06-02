@@ -1,5 +1,14 @@
-import { numbersSnapshotResponseSchema } from '@gryyk/contracts';
+import {
+  numbersFollowUpDecisionResponseSchema,
+  numbersFollowUpQueueResponseSchema,
+  numbersSnapshotResponseSchema
+} from '@gryyk/contracts';
 import { numbersSnapshot } from '../fixtures/numbers';
+import {
+  numbersFollowUpDecision,
+  numbersFollowUpOrigin,
+  numbersFollowUpQueueItem
+} from '../fixtures/numbersFollowUpActions';
 import { getAuthScope } from '../../../../netlify/functions/_shared/auth-scope';
 
 describe('Numbers API contract', () => {
@@ -33,6 +42,47 @@ describe('Numbers API contract', () => {
     expect(body).not.toContain('token');
     expect(body).not.toContain('secret');
     expect(body).not.toContain('credential');
+    expect(body).not.toContain('dispatchTarget');
+  });
+
+  it('accepts follow-up decision creation responses with origin metadata', () => {
+    const parsed = numbersFollowUpDecisionResponseSchema.parse({
+      decision: numbersFollowUpDecision,
+      origin: numbersFollowUpOrigin,
+      message:
+        'Decision recorded. No EVE action, wallet action, asset action, worker dispatch, or external execution was performed.'
+    });
+
+    expect(parsed.decision.status).toBe('proposed');
+    expect(parsed.decision.sourceContext?.sourceType).toBe('numbers_follow_up');
+    expect(parsed.origin.candidateId).toBe(numbersSnapshot.followUps[0].id);
+  });
+
+  it('accepts duplicate follow-up decision responses', () => {
+    const parsed = numbersFollowUpDecisionResponseSchema.parse({
+      decision: numbersFollowUpDecision,
+      origin: numbersFollowUpOrigin,
+      duplicate: true,
+      message: 'Existing decision surfaced. No duplicate was created.'
+    });
+
+    expect(parsed.duplicate).toBe(true);
+  });
+
+  it('accepts follow-up queue creation responses without execution metadata', () => {
+    const parsed = numbersFollowUpQueueResponseSchema.parse({
+      queueItem: numbersFollowUpQueueItem,
+      origin: numbersFollowUpOrigin,
+      message:
+        'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
+    });
+
+    expect(parsed.queueItem.status).toBe('queued');
+    expect(parsed.queueItem.attempts).toBe(0);
+
+    const body = JSON.stringify(parsed);
+    expect(body).not.toContain('token');
+    expect(body).not.toContain('secret');
     expect(body).not.toContain('dispatchTarget');
   });
 });
