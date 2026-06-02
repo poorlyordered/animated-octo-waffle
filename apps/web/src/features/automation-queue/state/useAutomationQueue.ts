@@ -125,8 +125,12 @@ export function useAutomationQueue(): UseAutomationQueueState {
     createQueueItem,
     loadQueueItem,
     prepareHandoff,
-    selectQueueItem: (queueItem) =>
-      setState((current) => ({ ...current, selectedQueueItem: queueItem ? { queueItem } : null })),
+    selectQueueItem: (queueItem) => {
+      setState((current) => ({ ...current, selectedQueueItem: queueItem ? { queueItem } : null }));
+      if (queueItem) {
+        void loadQueueItem(queueItem.id);
+      }
+    },
     setStatusFilter: (statusFilter) => setState((current) => ({ ...current, statusFilter })),
     queueItemsForDecision: (decisionId) => queueItemsByDecision[decisionId] ?? []
   };

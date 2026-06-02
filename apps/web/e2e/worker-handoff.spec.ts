@@ -32,6 +32,27 @@ test('shows blocked worker handoff failure details', async ({ page }, testInfo) 
   await assertNoBrowserDiagnostics();
 });
 
+test('shows claimed completed and failed worker callback metadata', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /Browser smoke claimed callback work item/ }).click();
+  await expect(page.getByLabel('Worker handoff').getByText('claimed', { exact: true }).first()).toBeVisible();
+  await expectVisibleText(page, 'overnightdesk-worker-1');
+  await expectVisibleText(page, 'Fetched source documents.');
+
+  await page.getByRole('button', { name: /Browser smoke callback completed work item/ }).click();
+  await expect(page.getByLabel('Worker handoff').getByText('completed', { exact: true }).first()).toBeVisible();
+  await expectVisibleText(page, 'Prepared safe output summary.');
+
+  await page.getByRole('button', { name: /Browser smoke callback failed work item/ }).click();
+  await expect(page.getByLabel('Worker handoff').getByText('failed', { exact: true }).first()).toBeVisible();
+  await expectVisibleText(page, 'Source data unavailable.');
+
+  await assertNoBrowserDiagnostics();
+});
+
 test('does not present handoff as execution', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
 

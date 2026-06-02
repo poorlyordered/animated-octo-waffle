@@ -55,6 +55,39 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff }: 
               <dt>Created</dt>
               <dd>{new Date(handoff.createdAt).toLocaleString()}</dd>
             </div>
+            {handoff.claimedBy ? (
+              <div>
+                <dt>Claimed by</dt>
+                <dd>{handoff.claimedBy}</dd>
+              </div>
+            ) : null}
+            {handoff.claimedAt ? (
+              <div>
+                <dt>Claimed</dt>
+                <dd>{new Date(handoff.claimedAt).toLocaleString()}</dd>
+              </div>
+            ) : null}
+            {handoff.progress.length > 0 ? (
+              <div>
+                <dt>Progress</dt>
+                <dd>
+                  <ul>
+                    {handoff.progress.map((event) => (
+                      <li key={`${event.workerId}-${event.createdAt}`}>
+                        {event.message}
+                        {event.code ? ` (${event.code})` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            ) : null}
+            {handoff.result ? (
+              <div>
+                <dt>Result</dt>
+                <dd>{handoff.result.summary}</dd>
+              </div>
+            ) : null}
             {handoff.failure ? (
               <div>
                 <dt>Failure</dt>

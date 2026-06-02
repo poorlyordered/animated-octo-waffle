@@ -20,6 +20,21 @@ export interface HandoffFailure {
   message: string;
   code?: string;
   failedAt: string;
+  workerId?: string;
+}
+
+export interface WorkerProgressEvent {
+  message: string;
+  code?: string;
+  createdAt: string;
+  workerId: string;
+}
+
+export interface WorkerCompletionResult {
+  summary: string;
+  artifactRefs: string[];
+  completedAt: string;
+  workerId: string;
 }
 
 export interface WorkerHandoff {
@@ -32,8 +47,11 @@ export interface WorkerHandoff {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  claimedBy?: string;
   claimedAt?: string;
   completedAt?: string;
+  progress: WorkerProgressEvent[];
+  result?: WorkerCompletionResult;
   failure?: HandoffFailure;
 }
 
@@ -42,6 +60,11 @@ export interface WorkerHandoffSummary {
   status: WorkerHandoffStatus;
   createdAt: string;
   updatedAt: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  completedAt?: string;
+  progress: WorkerProgressEvent[];
+  result?: WorkerCompletionResult;
   failure?: HandoffFailure;
 }
 
@@ -55,4 +78,26 @@ export interface WorkerHandoffResponse {
 
 export interface WorkerHandoffListResponse {
   handoffs: WorkerHandoff[];
+}
+
+export interface WorkerClaimRequest {
+  workerId: string;
+}
+
+export interface WorkerProgressRequest {
+  workerId: string;
+  message: string;
+  code?: string;
+}
+
+export interface WorkerCompleteRequest {
+  workerId: string;
+  summary: string;
+  artifactRefs?: string[];
+}
+
+export interface WorkerFailRequest {
+  workerId: string;
+  message: string;
+  code?: string;
 }

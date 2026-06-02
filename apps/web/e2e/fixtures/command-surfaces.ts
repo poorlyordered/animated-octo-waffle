@@ -3,7 +3,7 @@ import { processedBrief, processedRequest } from '../../tests/fixtures/commandBr
 import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
 import { numbersSnapshot } from '../../tests/fixtures/numbers';
 import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
-import { blockedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
+import { blockedHandoff, claimedHandoff, completedHandoff, failedHandoff, readyHandoff } from '../../tests/fixtures/workerHandoff';
 
 export const commandSurfaceFixtures = {
   commandBrief: {
@@ -64,6 +64,21 @@ export const commandSurfaceFixtures = {
         ...completedItem,
         id: 'queue-browser-completed',
         taskIntent: 'Browser smoke completed work item.'
+      },
+      {
+        ...queuedItem,
+        id: 'queue-browser-claimed',
+        taskIntent: 'Browser smoke claimed callback work item.'
+      },
+      {
+        ...completedItem,
+        id: 'queue-browser-callback-completed',
+        taskIntent: 'Browser smoke callback completed work item.'
+      },
+      {
+        ...failedItem,
+        id: 'queue-browser-callback-failed',
+        taskIntent: 'Browser smoke callback failed work item.'
       }
     ],
     handoffs: [
@@ -76,6 +91,21 @@ export const commandSurfaceFixtures = {
         ...blockedHandoff,
         id: 'handoff-browser-blocked',
         queueItemId: 'queue-browser-failed'
+      },
+      {
+        ...claimedHandoff,
+        id: 'handoff-browser-claimed',
+        queueItemId: 'queue-browser-claimed'
+      },
+      {
+        ...completedHandoff,
+        id: 'handoff-browser-completed',
+        queueItemId: 'queue-browser-callback-completed'
+      },
+      {
+        ...failedHandoff,
+        id: 'handoff-browser-failed',
+        queueItemId: 'queue-browser-callback-failed'
       }
     ]
   },

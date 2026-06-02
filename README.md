@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Live EVE SSO implemented on `009-live-eve-sso`; next roadmap slice should be selected from the roadmap after M9 review.
+Current phase: Worker Handoff Callbacks implemented on `010-worker-callbacks`; next roadmap slice should be selected from the roadmap after M10 review.
 
 ## Local Development
 
@@ -41,6 +41,7 @@ Required Netlify/server environment variables:
 - `MONGODB_URI`
 - `MONGODB_DB`
 - `EVEONLINE_CORPORATION_ID`
+- `WORKER_CALLBACK_SECRET`
 
 `EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
 
@@ -87,7 +88,9 @@ For write-flow validation, use the isolated MongoDB database `gryyk47_greenfield
 
 The Automation Queue stores auditable queued work in MongoDB `automation_queue` records linked to approved `strategic_decisions`. Queue records are draft work orders, not execution results.
 
-Worker handoff records are stored separately in MongoDB `worker_handoffs`. Handoff preparation creates durable worker-ready metadata for eligible queue items, returns existing active handoffs idempotently, and surfaces readiness/failure state in queue detail. It does not dispatch workers, retry failed work, perform EVE actions, change permissions, move assets, touch wallets/contracts/standings, or call external services. Player-impacting queue work requires approval metadata already present on the source decision.
+Worker handoff records are stored separately in MongoDB `worker_handoffs`. Handoff preparation creates durable worker-ready metadata for eligible queue items, returns existing active handoffs idempotently, and surfaces readiness/failure state in queue detail.
+
+Worker callbacks can list ready handoffs, atomically claim a handoff, append safe progress events, and mark claimed work completed or failed. Callback requests require `WORKER_CALLBACK_SECRET` through the worker callback header. Callback handlers store safe audit metadata only; they do not dispatch workers, retry failed work, perform EVE actions, change permissions, move assets, touch wallets/contracts/standings, or call external services. Player-impacting queue work requires approval metadata already present on the source decision.
 
 For write-flow validation, keep using the isolated MongoDB database `gryyk47_greenfield_test` and seed or reuse approved `strategic_decisions` records for the configured corporation scope before writing `automation_queue` or `worker_handoffs` records.
 
