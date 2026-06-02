@@ -7,6 +7,10 @@ export interface ScopeEnv {
   corporationId: string;
 }
 
+export interface EsiTokenVaultEnv {
+  sealingKey: string;
+}
+
 export function readServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
   const mongodbUri = env.MONGODB_URI;
   const mongodbDb = env.MONGODB_DB;
@@ -30,4 +34,18 @@ export function readScopeEnv(env: NodeJS.ProcessEnv = process.env): ScopeEnv {
   }
 
   return { corporationId };
+}
+
+export function readEsiTokenVaultEnv(env: NodeJS.ProcessEnv = process.env): EsiTokenVaultEnv {
+  const sealingKey = env.ESI_TOKEN_VAULT_SEALING_KEY;
+
+  if (sealingKey) {
+    return { sealingKey };
+  }
+
+  if (env.NODE_ENV === 'production') {
+    throw new Error('ESI_TOKEN_VAULT_SEALING_KEY is required');
+  }
+
+  return { sealingKey: 'local-development-esi-token-vault-key' };
 }

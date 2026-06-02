@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Numbers Follow-Up Actions complete locally on `011-numbers-followup-actions`; PR review/merge is next.
+Current phase: ESI Token Vault Sync in progress on `012-esi-token-vault-sync`.
 
 ## Local Development
 
@@ -56,8 +56,9 @@ Optional EVE SSO/session variables:
 - `EVE_SSO_TOKEN_URL`: optional override for the EVE SSO token endpoint.
 - `EVE_ESI_BASE_URL`: optional override for the ESI base URL used by read-only identity lookup.
 - `EVE_SSO_TEST_IDENTITY_JSON`: deterministic local/test callback identity fixture. Do not use this for production identity validation.
+- `ESI_TOKEN_VAULT_SEALING_KEY`: server-only sealing key for durable ESI token vault records. Production must configure this server-side.
 
-The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Gryyk-47 stores no EVE OAuth tokens in M9 and performs no EVE writes, role changes, wallet/asset actions, worker dispatch, or long-running ESI sync in request paths.
+The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
 
 ## MongoDB Data Sources
 
@@ -75,6 +76,12 @@ Current notes:
 The Numbers Operating Layer reads processed corporation health snapshots from MongoDB `numbers_snapshots`. It shows wallet, assets, logistics, market, and activity sections, provenance, stale/missing data indicators, and follow-up candidates.
 
 M11 allows a commander to record a proposed decision from an eligible Numbers follow-up candidate. Queue creation from Numbers follow-ups remains gated by approved decision records. These flows do not call live EVE APIs, move ISK, move assets, change contracts, dispatch workers, claim handoffs, schedule retries, or mutate external services.
+
+## ESI Token Vault Sync
+
+M12 adds explicit-consent ESI token vaulting for future live read ingestion. The commander can inspect vault status, start read-sync consent, revoke consent, and prepare a Numbers sync request from an active vault.
+
+Vault token material is sealed server-side before persistence in `esi_token_vaults`. Prepared read-sync records are stored in `esi_sync_requests` with queued status. This slice does not fetch ESI data, refresh tokens in workers, dispatch workers, schedule retries, write to EVE, move wallets/assets/contracts, change roles, or execute external-service actions in request paths.
 
 ## Decision Record Loop
 

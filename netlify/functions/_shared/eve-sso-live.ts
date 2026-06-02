@@ -37,6 +37,7 @@ interface TokenExchangeResponse {
   access_token?: string;
   expires_in?: number;
   refresh_token?: string;
+  scope?: string;
   token_type?: string;
 }
 
@@ -75,11 +76,52 @@ export async function resolveLiveEveSsoIdentity(
   };
 }
 
+export interface ResolvedLiveEveSsoVaultConsent {
+  identity: EveSsoIdentity;
+  token: {
+    accessToken: string;
+    refreshToken: string;
+    accessTokenExpiresAt: string;
+    grantedScopes: string[];
+  };
+}
+
+export async function resolveLiveEveSsoVaultConsent(
+  code: string,
+  env: NodeJS.ProcessEnv = process.env,
+  fetchImpl: Fetch = fetch
+): Promise<ResolvedLiveEveSsoVaultConsent> {
+  const config = readEveSsoLiveConfig(env);
+  const token = await exchangeAuthorizationCode(code, config, fetchImpl);
+  const jwks = await fetchJwks(config, fetchImpl);
+  const claims = await validateEveAccessToken(token.accessToken, jwks, config);
+  const corporation = await resolveCorporationIdentity(claims.characterId, token.accessToken, config, fetchImpl);
+
+  if (!token.refreshToken) {
+    throw new Error('EVE SSO refresh token is required for vault consent');
+  }
+
+  return {
+    identity: {
+      characterId: claims.characterId,
+      characterName: claims.characterName,
+      corporationId: corporation.corporationId,
+      corporationName: corporation.corporationName
+    },
+    token: {
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      accessTokenExpiresAt: token.accessTokenExpiresAt,
+      grantedScopes: token.grantedScopes
+    }
+  };
+}
+
 export async function exchangeAuthorizationCode(
   code: string,
   config: EveSsoLiveConfig,
   fetchImpl: Fetch = fetch
-): Promise<{ accessToken: string }> {
+): Promise<{ accessToken: string; refreshToken?: string; accessTokenExpiresAt: string; grantedScopes: string[] }> {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
@@ -104,7 +146,12 @@ export async function exchangeAuthorizationCode(
     throw new Error('EVE SSO token exchange failed');
   }
 
-  return { accessToken: payload.access_token };
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    accessTokenExpiresAt: new Date(Date.now() + (payload.expires_in ?? 1200) * 1000).toISOString(),
+    grantedScopes: payload.scope?.split(/\s+/).filter(Boolean) ?? config.scopes.split(/\s+/).filter(Boolean)
+  };
 }
 
 export async function fetchJwks(config: EveSsoLiveConfig, fetchImpl: Fetch = fetch): Promise<Jwks> {

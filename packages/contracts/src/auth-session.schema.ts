@@ -14,7 +14,8 @@ export const eveSsoStateSchema = z.object({
   state: z.string().min(16),
   returnTo: z.string().startsWith('/'),
   issuedAt: z.string().datetime(),
-  expiresAt: z.string().datetime()
+  expiresAt: z.string().datetime(),
+  purpose: z.enum(['session', 'esi-sync-consent']).optional()
 });
 
 export const signedInSessionStateResponseSchema = z.object({

@@ -12,3 +12,5 @@ export * from './worker-handoff.js';
 export * from './worker-handoff.schema.js';
 export * from './numbers.js';
 export * from './numbers.schema.js';
+export * from './esi-sync.js';
+export * from './esi-sync.schema.js';

@@ -15,6 +15,7 @@ export interface EveSsoState {
   returnTo: string;
   issuedAt: string;
   expiresAt: string;
+  purpose?: 'session' | 'esi-sync-consent';
 }
 
 export type SessionStateResponse =
