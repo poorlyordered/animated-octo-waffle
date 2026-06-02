@@ -19,6 +19,14 @@ export async function findLatestNumbersSnapshot(
   return document ? normalizeNumbersDocument(document as NumbersDocument) : null;
 }
 
+export async function createNumbersSnapshot(
+  db: Db,
+  document: Omit<NumbersDocument, '_id' | 'id'>
+): Promise<NumbersSnapshot> {
+  const result = await db.collection(collectionName).insertOne(document);
+  return normalizeNumbersDocument({ ...document, _id: result.insertedId } as NumbersDocument);
+}
+
 export interface NumbersFollowUpSelection {
   snapshot: NumbersSnapshot;
   candidate: NumbersFollowUpCandidate;

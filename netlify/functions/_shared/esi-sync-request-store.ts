@@ -1,5 +1,11 @@
-import type { Db } from 'mongodb';
-import type { EsiSyncDomain, EsiSyncRequestSummary } from '../../../packages/contracts/src/index';
+import { ObjectId, type Db } from 'mongodb';
+import type {
+  EsiSyncDomain,
+  EsiSyncRequestSummary,
+  EsiSyncWorkerFailureSummary,
+  EsiSyncWorkerRequestSummary,
+  EsiSyncWorkerResultSummary
+} from '../../../packages/contracts/src/index';
 import type { EsiTokenVaultDocument } from './esi-token-vault';
 import { markVaultLastSync } from './esi-token-vault-store';
 
@@ -17,8 +23,17 @@ export interface EsiSyncRequestDocument {
   requestedBy: string;
   requestedAt: string;
   source: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  completedAt?: string;
+  failure?: EsiSyncWorkerFailureSummary;
+  result?: EsiSyncWorkerResultSummary;
   createdAt: string;
   updatedAt: string;
+}
+
+function syncRequestIdFilter(id: string) {
+  return ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id };
 }
 
 export async function findActiveSyncRequest(
@@ -35,6 +50,102 @@ export async function findActiveSyncRequest(
   });
 
   return document ? normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument) : null;
+}
+
+export async function findSyncRequest(db: Db, id: string): Promise<EsiSyncRequestDocument | null> {
+  const document = await db.collection(collectionName).findOne(syncRequestIdFilter(id));
+  return document ? normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument) : null;
+}
+
+export async function listQueuedSyncRequests(
+  db: Db,
+  domain?: EsiSyncDomain
+): Promise<EsiSyncRequestDocument[]> {
+  const query: Record<string, unknown> = { status: 'queued' };
+  if (domain) {
+    query.domain = domain;
+  }
+
+  const documents = await db.collection(collectionName).find(query).sort({ requestedAt: 1, createdAt: 1 }).toArray();
+  return documents.map((document) => normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument));
+}
+
+export async function claimQueuedSyncRequest(
+  db: Db,
+  id: string,
+  workerId: string
+): Promise<EsiSyncRequestDocument | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection(collectionName).findOneAndUpdate(
+    {
+      ...syncRequestIdFilter(id),
+      status: 'queued'
+    },
+    {
+      $set: {
+        status: 'claimed',
+        claimedBy: workerId,
+        claimedAt: now,
+        updatedAt: now
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeSyncRequestDocument(result as unknown as EsiSyncRequestDocument) : null;
+}
+
+export async function completeSyncRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  resultSummary: EsiSyncWorkerResultSummary
+): Promise<EsiSyncRequestDocument | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection(collectionName).findOneAndUpdate(
+    {
+      ...syncRequestIdFilter(id),
+      status: 'claimed',
+      claimedBy: workerId
+    },
+    {
+      $set: {
+        status: 'completed',
+        completedAt: now,
+        result: resultSummary,
+        updatedAt: now
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeSyncRequestDocument(result as unknown as EsiSyncRequestDocument) : null;
+}
+
+export async function failSyncRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  reason: string
+): Promise<EsiSyncRequestDocument | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection(collectionName).findOneAndUpdate(
+    {
+      ...syncRequestIdFilter(id),
+      status: 'claimed',
+      claimedBy: workerId
+    },
+    {
+      $set: {
+        status: 'failed',
+        failure: { reason, failedAt: now },
+        updatedAt: now
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeSyncRequestDocument(result as unknown as EsiSyncRequestDocument) : null;
 }
 
 export async function createOrFindQueuedSyncRequest(
@@ -86,6 +197,25 @@ export function syncRequestSummary(syncRequest: EsiSyncRequestDocument, duplicat
       ? 'Existing queued sync request surfaced. No duplicate was created.'
       : 'Queued for future read-only worker sync. No ESI data was fetched and no worker was dispatched.'
   };
+}
+
+export function workerSyncRequestSummary(syncRequest: EsiSyncRequestDocument): EsiSyncWorkerRequestSummary {
+  const summary: EsiSyncWorkerRequestSummary = {
+    id: syncRequest.id ?? syncRequest._id?.toString() ?? '',
+    corporationId: syncRequest.corporationId,
+    domain: syncRequest.domain,
+    status: syncRequest.status,
+    requiredScopes: syncRequest.requiredScopes,
+    requestedAt: syncRequest.requestedAt
+  };
+
+  if (syncRequest.claimedBy) summary.claimedBy = syncRequest.claimedBy;
+  if (syncRequest.claimedAt) summary.claimedAt = syncRequest.claimedAt;
+  if (syncRequest.completedAt) summary.completedAt = syncRequest.completedAt;
+  if (syncRequest.result) summary.result = syncRequest.result;
+  if (syncRequest.failure) summary.failure = syncRequest.failure;
+
+  return summary;
 }
 
 function normalizeSyncRequestDocument(document: EsiSyncRequestDocument): EsiSyncRequestDocument {

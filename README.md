@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: ESI Token Vault Sync in progress on `012-esi-token-vault-sync`.
+Current phase: Worker Numbers ESI Ingestion in progress on `013-worker-numbers-esi-ingestion`.
 
 ## Local Development
 
@@ -82,6 +82,8 @@ M11 allows a commander to record a proposed decision from an eligible Numbers fo
 M12 adds explicit-consent ESI token vaulting for future live read ingestion. The commander can inspect vault status, start read-sync consent, revoke consent, and prepare a Numbers sync request from an active vault.
 
 Vault token material is sealed server-side before persistence in `esi_token_vaults`. Prepared read-sync records are stored in `esi_sync_requests` with queued status. This slice does not fetch ESI data, refresh tokens in workers, dispatch workers, schedule retries, write to EVE, move wallets/assets/contracts, change roles, or execute external-service actions in request paths.
+
+M13 adds a trusted worker path for prepared Numbers sync requests. Worker-authenticated requests can list queued sync work, claim one request, run read-only ESI ingestion, write a processed `numbers_snapshots` record, and mark the sync request completed or failed with safe metadata. Raw ESI payloads and token material are not returned to the browser or persisted as command-surface data.
 
 ## Decision Record Loop
 

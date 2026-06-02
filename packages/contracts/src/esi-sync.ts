@@ -76,6 +76,57 @@ export interface EsiSyncRequestSummary {
   boundary: string;
 }
 
+export interface EsiSyncWorkerResultSummary {
+  snapshotId?: string;
+  sourceCount: number;
+  summary: string;
+  sectionStatuses: Array<{
+    key: string;
+    status: string;
+  }>;
+  failures: string[];
+}
+
+export interface EsiSyncWorkerFailureSummary {
+  reason: string;
+  failedAt: string;
+}
+
+export interface EsiSyncWorkerRequestSummary {
+  id: string;
+  corporationId: string;
+  domain: EsiSyncDomain;
+  status: EsiSyncRequestStatus;
+  requiredScopes: string[];
+  requestedAt: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  completedAt?: string;
+  result?: EsiSyncWorkerResultSummary;
+  failure?: EsiSyncWorkerFailureSummary;
+}
+
+export interface EsiSyncWorkerListResponse {
+  syncRequests: EsiSyncWorkerRequestSummary[];
+}
+
+export interface EsiSyncWorkerRequestResponse {
+  syncRequest: EsiSyncWorkerRequestSummary;
+}
+
+export interface EsiSyncWorkerClaimRequest {
+  workerId: string;
+}
+
+export interface EsiSyncWorkerRunRequest {
+  workerId: string;
+}
+
+export interface EsiSyncWorkerFailRequest {
+  workerId: string;
+  reason: string;
+}
+
 export interface PrepareEsiSyncResponse {
   syncRequest: EsiSyncRequestSummary;
   duplicate: boolean;

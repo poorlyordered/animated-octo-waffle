@@ -73,6 +73,59 @@ export const esiSyncRequestSummarySchema = z.object({
   boundary: z.string().min(1)
 });
 
+export const esiSyncWorkerResultSummarySchema = z.object({
+  snapshotId: z.string().min(1).optional(),
+  sourceCount: z.number().int().nonnegative(),
+  summary: z.string().min(1),
+  sectionStatuses: z.array(
+    z.object({
+      key: z.string().min(1),
+      status: z.string().min(1)
+    })
+  ),
+  failures: z.array(z.string())
+});
+
+export const esiSyncWorkerFailureSummarySchema = z.object({
+  reason: z.string().min(1),
+  failedAt: z.string().datetime()
+});
+
+export const esiSyncWorkerRequestSummarySchema = z.object({
+  id: z.string().min(1),
+  corporationId: z.string().min(1),
+  domain: esiSyncDomainSchema,
+  status: esiSyncRequestStatusSchema,
+  requiredScopes: z.array(z.string().min(1)),
+  requestedAt: z.string().datetime(),
+  claimedBy: z.string().optional(),
+  claimedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+  result: esiSyncWorkerResultSummarySchema.optional(),
+  failure: esiSyncWorkerFailureSummarySchema.optional()
+});
+
+export const esiSyncWorkerListResponseSchema = z.object({
+  syncRequests: z.array(esiSyncWorkerRequestSummarySchema)
+});
+
+export const esiSyncWorkerRequestResponseSchema = z.object({
+  syncRequest: esiSyncWorkerRequestSummarySchema
+});
+
+export const esiSyncWorkerClaimRequestSchema = z.object({
+  workerId: z.string().min(1)
+});
+
+export const esiSyncWorkerRunRequestSchema = z.object({
+  workerId: z.string().min(1)
+});
+
+export const esiSyncWorkerFailRequestSchema = z.object({
+  workerId: z.string().min(1),
+  reason: z.string().min(1)
+});
+
 export const prepareEsiSyncResponseSchema = z.object({
   syncRequest: esiSyncRequestSummarySchema,
   duplicate: z.boolean()
