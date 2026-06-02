@@ -4,5 +4,5 @@ import { useNumbersSnapshot } from '../features/numbers/state/useNumbersSnapshot
 export function NumbersRoute() {
   const numbers = useNumbersSnapshot();
 
-  return <NumbersPanel {...numbers} />;
+  return <NumbersPanel {...numbers} onCreateDecision={numbers.createDecision} onCreateQueue={numbers.createQueue} />;
 }

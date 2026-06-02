@@ -29,12 +29,21 @@ export const approvalRecordSchema = z.object({
   approvalText: z.string().min(1)
 });
 
+export const decisionSourceContextSchema = z.object({
+  sourceType: z.enum(['research_brief', 'numbers_follow_up']),
+  snapshotId: z.string().min(1).optional(),
+  candidateId: z.string().min(1).optional(),
+  relatedSection: z.string().min(1).optional(),
+  suggestedPath: z.string().min(1).optional()
+});
+
 export const decisionRecordSchema = z.object({
   id: z.string().min(1),
   corporationId: z.string().min(1),
   sourceBriefId: z.string().min(1),
   sourceRecommendation: z.string().min(1),
   sourceProvenance: sourceProvenanceSnapshotSchema,
+  sourceContext: decisionSourceContextSchema.optional(),
   status: decisionStatusSchema,
   rationale: z.string().min(1),
   expectedResult: z.string().min(1),

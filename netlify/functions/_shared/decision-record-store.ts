@@ -3,6 +3,9 @@ import type {
   ApprovalRecord,
   CreateDecisionRecordRequest,
   DecisionRecord,
+  NumbersFollowUpOrigin,
+  NumbersSnapshot,
+  NumbersFollowUpCandidate,
   DecisionStatus,
   UpdateDecisionStatusRequest
 } from '../../../packages/contracts/src/index';
@@ -51,6 +54,21 @@ export async function findDecisionRecord(db: Db, corporationId: string, id: stri
   return document ? normalizeDecisionRecordDocument(document as DecisionDocument) : null;
 }
 
+export async function findDecisionRecordByNumbersFollowUpOrigin(
+  db: Db,
+  corporationId: string,
+  origin: Pick<NumbersFollowUpOrigin, 'snapshotId' | 'candidateId'>
+): Promise<DecisionRecord | null> {
+  const document = await db.collection(collectionName).findOne({
+    corporationId,
+    'sourceContext.sourceType': 'numbers_follow_up',
+    'sourceContext.snapshotId': origin.snapshotId,
+    'sourceContext.candidateId': origin.candidateId
+  });
+
+  return document ? normalizeDecisionRecordDocument(document as DecisionDocument) : null;
+}
+
 export async function createDecisionRecord(
   db: Db,
   corporationId: string,
@@ -80,6 +98,64 @@ export async function createDecisionRecord(
     rationale: request.rationale,
     expectedResult: request.expectedResult,
     isPlayerImpacting: request.isPlayerImpacting,
+    approval: null,
+    statusHistory: [
+      {
+        toStatus: 'proposed' satisfies DecisionStatus,
+        changedAt: now
+      }
+    ],
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const result = await db.collection(collectionName).insertOne(document);
+  return normalizeDecisionRecordDocument({ ...document, _id: result.insertedId } as DecisionDocument);
+}
+
+export async function createDecisionRecordFromNumbersFollowUp(
+  db: Db,
+  corporationId: string,
+  snapshot: NumbersSnapshot,
+  candidate: NumbersFollowUpCandidate,
+  origin: NumbersFollowUpOrigin,
+  expectedResult?: string
+): Promise<DecisionRecord> {
+  const duplicate = await findDecisionRecordByNumbersFollowUpOrigin(db, corporationId, origin);
+
+  if (duplicate) {
+    return duplicate;
+  }
+
+  const now = new Date().toISOString();
+  const document = {
+    corporationId,
+    sourceBriefId: snapshot.id,
+    researchBriefId: snapshot.id,
+    sourceRecommendation: candidate.title,
+    sourceContext: origin,
+    sourceProvenance: {
+      briefId: snapshot.id,
+      briefCreatedAt: snapshot.createdAt,
+      focus: snapshot.focus,
+      model: snapshot.provenance.model ?? 'unknown',
+      promptVersion: snapshot.provenance.promptVersion ?? 'unknown',
+      confidence: snapshot.provenance.confidence ?? 0,
+      sourceCount: snapshot.provenance.sourceCount,
+      sourceReferences: snapshot.provenance.sourceReferences,
+      coverage: snapshot.coverage ?? {
+        numbers: 'present',
+        opportunity: 'missing',
+        people: 'missing',
+        missingReasons: ['Numbers follow-up did not include opportunity or people coverage metadata.']
+      }
+    },
+    status: 'proposed' satisfies DecisionStatus,
+    rationale: candidate.rationale,
+    expectedResult:
+      expectedResult?.trim() ||
+      `Commander decision recorded from Numbers follow-up: ${candidate.title}. No execution has been performed.`,
+    isPlayerImpacting: candidate.isPlayerImpacting,
     approval: null,
     statusHistory: [
       {

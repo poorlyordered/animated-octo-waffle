@@ -1,12 +1,87 @@
-import type { NumbersSnapshot } from '@gryyk/contracts';
+import { useState } from 'react';
+import type {
+  CreateNumbersFollowUpDecisionRequest,
+  CreateNumbersFollowUpQueueRequest,
+  NumbersFollowUpDecisionResponse,
+  NumbersFollowUpQueueResponse,
+  NumbersSnapshot
+} from '@gryyk/contracts';
 
 interface NumbersPanelProps {
   error: string | null;
   loading: boolean;
   snapshot: NumbersSnapshot | null;
+  onCreateDecision?: (
+    candidateId: string,
+    request: CreateNumbersFollowUpDecisionRequest
+  ) => Promise<NumbersFollowUpDecisionResponse>;
+  onCreateQueue?: (candidateId: string, request: CreateNumbersFollowUpQueueRequest) => Promise<NumbersFollowUpQueueResponse>;
 }
 
-export function NumbersPanel({ error, loading, snapshot }: NumbersPanelProps) {
+export function NumbersPanel({ error, loading, snapshot, onCreateDecision, onCreateQueue }: NumbersPanelProps) {
+  const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+  const [decisionByCandidate, setDecisionByCandidate] = useState<Record<string, NumbersFollowUpDecisionResponse['decision']>>({});
+  const [busyCandidateId, setBusyCandidateId] = useState<string | null>(null);
+
+  async function handleCreateDecision(candidateId: string) {
+    if (!snapshot || !onCreateDecision) {
+      return;
+    }
+
+    setBusyCandidateId(candidateId);
+    try {
+      const response = await onCreateDecision(candidateId, {
+        snapshotId: snapshot.id
+      });
+      setDecisionByCandidate((current) => ({ ...current, [candidateId]: response.decision }));
+      setActionStatus((current) => ({
+        ...current,
+        [candidateId]: `${response.message} Decision status: ${response.decision.status}.`
+      }));
+    } catch (actionError) {
+      setActionStatus((current) => ({
+        ...current,
+        [candidateId]: actionError instanceof Error ? actionError.message : 'Unable to record decision.'
+      }));
+    } finally {
+      setBusyCandidateId(null);
+    }
+  }
+
+  async function handleCreateQueue(candidateId: string) {
+    if (!snapshot || !onCreateQueue) {
+      return;
+    }
+
+    const candidate = snapshot.followUps.find((item) => item.id === candidateId);
+    const decision = decisionByCandidate[candidateId];
+    if (!candidate || !decision) {
+      return;
+    }
+
+    setBusyCandidateId(candidateId);
+    try {
+      const response = await onCreateQueue(candidateId, {
+        snapshotId: snapshot.id,
+        sourceDecisionId: decision.id,
+        taskIntent: candidate.title,
+        inputSummary: candidate.rationale,
+        expectedOutput: `Prepare commander review options for Numbers follow-up: ${candidate.title}.`
+      });
+      setActionStatus((current) => ({
+        ...current,
+        [candidateId]: `${response.message} Queue status: ${response.queueItem.status}.`
+      }));
+    } catch (actionError) {
+      setActionStatus((current) => ({
+        ...current,
+        [candidateId]: actionError instanceof Error ? actionError.message : 'Unable to create queued work.'
+      }));
+    } finally {
+      setBusyCandidateId(null);
+    }
+  }
+
   if (loading) {
     return <main className="command-brief">Loading numbers...</main>;
   }
@@ -122,6 +197,19 @@ export function NumbersPanel({ error, loading, snapshot }: NumbersPanelProps) {
                   Suggested path: {followUp.suggestedPath}.{' '}
                   {followUp.isPlayerImpacting ? 'Player-impacting: explicit approval is required later.' : 'Planning only.'}
                 </p>
+                {onCreateDecision ? (
+                  <button type="button" onClick={() => void handleCreateDecision(followUp.id)} disabled={busyCandidateId === followUp.id}>
+                    {busyCandidateId === followUp.id ? 'Recording...' : 'Record decision'}
+                  </button>
+                ) : null}
+                {followUp.suggestedPath === 'queue' &&
+                onCreateQueue &&
+                decisionByCandidate[followUp.id]?.status === 'approved' ? (
+                  <button type="button" onClick={() => void handleCreateQueue(followUp.id)} disabled={busyCandidateId === followUp.id}>
+                    {busyCandidateId === followUp.id ? 'Queueing...' : 'Create queued work'}
+                  </button>
+                ) : null}
+                {actionStatus[followUp.id] ? <p className="notice">{actionStatus[followUp.id]}</p> : null}
               </li>
             ))}
           </ul>

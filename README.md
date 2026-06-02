@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Worker Handoff Callbacks implemented on `010-worker-callbacks`; next roadmap slice should be selected from the roadmap after M10 review.
+Current phase: Numbers Follow-Up Actions complete locally on `011-numbers-followup-actions`; PR review/merge is next.
 
 ## Local Development
 
@@ -72,9 +72,9 @@ Current notes:
 
 ## Numbers Operating Layer
 
-The Numbers Operating Layer reads processed corporation health snapshots from MongoDB `numbers_snapshots`. It shows wallet, assets, logistics, market, and activity sections, provenance, stale/missing data indicators, and display-only follow-up candidates.
+The Numbers Operating Layer reads processed corporation health snapshots from MongoDB `numbers_snapshots`. It shows wallet, assets, logistics, market, and activity sections, provenance, stale/missing data indicators, and follow-up candidates.
 
-M8 is read-only. It does not call live EVE APIs, move ISK, move assets, change contracts, dispatch workers, retry work, or mutate external services. Follow-up candidates are planning recommendations only.
+M11 allows a commander to record a proposed decision from an eligible Numbers follow-up candidate. Queue creation from Numbers follow-ups remains gated by approved decision records. These flows do not call live EVE APIs, move ISK, move assets, change contracts, dispatch workers, claim handoffs, schedule retries, or mutate external services.
 
 ## Decision Record Loop
 

@@ -1,4 +1,6 @@
 import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
+import type { AutomationQueueItem } from './automation-queue.js';
+import type { DecisionRecord } from './decision-record.js';
 
 export const numbersSectionKeys = ['wallet', 'assets', 'logistics', 'market', 'activity'] as const;
 export type NumbersSectionKey = (typeof numbersSectionKeys)[number];
@@ -66,4 +68,40 @@ export interface NumbersSnapshot {
 
 export interface NumbersSnapshotResponse {
   snapshot: NumbersSnapshot | null;
+}
+
+export interface NumbersFollowUpOrigin {
+  sourceType: 'numbers_follow_up';
+  snapshotId: string;
+  candidateId: string;
+  relatedSection?: NumbersSectionKey;
+  suggestedPath: NumbersFollowUpCandidate['suggestedPath'];
+}
+
+export interface CreateNumbersFollowUpDecisionRequest {
+  snapshotId: string;
+  expectedResult?: string;
+}
+
+export interface NumbersFollowUpDecisionResponse {
+  decision: DecisionRecord;
+  origin: NumbersFollowUpOrigin;
+  duplicate?: boolean;
+  message: string;
+}
+
+export interface CreateNumbersFollowUpQueueRequest {
+  snapshotId: string;
+  sourceDecisionId: string;
+  taskIntent: string;
+  inputSummary: string;
+  expectedOutput: string;
+  owner?: string;
+}
+
+export interface NumbersFollowUpQueueResponse {
+  queueItem: AutomationQueueItem;
+  origin: NumbersFollowUpOrigin;
+  duplicate?: boolean;
+  message: string;
 }
