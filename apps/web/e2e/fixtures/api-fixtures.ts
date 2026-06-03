@@ -32,7 +32,13 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   await page.route('**/api/numbers**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/decision')) {
-      return json(route, commandSurfaceFixtures.numbersFollowUpActions.decision);
+      const candidateId = decodeURIComponent(url.pathname.split('/').at(-2) ?? '');
+      return json(
+        route,
+        candidateId === 'numbers-follow-up-2'
+          ? commandSurfaceFixtures.numbersFollowUpActions.approvedDecision
+          : commandSurfaceFixtures.numbersFollowUpActions.decision
+      );
     }
     if (url.pathname.endsWith('/queue')) {
       return json(route, commandSurfaceFixtures.numbersFollowUpActions.queue);

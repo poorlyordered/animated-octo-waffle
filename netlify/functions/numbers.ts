@@ -13,7 +13,7 @@ import {
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import { latestNumbersLiveProvenance } from './_shared/esi-sync-history';
 import { findCompletedSyncRequestForSnapshot } from './_shared/esi-sync-request-store';
-import { assertNoUnsafeNumbersFollowUpFields } from './_shared/numbers-followup-actions';
+import { assertNoUnsafeNumbersFollowUpFields, numbersApprovalHandoff } from './_shared/numbers-followup-actions';
 import { findLatestNumbersSnapshot, findNumbersFollowUpCandidate } from './_shared/numbers-store';
 
 function parseJsonBody(event: FunctionEvent): unknown {
@@ -88,6 +88,7 @@ export async function handler(event: FunctionEvent) {
       return jsonResponse(existingDecision ? 200 : 201, {
         decision,
         origin: selection.origin,
+        approvalHandoff: numbersApprovalHandoff(selection.origin, decision, { duplicate: Boolean(existingDecision) }),
         duplicate: existingDecision ? true : undefined,
         message: existingDecision
           ? 'Existing decision surfaced. No duplicate was created.'
@@ -127,6 +128,10 @@ export async function handler(event: FunctionEvent) {
       return jsonResponse(200, {
         queueItem: existingQueueItem,
         origin: selection.origin,
+        approvalHandoff: numbersApprovalHandoff(selection.origin, decision, {
+          queueItem: existingQueueItem,
+          duplicate: true
+        }),
         duplicate: true,
         message: 'Existing queued work surfaced. No duplicate was created.'
       });
@@ -141,6 +146,7 @@ export async function handler(event: FunctionEvent) {
     return jsonResponse(201, {
       queueItem,
       origin: selection.origin,
+      approvalHandoff: numbersApprovalHandoff(selection.origin, decision, { queueItem }),
       message:
         'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
     });

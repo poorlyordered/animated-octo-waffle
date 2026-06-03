@@ -1,4 +1,11 @@
-import type { AutomationQueueItem, DecisionRecord, NumbersFollowUpOrigin } from '@gryyk/contracts';
+import type {
+  AutomationQueueItem,
+  DecisionRecord,
+  NumbersApprovalHandoff,
+  NumbersFollowUpOrigin,
+  NumbersFollowUpDecisionResponse,
+  NumbersFollowUpQueueResponse
+} from '@gryyk/contracts';
 import { queuedItem } from './automationQueue';
 import { numbersSnapshot } from './numbers';
 
@@ -81,4 +88,56 @@ export const numbersFollowUpQueueItem: AutomationQueueItem = {
   },
   createdAt: '2026-06-02T12:05:00.000Z',
   updatedAt: '2026-06-02T12:05:00.000Z'
+};
+
+export const proposedNumbersApprovalHandoff: NumbersApprovalHandoff = {
+  candidateId: numbersFollowUpOrigin.candidateId,
+  snapshotId: numbersFollowUpOrigin.snapshotId,
+  decisionId: numbersFollowUpDecision.id,
+  decisionStatus: 'proposed',
+  approvalRequired: true,
+  queueReady: false,
+  message: `Decision ${numbersFollowUpDecision.id} is proposed. Approval is required before queued work can be created.`,
+  boundary: 'Approval handoff only. No worker was dispatched and no execution occurred.'
+};
+
+export const approvedNumbersApprovalHandoff: NumbersApprovalHandoff = {
+  ...proposedNumbersApprovalHandoff,
+  decisionId: approvedNumbersFollowUpDecision.id,
+  decisionStatus: 'approved',
+  approvalRequired: false,
+  queueReady: true,
+  message: `Decision ${approvedNumbersFollowUpDecision.id} is approved and ready for queued work.`
+};
+
+export const queuedNumbersApprovalHandoff: NumbersApprovalHandoff = {
+  ...approvedNumbersApprovalHandoff,
+  queueItemId: numbersFollowUpQueueItem.id,
+  queueStatus: 'queued',
+  message: `Queued work is linked to approved Numbers decision ${approvedNumbersFollowUpDecision.id}.`,
+  boundary: 'Queued work handoff only. No worker was dispatched and no execution occurred.'
+};
+
+export const numbersFollowUpDecisionResponse: NumbersFollowUpDecisionResponse = {
+  decision: numbersFollowUpDecision,
+  origin: numbersFollowUpOrigin,
+  approvalHandoff: proposedNumbersApprovalHandoff,
+  message:
+    'Decision recorded. No EVE action, wallet action, asset action, worker dispatch, or external execution was performed.'
+};
+
+export const approvedNumbersFollowUpDecisionResponse: NumbersFollowUpDecisionResponse = {
+  decision: approvedNumbersFollowUpDecision,
+  origin: numbersFollowUpOrigin,
+  approvalHandoff: approvedNumbersApprovalHandoff,
+  message: 'Existing decision surfaced. No duplicate was created.',
+  duplicate: true
+};
+
+export const numbersFollowUpQueueResponse: NumbersFollowUpQueueResponse = {
+  queueItem: numbersFollowUpQueueItem,
+  origin: numbersFollowUpOrigin,
+  approvalHandoff: queuedNumbersApprovalHandoff,
+  message:
+    'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
 };

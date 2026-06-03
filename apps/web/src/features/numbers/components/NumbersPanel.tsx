@@ -4,6 +4,7 @@ import type {
   CreateNumbersFollowUpQueueRequest,
   NumbersFollowUpDecisionResponse,
   NumbersFollowUpQueueResponse,
+  NumbersApprovalHandoff,
   NumbersLiveProvenance,
   NumbersSnapshot
 } from '@gryyk/contracts';
@@ -22,6 +23,7 @@ interface NumbersPanelProps {
 
 export function NumbersPanel({ error, liveProvenance, loading, snapshot, onCreateDecision, onCreateQueue }: NumbersPanelProps) {
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+  const [handoffByCandidate, setHandoffByCandidate] = useState<Record<string, NumbersApprovalHandoff>>({});
   const [decisionByCandidate, setDecisionByCandidate] = useState<Record<string, NumbersFollowUpDecisionResponse['decision']>>({});
   const [busyCandidateId, setBusyCandidateId] = useState<string | null>(null);
 
@@ -36,9 +38,10 @@ export function NumbersPanel({ error, liveProvenance, loading, snapshot, onCreat
         snapshotId: snapshot.id
       });
       setDecisionByCandidate((current) => ({ ...current, [candidateId]: response.decision }));
+      setHandoffByCandidate((current) => ({ ...current, [candidateId]: response.approvalHandoff }));
       setActionStatus((current) => ({
         ...current,
-        [candidateId]: `${response.message} Decision status: ${response.decision.status}.`
+        [candidateId]: `${response.message} ${response.approvalHandoff.message}`
       }));
     } catch (actionError) {
       setActionStatus((current) => ({
@@ -70,9 +73,10 @@ export function NumbersPanel({ error, liveProvenance, loading, snapshot, onCreat
         inputSummary: candidate.rationale,
         expectedOutput: `Prepare commander review options for Numbers follow-up: ${candidate.title}.`
       });
+      setHandoffByCandidate((current) => ({ ...current, [candidateId]: response.approvalHandoff }));
       setActionStatus((current) => ({
         ...current,
-        [candidateId]: `${response.message} Queue status: ${response.queueItem.status}.`
+        [candidateId]: `${response.message} ${response.approvalHandoff.message}`
       }));
     } catch (actionError) {
       setActionStatus((current) => ({
@@ -223,6 +227,9 @@ export function NumbersPanel({ error, liveProvenance, loading, snapshot, onCreat
                   Suggested path: {followUp.suggestedPath}.{' '}
                   {followUp.isPlayerImpacting ? 'Player-impacting: explicit approval is required later.' : 'Planning only.'}
                 </p>
+                {handoffByCandidate[followUp.id] ? (
+                  <ApprovalHandoffSummary handoff={handoffByCandidate[followUp.id]} />
+                ) : null}
                 {onCreateDecision ? (
                   <button type="button" onClick={() => void handleCreateDecision(followUp.id)} disabled={busyCandidateId === followUp.id}>
                     {busyCandidateId === followUp.id ? 'Recording...' : 'Record decision'}
@@ -243,6 +250,33 @@ export function NumbersPanel({ error, liveProvenance, loading, snapshot, onCreat
         <p className="notice">Numbers findings are read-only recommendations. This surface does not move ISK, assets, contracts, workers, or EVE state.</p>
       </section>
     </main>
+  );
+}
+
+function ApprovalHandoffSummary({ handoff }: { handoff: NumbersApprovalHandoff }) {
+  return (
+    <dl className="metadata-grid" aria-label="Numbers approval handoff">
+      <div className="metadata-item">
+        <dt>Decision</dt>
+        <dd>{handoff.decisionId ?? 'Not recorded'}</dd>
+      </div>
+      <div className="metadata-item">
+        <dt>Approval</dt>
+        <dd>{handoff.approvalRequired ? 'required' : 'ready'}</dd>
+      </div>
+      <div className="metadata-item">
+        <dt>Queue</dt>
+        <dd>{handoff.queueItemId ? `${handoff.queueItemId} ${handoff.queueStatus ?? ''}` : handoff.queueReady ? 'ready' : 'blocked'}</dd>
+      </div>
+      <div className="metadata-item">
+        <dt>Duplicate</dt>
+        <dd>{handoff.duplicate ? 'yes' : 'no'}</dd>
+      </div>
+      <div className="metadata-item">
+        <dt>Boundary</dt>
+        <dd>{handoff.boundary}</dd>
+      </div>
+    </dl>
   );
 }
 

@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Retry Execution Worker in progress on `016-retry-execution-worker`.
+Current phase: Numbers Approval Handoff in progress on `017-numbers-approval-handoff`.
 
 ## Local Development
 
@@ -76,6 +76,8 @@ Current notes:
 The Numbers Operating Layer reads processed corporation health snapshots from MongoDB `numbers_snapshots`. It shows wallet, assets, logistics, market, and activity sections, provenance, stale/missing data indicators, and follow-up candidates.
 
 M11 allows a commander to record a proposed decision from an eligible Numbers follow-up candidate. Queue creation from Numbers follow-ups remains gated by approved decision records. These flows do not call live EVE APIs, move ISK, move assets, change contracts, dispatch workers, claim handoffs, schedule retries, or mutate external services.
+
+M17 makes that approval handoff browser-visible. Numbers follow-up action responses now include computed approval handoff metadata showing whether a decision is approval-blocked, queue-ready, linked to queued work, or duplicate-safe. The browser renders the decision and queue linkage without letting browser inputs forge approval, queue state, provenance, dispatch, retry, EVE write, wallet, asset, contract, role, or external execution metadata.
 
 ## ESI Token Vault Sync
 

@@ -7,8 +7,11 @@ import {
 import { numbersLiveProvenance, numbersSnapshot } from '../fixtures/numbers';
 import {
   numbersFollowUpDecision,
+  numbersFollowUpDecisionResponse,
   numbersFollowUpOrigin,
-  numbersFollowUpQueueItem
+  numbersFollowUpQueueItem,
+  numbersFollowUpQueueResponse,
+  approvedNumbersFollowUpDecisionResponse
 } from '../fixtures/numbersFollowUpActions';
 import { getAuthScope } from '../../../../netlify/functions/_shared/auth-scope';
 
@@ -59,6 +62,7 @@ describe('Numbers API contract', () => {
     const parsed = numbersFollowUpDecisionResponseSchema.parse({
       decision: numbersFollowUpDecision,
       origin: numbersFollowUpOrigin,
+      approvalHandoff: numbersFollowUpDecisionResponse.approvalHandoff,
       message:
         'Decision recorded. No EVE action, wallet action, asset action, worker dispatch, or external execution was performed.'
     });
@@ -66,12 +70,26 @@ describe('Numbers API contract', () => {
     expect(parsed.decision.status).toBe('proposed');
     expect(parsed.decision.sourceContext?.sourceType).toBe('numbers_follow_up');
     expect(parsed.origin.candidateId).toBe(numbersSnapshot.followUps[0].id);
+    expect(parsed.approvalHandoff.approvalRequired).toBe(true);
+    expect(parsed.approvalHandoff.queueReady).toBe(false);
+  });
+
+  it('accepts approved follow-up decision handoff responses', () => {
+    const parsed = numbersFollowUpDecisionResponseSchema.parse(approvedNumbersFollowUpDecisionResponse);
+
+    expect(parsed.decision.status).toBe('approved');
+    expect(parsed.approvalHandoff.approvalRequired).toBe(false);
+    expect(parsed.approvalHandoff.queueReady).toBe(true);
   });
 
   it('accepts duplicate follow-up decision responses', () => {
     const parsed = numbersFollowUpDecisionResponseSchema.parse({
       decision: numbersFollowUpDecision,
       origin: numbersFollowUpOrigin,
+      approvalHandoff: {
+        ...numbersFollowUpDecisionResponse.approvalHandoff,
+        duplicate: true
+      },
       duplicate: true,
       message: 'Existing decision surfaced. No duplicate was created.'
     });
@@ -83,12 +101,15 @@ describe('Numbers API contract', () => {
     const parsed = numbersFollowUpQueueResponseSchema.parse({
       queueItem: numbersFollowUpQueueItem,
       origin: numbersFollowUpOrigin,
+      approvalHandoff: numbersFollowUpQueueResponse.approvalHandoff,
       message:
         'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
     });
 
     expect(parsed.queueItem.status).toBe('queued');
     expect(parsed.queueItem.attempts).toBe(0);
+    expect(parsed.approvalHandoff.queueItemId).toBe(numbersFollowUpQueueItem.id);
+    expect(parsed.approvalHandoff.boundary).toContain('No worker was dispatched');
 
     const body = JSON.stringify(parsed);
     expect(body).not.toContain('token');
