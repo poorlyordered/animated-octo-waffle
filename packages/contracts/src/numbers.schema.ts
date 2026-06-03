@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { automationQueueItemSchema } from './automation-queue.schema.js';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
-import { decisionRecordSchema } from './decision-record.schema.js';
+import { decisionRecordSchema, decisionStatusSchema } from './decision-record.schema.js';
 import { esiSyncRequestStatusSchema, esiSyncSectionStatusSummarySchema } from './esi-sync.schema.js';
 
 export const numbersSectionKeySchema = z.enum(['wallet', 'assets', 'logistics', 'market', 'activity']);
@@ -88,6 +88,20 @@ export const numbersFollowUpOriginSchema = z.object({
   suggestedPath: z.enum(['decision', 'queue'])
 });
 
+export const numbersApprovalHandoffSchema = z.object({
+  candidateId: z.string().min(1),
+  snapshotId: z.string().min(1),
+  decisionId: z.string().min(1).optional(),
+  decisionStatus: decisionStatusSchema.optional(),
+  approvalRequired: z.boolean(),
+  queueReady: z.boolean(),
+  queueItemId: z.string().min(1).optional(),
+  queueStatus: z.enum(['queued', 'blocked', 'running', 'completed', 'failed', 'canceled']).optional(),
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1),
+  boundary: z.string().min(1)
+});
+
 export const createNumbersFollowUpDecisionRequestSchema = z.object({
   snapshotId: z.string().min(1),
   expectedResult: z.string().min(1).optional()
@@ -96,6 +110,7 @@ export const createNumbersFollowUpDecisionRequestSchema = z.object({
 export const numbersFollowUpDecisionResponseSchema = z.object({
   decision: decisionRecordSchema,
   origin: numbersFollowUpOriginSchema,
+  approvalHandoff: numbersApprovalHandoffSchema,
   duplicate: z.boolean().optional(),
   message: z.string().min(1)
 });
@@ -112,6 +127,7 @@ export const createNumbersFollowUpQueueRequestSchema = z.object({
 export const numbersFollowUpQueueResponseSchema = z.object({
   queueItem: automationQueueItemSchema,
   origin: numbersFollowUpOriginSchema,
+  approvalHandoff: numbersApprovalHandoffSchema,
   duplicate: z.boolean().optional(),
   message: z.string().min(1)
 });

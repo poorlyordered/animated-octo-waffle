@@ -27,6 +27,20 @@ describe('numbers follow-up actions', () => {
         walletAction: 'transfer'
       })
     ).toThrow('Unsafe Numbers follow-up action field rejected: walletAction');
+
+    expect(() =>
+      assertNoUnsafeNumbersFollowUpFields({
+        snapshotId: 'numbers-1',
+        approvalHandoff: { queueReady: true }
+      })
+    ).toThrow('Unsafe Numbers follow-up action field rejected: approvalHandoff');
+
+    expect(() =>
+      assertNoUnsafeNumbersFollowUpFields({
+        snapshotId: 'numbers-1',
+        queueStatus: 'queued'
+      })
+    ).toThrow('Unsafe Numbers follow-up action field rejected: queueStatus');
   });
 
   it('allows bounded follow-up action request fields', () => {

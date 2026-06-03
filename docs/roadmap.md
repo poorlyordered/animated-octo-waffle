@@ -361,12 +361,31 @@ Validation:
 - Spec: `specs/016-retry-execution-worker`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M17: Numbers Approval Handoff - Complete
+
+Goal: make the browser-visible handoff from Numbers-created decisions into queued work explicit and auditable.
+
+Delivered capabilities:
+
+- Browser-safe Numbers approval handoff metadata on follow-up decision responses
+- Browser-safe queue handoff metadata on approved follow-up queue responses
+- Decision status, approval requirement, queue readiness, queue item linkage, duplicate state, and no-execution boundary display
+- Server-derived handoff state from existing decision and queue records, not browser-provided overrides
+- Unsafe approval handoff, queue status, provenance, dispatch, retry, EVE write, wallet, asset, contract, role, and external execution field rejection
+- Browser smoke coverage for proposed approval-blocked handoffs and approved queued-work handoffs
+- No decision approval mutation, worker dispatch, handoff claim, retry scheduling, ESI fetch, EVE write, wallet/asset movement, contract mutation, role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/017-numbers-approval-handoff`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M17 selection after M16 review.
+Proceed to M18 selection after M17 review.
 
 Recommended next-slice candidates:
 
-- Browser-visible approval handoff from Numbers-created decisions into queued work.
 - People or Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.
 - Retry cancellation and retry policy controls for scheduled or blocked retry requests.
+- Decision approval workflow improvements for Numbers-origin decisions.

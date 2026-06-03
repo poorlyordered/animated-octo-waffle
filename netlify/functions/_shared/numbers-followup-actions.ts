@@ -1,8 +1,20 @@
+import type {
+  AutomationQueueItem,
+  DecisionRecord,
+  NumbersApprovalHandoff,
+  NumbersFollowUpOrigin
+} from '../../../packages/contracts/src/index';
+
 const unsafeRequestFields = new Set([
   'corporationId',
   'approval',
+  'approvalHandoff',
   'approvalText',
   'approvedAt',
+  'decisionStatus',
+  'queueItemId',
+  'queueReady',
+  'queueStatus',
   'sourceProvenance',
   'provenance',
   'sourceReferences',
@@ -25,6 +37,9 @@ const unsafeRequestFields = new Set([
   'externalService'
 ]);
 
+const approvalBoundary = 'Approval handoff only. No worker was dispatched and no execution occurred.';
+const queueBoundary = 'Queued work handoff only. No worker was dispatched and no execution occurred.';
+
 export function assertNoUnsafeNumbersFollowUpFields(value: unknown): void {
   if (!value || typeof value !== 'object') {
     return;
@@ -36,4 +51,37 @@ export function assertNoUnsafeNumbersFollowUpFields(value: unknown): void {
   if (unsafeField) {
     throw new Error(`Unsafe Numbers follow-up action field rejected: ${unsafeField}`);
   }
+}
+
+export function numbersApprovalHandoff(
+  origin: NumbersFollowUpOrigin,
+  decision: DecisionRecord,
+  options: { queueItem?: AutomationQueueItem; duplicate?: boolean } = {}
+): NumbersApprovalHandoff {
+  const queueItem = options.queueItem;
+  const queueReady = decision.status === 'approved';
+  const approvalRequired = !queueReady;
+
+  const handoff: NumbersApprovalHandoff = {
+    candidateId: origin.candidateId,
+    snapshotId: origin.snapshotId,
+    decisionId: decision.id,
+    decisionStatus: decision.status,
+    approvalRequired,
+    queueReady,
+    duplicate: options.duplicate || undefined,
+    message: queueItem
+      ? `${options.duplicate ? 'Existing queued work is linked' : 'Queued work is linked'} to approved Numbers decision ${decision.id}.`
+      : queueReady
+        ? `Decision ${decision.id} is approved and ready for queued work.`
+        : `Decision ${decision.id} is ${decision.status}. Approval is required before queued work can be created.`,
+    boundary: queueItem ? queueBoundary : approvalBoundary
+  };
+
+  if (queueItem) {
+    handoff.queueItemId = queueItem.id;
+    handoff.queueStatus = queueItem.status;
+  }
+
+  return handoff;
 }

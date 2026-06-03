@@ -11,9 +11,9 @@ import {
   readyHandoff
 } from '../../tests/fixtures/workerHandoff';
 import {
-  numbersFollowUpDecision,
-  numbersFollowUpOrigin,
-  numbersFollowUpQueueItem
+  approvedNumbersFollowUpDecisionResponse,
+  numbersFollowUpDecisionResponse,
+  numbersFollowUpQueueResponse
 } from '../../tests/fixtures/numbersFollowUpActions';
 import { esiSyncRetryResponse, handoffRetryResponse } from '../../tests/fixtures/retry';
 import {
@@ -44,18 +44,9 @@ export const commandSurfaceFixtures = {
     liveProvenance: numbersLiveProvenance
   },
   numbersFollowUpActions: {
-    decision: {
-      decision: numbersFollowUpDecision,
-      origin: numbersFollowUpOrigin,
-      message:
-        'Decision recorded. No EVE action, wallet action, asset action, worker dispatch, or external execution was performed.'
-    },
-    queue: {
-      queueItem: numbersFollowUpQueueItem,
-      origin: numbersFollowUpOrigin,
-      message:
-        'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
-    }
+    decision: numbersFollowUpDecisionResponse,
+    approvedDecision: approvedNumbersFollowUpDecisionResponse,
+    queue: numbersFollowUpQueueResponse
   },
   decisionRecords: {
     decisions: [

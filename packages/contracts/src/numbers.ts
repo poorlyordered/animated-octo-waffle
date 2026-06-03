@@ -1,6 +1,6 @@
 import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
 import type { AutomationQueueItem } from './automation-queue.js';
-import type { DecisionRecord } from './decision-record.js';
+import type { DecisionRecord, DecisionStatus } from './decision-record.js';
 import type { EsiSyncRequestStatus, EsiSyncSectionStatusSummary } from './esi-sync.js';
 
 export const numbersSectionKeys = ['wallet', 'assets', 'logistics', 'market', 'activity'] as const;
@@ -96,6 +96,20 @@ export interface NumbersFollowUpOrigin {
   suggestedPath: NumbersFollowUpCandidate['suggestedPath'];
 }
 
+export interface NumbersApprovalHandoff {
+  candidateId: string;
+  snapshotId: string;
+  decisionId?: string;
+  decisionStatus?: DecisionStatus;
+  approvalRequired: boolean;
+  queueReady: boolean;
+  queueItemId?: string;
+  queueStatus?: AutomationQueueItem['status'];
+  duplicate?: boolean;
+  message: string;
+  boundary: string;
+}
+
 export interface CreateNumbersFollowUpDecisionRequest {
   snapshotId: string;
   expectedResult?: string;
@@ -104,6 +118,7 @@ export interface CreateNumbersFollowUpDecisionRequest {
 export interface NumbersFollowUpDecisionResponse {
   decision: DecisionRecord;
   origin: NumbersFollowUpOrigin;
+  approvalHandoff: NumbersApprovalHandoff;
   duplicate?: boolean;
   message: string;
 }
@@ -120,6 +135,7 @@ export interface CreateNumbersFollowUpQueueRequest {
 export interface NumbersFollowUpQueueResponse {
   queueItem: AutomationQueueItem;
   origin: NumbersFollowUpOrigin;
+  approvalHandoff: NumbersApprovalHandoff;
   duplicate?: boolean;
   message: string;
 }
