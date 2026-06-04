@@ -122,6 +122,10 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
         commandSurfaceFixtures.automationQueue.queueItems[0];
       const handoff = commandSurfaceFixtures.automationQueue.handoffs.find((item) => item.queueItemId === queueItem.id);
       const retry = handoff?.id === 'handoff-browser-failed' && workerHandoffRetryOverride ? workerHandoffRetryOverride : handoff?.retry;
+      const retryHistory =
+        handoff?.id === 'handoff-browser-failed' && workerHandoffRetryOverride
+          ? [workerHandoffRetryOverride, ...(handoff.retryHistory ?? []).filter((item) => item.id !== workerHandoffRetryOverride?.id)]
+          : handoff?.retryHistory;
       return json(route, {
         queueItem,
         handoff: handoff
@@ -136,7 +140,8 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
               progress: handoff.progress,
               result: handoff.result,
               failure: handoff.failure,
-              retry
+              retry,
+              retryHistory
             }
           : undefined
       });

@@ -78,9 +78,10 @@ export function normalizeWorkerHandoffDocument(document: WorkerHandoffDocument):
     claimedAt: optionalIsoDate(document.claimedAt),
     completedAt: optionalIsoDate(document.completedAt),
     progress: Array.isArray(document.progress) ? document.progress : [],
-  result: document.result,
+    result: document.result,
     failure: document.failure,
-    retry: document.retry
+    retry: document.retry,
+    retryHistory: document.retryHistory
   });
 }
 
@@ -96,6 +97,7 @@ export function workerHandoffSummaryFromHandoff(handoff: WorkerHandoff): WorkerH
     progress: handoff.progress,
     result: handoff.result,
     failure: handoff.failure,
-    retry: handoff.retry
+    retry: handoff.retry,
+    retryHistory: handoff.retryHistory
   });
 }

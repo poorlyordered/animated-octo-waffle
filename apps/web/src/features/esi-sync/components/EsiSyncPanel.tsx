@@ -4,6 +4,7 @@ import type {
   EsiSyncStatusResponse,
   CancelRetryResponse,
   PrepareEsiSyncResponse,
+  RetryRequestSummary,
   RevokeEsiVaultResponse,
   ScheduleRetryResponse,
   StartEsiSyncConsentResponse
@@ -226,6 +227,17 @@ export function EsiSyncPanel({
                     {item.retry.policy.boundary}
                   </p>
                 ) : null}
+                {item.retryHistory && item.retryHistory.length > 0 ? (
+                  <section aria-label={`${item.id} retry history`}>
+                    <h3>Retry history</h3>
+                    <ul>
+                      {item.retryHistory.map((retry) => (
+                        <li key={retry.id}>{retryAttemptSummary(retry)}</li>
+                      ))}
+                    </ul>
+                    <p className="notice">Retry history is read-only. This view does not dispatch, execute, fetch ESI, or reschedule work.</p>
+                  </section>
+                ) : null}
                 {item.status === 'failed' ? (
                   <button type="button" disabled={!onScheduleRetry || busyAction === `retry-${item.id}`} onClick={() => void handleScheduleRetry(item.id)}>
                     {busyAction === `retry-${item.id}` ? 'Scheduling...' : 'Schedule retry'}
@@ -250,4 +262,18 @@ export function EsiSyncPanel({
       </section>
     </main>
   );
+}
+
+function retryAttemptSummary(retry: RetryRequestSummary): string {
+  const parts = [`${retry.status}: ${retry.reason}`];
+
+  if (retry.claimedBy) parts.push(`Claimed by ${retry.claimedBy}.`);
+  if (retry.completedAt) parts.push(`Completed ${new Date(retry.completedAt).toLocaleString()}.`);
+  if (retry.canceledAt) parts.push(`Canceled ${new Date(retry.canceledAt).toLocaleString()}.`);
+  if (retry.cancelReason) parts.push(`Reason: ${retry.cancelReason}`);
+  if (retry.result) parts.push(`Replacement ${retry.result.replacementTargetId} is ${retry.result.replacementTargetStatus}.`);
+  if (retry.blockedReason) parts.push(`Blocked: ${retry.blockedReason}`);
+  parts.push(retry.policy.boundary);
+
+  return parts.join(' ');
 }

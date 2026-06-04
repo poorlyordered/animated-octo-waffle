@@ -106,9 +106,12 @@ export const esiSyncRetryCancelResponse: CancelRetryResponse = {
     ...canceledHandoffRetry,
     id: 'retry-esi-sync-canceled',
     targetType: 'esi_sync_request',
-    targetId: 'sync-request-failed'
+    targetId: 'sync-request-failed',
+    reason: 'Commander approved retry scheduling for failed ESI sync.'
   }
 };
+
+export const canceledEsiSyncRetry: RetryRequestSummary = esiSyncRetryCancelResponse.retry;
 
 export const retryWorkerReadyResponse: RetryWorkerReadyResponse = {
   retries: [handoffRetry, esiSyncRetry]

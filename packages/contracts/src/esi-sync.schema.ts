@@ -105,6 +105,7 @@ export const esiSyncHistoryItemSchema = z.object({
   sectionStatuses: z.array(esiSyncSectionStatusSummarySchema),
   failure: esiSyncWorkerFailureSummarySchema.optional(),
   retry: retryRequestSummarySchema.optional(),
+  retryHistory: z.array(retryRequestSummarySchema).optional(),
   boundary: z.string().min(1)
 });
 

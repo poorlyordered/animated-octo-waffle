@@ -10,6 +10,7 @@ import type {
 } from '../../../packages/contracts/src/index';
 
 const collectionName = 'retry_requests';
+export const defaultRetryHistoryLimit = 5;
 const retryScheduledBoundary = 'Retry scheduled only. No worker was dispatched and no execution occurred.';
 const retryWorkerBoundary = 'Retry execution is worker-only and uses prior commander approval.';
 const retryCanceledBoundary = 'Retry canceled by commander. No worker was dispatched and no execution occurred.';
@@ -98,6 +99,24 @@ export async function findLatestRetryRequest(
     .next();
 
   return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
+}
+
+export async function listRetryRequestsForTarget(
+  db: Db,
+  corporationId: string,
+  targetType: RetryTargetType,
+  targetId: string,
+  limit = defaultRetryHistoryLimit
+): Promise<RetryRequestDocument[]> {
+  const boundedLimit = Math.min(Math.max(Math.trunc(limit), 1), 10);
+  const documents = await db
+    .collection(collectionName)
+    .find({ corporationId, targetType, targetId })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(boundedLimit)
+    .toArray();
+
+  return documents.map((document) => normalizeRetryRequestDocument(document as unknown as RetryRequestDocument));
 }
 
 export async function findRetryRequest(db: Db, id: string): Promise<RetryRequestDocument | null> {

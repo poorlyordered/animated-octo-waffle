@@ -22,7 +22,7 @@ import {
   assertNoUnsafeRetryFields,
   cancelLatestRetryRequestForTarget,
   createOrFindScheduledRetryRequest,
-  findLatestRetryRequest,
+  listRetryRequestsForTarget,
   retryRequestSummary
 } from './_shared/retry-request-store';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
@@ -146,9 +146,10 @@ export async function handler(event: FunctionEvent) {
         return safeErrorResponse('Worker handoff not found', 404);
       }
 
-      const retry = await findLatestRetryRequest(db, corporationId, 'worker_handoff', handoff.id);
-      if (retry) {
-        handoff.retry = retryRequestSummary(retry);
+      const retries = await listRetryRequestsForTarget(db, corporationId, 'worker_handoff', handoff.id);
+      if (retries.length > 0) {
+        handoff.retryHistory = retries.map(retryRequestSummary);
+        handoff.retry = handoff.retryHistory[0];
       }
 
       return jsonResponse(200, { handoff });

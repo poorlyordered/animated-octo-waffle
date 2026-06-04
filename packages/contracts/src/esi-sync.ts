@@ -113,6 +113,7 @@ export interface EsiSyncHistoryItem {
   sectionStatuses: EsiSyncSectionStatusSummary[];
   failure?: EsiSyncWorkerFailureSummary;
   retry?: RetryRequestSummary;
+  retryHistory?: RetryRequestSummary[];
   boundary: string;
 }
 

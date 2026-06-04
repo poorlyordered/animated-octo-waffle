@@ -52,7 +52,8 @@ export const workerHandoffSchema = z.object({
   progress: z.array(workerProgressEventSchema).default([]),
   result: workerCompletionResultSchema.optional(),
   failure: handoffFailureSchema.optional(),
-  retry: retryRequestSummarySchema.optional()
+  retry: retryRequestSummarySchema.optional(),
+  retryHistory: z.array(retryRequestSummarySchema).optional()
 });
 
 export const workerHandoffSummarySchema = z.object({
@@ -66,7 +67,8 @@ export const workerHandoffSummarySchema = z.object({
   progress: z.array(workerProgressEventSchema).default([]),
   result: workerCompletionResultSchema.optional(),
   failure: handoffFailureSchema.optional(),
-  retry: retryRequestSummarySchema.optional()
+  retry: retryRequestSummarySchema.optional(),
+  retryHistory: z.array(retryRequestSummarySchema).optional()
 });
 
 export const prepareWorkerHandoffRequestSchema = z.object({
