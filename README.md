@@ -91,6 +91,8 @@ M22 adds a dedicated Opportunity operating layer in the command center. It reuse
 
 M23 lets commanders record proposed decisions directly from Opportunity recommendations on the dedicated Opportunity surface. The browser shows a safe Opportunity decision handoff with decision id, proposed status, source brief, source count, focus, provenance mode, and approval/queue separation language. It does not approve decisions, create queued work, schedule research, dispatch workers, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
 
+M27 lets commanders approve or reject recorded Opportunity decisions on the dedicated Opportunity surface, then create queued planning work as a separate action only after approval. Approval and rejection update only decision status; queue creation creates an auditable queued work record only. These flows do not schedule research, dispatch workers, prepare handoffs, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## People Operating Layer
 
 The People Operating Layer reads processed member profiles and leadership follow-ups from MongoDB `member_profiles` and `leadership_followups`. It shows member identity, role context, activity, delegation, source coverage, and approval-gated follow-up creation.

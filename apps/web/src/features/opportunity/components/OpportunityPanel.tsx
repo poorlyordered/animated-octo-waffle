@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import type { CommandBrief, CreateDecisionRecordRequest, DecisionRecord } from '@gryyk/contracts';
+import type {
+  AutomationQueueItem,
+  CommandBrief,
+  CreateAutomationQueueItemRequest,
+  CreateDecisionRecordRequest,
+  DecisionRecord,
+  UpdateDecisionStatusRequest
+} from '@gryyk/contracts';
 import type { OpportunityIngestionProvenance, SourceReference } from '@gryyk/contracts';
 import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
 import {
@@ -13,7 +20,9 @@ interface OpportunityPanelProps {
   error: string | null;
   opportunity: OpportunitySurfaceViewModel;
   sourceBrief?: CommandBrief | null;
+  onCreateQueue?: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem>;
   onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
+  onUpdateDecisionStatus?: (decisionId: string, request: UpdateDecisionStatusRequest) => Promise<DecisionRecord>;
 }
 
 function Metadata({ label, value }: { label: string; value: string | number }) {
@@ -62,6 +71,8 @@ function OpportunityDecisionHandoffSummary({ handoff }: { handoff: OpportunityDe
       <dl className="metadata-grid">
         <Metadata label="Decision" value={handoff.decisionId} />
         <Metadata label="Status" value={handoff.decisionStatus} />
+        <Metadata label="Approval" value={handoff.approvalRequired ? 'required' : 'resolved'} />
+        <Metadata label="Queue" value={handoff.queueItemId ? `${handoff.queueItemId} ${handoff.queueStatus ?? ''}` : handoff.queueReady ? 'ready' : 'blocked'} />
         <Metadata label="Source brief" value={handoff.sourceBriefId} />
         <Metadata label="Sources" value={handoff.sourceCount} />
         <Metadata label="Focus" value={handoff.focus} />
@@ -129,9 +140,76 @@ function OpportunityProvenanceSummary({ provenance }: { provenance: OpportunityI
   );
 }
 
-export function OpportunityPanel({ error, loading, onCreateDecision, opportunity, sourceBrief }: OpportunityPanelProps) {
+export function OpportunityPanel({
+  error,
+  loading,
+  onCreateDecision,
+  onCreateQueue,
+  onUpdateDecisionStatus,
+  opportunity,
+  sourceBrief
+}: OpportunityPanelProps) {
   const [selectedRecommendation, setSelectedRecommendation] = useState<string | null>(null);
+  const [createdDecision, setCreatedDecision] = useState<DecisionRecord | null>(null);
   const [createdHandoff, setCreatedHandoff] = useState<OpportunityDecisionHandoff | null>(null);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+
+  async function handleDecisionStatus(status: Extract<UpdateDecisionStatusRequest['status'], 'approved' | 'rejected'>) {
+    if (!createdDecision || !onUpdateDecisionStatus) {
+      return;
+    }
+
+    setBusyAction(status);
+    try {
+      const decision = await onUpdateDecisionStatus(createdDecision.id, {
+        status,
+        approvalText:
+          status === 'approved'
+            ? `Commander approves this Opportunity recommendation for queued planning: ${createdDecision.sourceRecommendation}.`
+            : undefined,
+        note:
+          status === 'rejected'
+            ? `Commander rejected this Opportunity recommendation: ${createdDecision.sourceRecommendation}.`
+            : 'Commander approved this Opportunity recommendation for queued planning.'
+      });
+      setCreatedDecision(decision);
+      const handoff = deriveOpportunityDecisionHandoff(decision, opportunity);
+      setCreatedHandoff(handoff);
+      setActionStatus(
+        status === 'approved'
+          ? `Decision approved. Queue creation remains a separate commander action. ${handoff.message}`
+          : `Decision rejected. No queued work was created. ${handoff.message}`
+      );
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to update Opportunity decision status.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleCreateQueue() {
+    if (!createdDecision || !onCreateQueue) {
+      return;
+    }
+
+    setBusyAction('queue');
+    try {
+      const queueItem = await onCreateQueue({
+        sourceDecisionId: createdDecision.id,
+        taskIntent: `Opportunity planning: ${createdDecision.sourceRecommendation}`,
+        inputSummary: `Use Opportunity recommendation from brief ${createdDecision.sourceBriefId}: ${createdDecision.sourceRecommendation}`,
+        expectedOutput: `Prepare commander review options for Opportunity recommendation: ${createdDecision.sourceRecommendation}.`
+      });
+      const handoff = deriveOpportunityDecisionHandoff(createdDecision, opportunity, queueItem);
+      setCreatedHandoff(handoff);
+      setActionStatus(`Queued work created. ${handoff.message}`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to create Opportunity queued work.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
 
   if (loading) {
     return <main className="command-brief">Loading opportunity...</main>;
@@ -195,7 +273,9 @@ export function OpportunityPanel({ error, loading, onCreateDecision, opportunity
           onCreate={async (request) => {
             const decision = await onCreateDecision(request);
             if (decision) {
+              setCreatedDecision(decision);
               setCreatedHandoff(deriveOpportunityDecisionHandoff(decision, opportunity));
+              setActionStatus('Decision recorded. Approval and queue creation remain separate commander actions.');
             }
             setSelectedRecommendation(null);
             return decision;
@@ -204,6 +284,24 @@ export function OpportunityPanel({ error, loading, onCreateDecision, opportunity
       ) : null}
 
       {createdHandoff ? <OpportunityDecisionHandoffSummary handoff={createdHandoff} /> : null}
+      {createdDecision && createdDecision.status === 'proposed' && onUpdateDecisionStatus ? (
+        <section className="form-actions" aria-label="Opportunity decision approval controls">
+          <button type="button" onClick={() => void handleDecisionStatus('approved')} disabled={busyAction === 'approved'}>
+            {busyAction === 'approved' ? 'Approving...' : 'Approve decision'}
+          </button>
+          <button type="button" className="secondary" onClick={() => void handleDecisionStatus('rejected')} disabled={busyAction === 'rejected'}>
+            {busyAction === 'rejected' ? 'Rejecting...' : 'Reject decision'}
+          </button>
+        </section>
+      ) : null}
+      {createdDecision && createdDecision.status === 'approved' && onCreateQueue && !createdHandoff?.queueItemId ? (
+        <section className="form-actions" aria-label="Opportunity queue controls">
+          <button type="button" onClick={() => void handleCreateQueue()} disabled={busyAction === 'queue'}>
+            {busyAction === 'queue' ? 'Queueing...' : 'Create queued work'}
+          </button>
+        </section>
+      ) : null}
+      {actionStatus ? <p className="notice">{actionStatus}</p> : null}
 
       <section aria-label="Opportunity watchlist">
         <h2>Watchlist</h2>

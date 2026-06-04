@@ -99,7 +99,28 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
 
   await page.route('**/api/decision-records**', (route) => {
     if (route.request().method() !== 'GET') {
-      return json(route, { decision: commandSurfaceFixtures.decisionRecords.decisions[0] });
+      const url = new URL(route.request().url());
+      const body = route.request().postDataJSON() as Record<string, unknown> | null;
+      const decisionId = url.pathname.match(/\/api\/decision-records\/([^/]+)\/status$/)?.[1] ?? 'decision-browser-opportunity';
+      const status = body?.status === 'approved' || body?.status === 'rejected' ? body.status : 'proposed';
+      return json(route, {
+        decision: {
+          ...commandSurfaceFixtures.decisionRecords.decisions[0],
+          id: decisionId,
+          sourceBriefId: String(body?.sourceBriefId ?? commandSurfaceFixtures.commandBrief.brief.id),
+          sourceRecommendation: String(body?.sourceRecommendation ?? 'Browser smoke recommendation for command validation.'),
+          rationale: String(body?.rationale ?? 'Commander reviewed the Opportunity recommendation.'),
+          expectedResult: String(body?.expectedResult ?? 'Opportunity decision is tracked for later approval review.'),
+          status,
+          approval:
+            status === 'approved'
+              ? {
+                  approvedAt: '2026-06-04T19:00:00.000Z',
+                  approvalText: String(body?.approvalText ?? 'Commander approves this Opportunity recommendation for queued planning.')
+                }
+              : null
+        }
+      });
     }
 
     return json(route, commandSurfaceFixtures.decisionRecords);
@@ -152,7 +173,17 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     }
 
     if (route.request().method() !== 'GET') {
-      return json(route, { queueItem: commandSurfaceFixtures.automationQueue.queueItems[0] });
+      const body = route.request().postDataJSON() as Record<string, unknown> | null;
+      return json(route, {
+        queueItem: {
+          ...commandSurfaceFixtures.automationQueue.queueItems[0],
+          id: 'queue-browser-opportunity',
+          sourceDecisionId: String(body?.sourceDecisionId ?? 'decision-browser-opportunity'),
+          taskIntent: String(body?.taskIntent ?? 'Opportunity planning queue item.'),
+          inputSummary: String(body?.inputSummary ?? 'Use Opportunity recommendation.'),
+          expectedOutput: String(body?.expectedOutput ?? 'Prepare commander review options for Opportunity recommendation.')
+        }
+      });
     }
 
     return json(route, commandSurfaceFixtures.automationQueue);
