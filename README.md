@@ -89,6 +89,8 @@ M19 adds browser-safe Opportunity ingestion provenance to the command brief resp
 
 M22 adds a dedicated Opportunity operating layer in the command center. It reuses the existing command brief and Opportunity provenance APIs to show summary, strategic impacts, recommendations, watchlist, source references, section status, and recent research history as a first-class read-only surface. It does not schedule research, dispatch workers, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
 
+M23 lets commanders record proposed decisions directly from Opportunity recommendations on the dedicated Opportunity surface. The browser shows a safe Opportunity decision handoff with decision id, proposed status, source brief, source count, focus, provenance mode, and approval/queue separation language. It does not approve decisions, create queued work, schedule research, dispatch workers, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## People Operating Layer
 
 The People Operating Layer reads processed member profiles and leadership follow-ups from MongoDB `member_profiles` and `leadership_followups`. It shows member identity, role context, activity, delegation, source coverage, and approval-gated follow-up creation.

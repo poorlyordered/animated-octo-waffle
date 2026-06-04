@@ -477,12 +477,32 @@ Validation:
 - Spec: `specs/022-dedicated-opportunity-surface`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
 
+### M23: Opportunity Decision Handoff - Complete
+
+Goal: let commanders record proposed decisions from recommendations on the dedicated Opportunity surface.
+
+Delivered capabilities:
+
+- Record decision controls on dedicated Opportunity recommendations
+- Existing decision-record API reuse for Opportunity source-brief recommendations
+- Browser-safe Opportunity decision handoff metadata after decision creation
+- Handoff display for decision id, proposed status, source brief, source count, focus, and provenance mode
+- Explicit approval, queueing, research scheduling, worker dispatch, ESI fetch, EVE write, wallet/asset/contract/role mutation, and external execution boundary language
+- Unit coverage for handoff derivation with and without Opportunity provenance
+- Browser smoke coverage for recording an Opportunity decision without queueing or execution
+- No new backend route, durable collection, decision approval, queue creation, research scheduling, worker dispatch, ESI fetch, EVE write, or external-service execution
+
+Validation:
+
+- Spec: `specs/023-opportunity-decision-handoff`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M23 selection after M22 review.
+Proceed to M24 selection after M23 review.
 
 Recommended next-slice candidates:
 
 - Retry rescheduling or retry history management once cancellation behavior has been reviewed.
-- Decision approval list/filter improvements now that Numbers-origin approve/reject exists.
-- Opportunity decision handoff from dedicated surface once Opportunity-specific provenance is stable.
+- Decision approval list/filter improvements now that Numbers-origin approve/reject and Opportunity decision handoff exist.
+- Opportunity approval or queue handoff once Opportunity decision recording has been reviewed.

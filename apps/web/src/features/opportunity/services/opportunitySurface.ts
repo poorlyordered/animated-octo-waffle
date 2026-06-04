@@ -1,6 +1,7 @@
 import type {
   CommandBriefViewModel,
   CoverageState,
+  DecisionRecord,
   DisplayState,
   OperatingLegCoverage,
   OpportunityIngestionProvenance,
@@ -25,8 +26,23 @@ export interface OpportunitySurfaceViewModel {
   boundary: string;
 }
 
+export interface OpportunityDecisionHandoff {
+  decisionId: string;
+  decisionStatus: DecisionRecord['status'];
+  sourceBriefId: string;
+  sourceRecommendation: string;
+  sourceCount: number;
+  focus: string;
+  provenanceMode: OpportunityIngestionProvenance['mode'] | 'unavailable';
+  message: string;
+  boundary: string;
+}
+
 const readOnlyBoundary =
   'Opportunity surface is read-only. This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, move wallets or assets, change contracts or roles, or execute external services.';
+
+const decisionHandoffBoundary =
+  'Opportunity decision handoff only. Approval, queueing, research scheduling, worker dispatch, ESI fetch, EVE writes, wallet or asset movement, contract or role changes, and external execution remain separate workflows.';
 
 const unavailableCoverage: OperatingLegCoverage = {
   numbers: 'missing',
@@ -59,5 +75,22 @@ export function deriveOpportunitySurface(viewModel: CommandBriefViewModel): Oppo
     missingReasons: coverage.missingReasons,
     provenance,
     boundary: readOnlyBoundary
+  };
+}
+
+export function deriveOpportunityDecisionHandoff(
+  decision: DecisionRecord,
+  opportunity: OpportunitySurfaceViewModel
+): OpportunityDecisionHandoff {
+  return {
+    decisionId: decision.id,
+    decisionStatus: decision.status,
+    sourceBriefId: decision.sourceBriefId,
+    sourceRecommendation: decision.sourceRecommendation,
+    sourceCount: opportunity.sourceCount,
+    focus: opportunity.provenance?.focus ?? decision.sourceProvenance.focus,
+    provenanceMode: opportunity.provenance?.mode ?? 'unavailable',
+    message: `Decision ${decision.id} was recorded from Opportunity recommendation "${decision.sourceRecommendation}" as ${decision.status}.`,
+    boundary: decisionHandoffBoundary
   };
 }
