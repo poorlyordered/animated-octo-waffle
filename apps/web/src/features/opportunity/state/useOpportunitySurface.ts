@@ -7,6 +7,7 @@ export function useOpportunitySurface(focus = 'grykk-47-eve-official-news') {
   return {
     error: commandBrief.error,
     loading: commandBrief.loading,
-    opportunity: deriveOpportunitySurface(commandBrief.viewModel)
+    opportunity: deriveOpportunitySurface(commandBrief.viewModel),
+    sourceBrief: commandBrief.viewModel.brief
   };
 }

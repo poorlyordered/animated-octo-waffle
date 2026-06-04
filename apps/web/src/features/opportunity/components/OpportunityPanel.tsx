@@ -1,10 +1,19 @@
+import { useState } from 'react';
+import type { CommandBrief, CreateDecisionRecordRequest, DecisionRecord } from '@gryyk/contracts';
 import type { OpportunityIngestionProvenance, SourceReference } from '@gryyk/contracts';
-import type { OpportunitySurfaceViewModel } from '../services/opportunitySurface';
+import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
+import {
+  deriveOpportunityDecisionHandoff,
+  type OpportunityDecisionHandoff,
+  type OpportunitySurfaceViewModel
+} from '../services/opportunitySurface';
 
 interface OpportunityPanelProps {
   loading: boolean;
   error: string | null;
   opportunity: OpportunitySurfaceViewModel;
+  sourceBrief?: CommandBrief | null;
+  onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
 }
 
 function Metadata({ label, value }: { label: string; value: string | number }) {
@@ -16,7 +25,15 @@ function Metadata({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function TextList({ emptyText, items }: { emptyText: string; items: string[] }) {
+function TextList({
+  emptyText,
+  items,
+  onSelect
+}: {
+  emptyText: string;
+  items: string[];
+  onSelect?: (item: string) => void;
+}) {
   if (items.length === 0) {
     return <p className="empty-state">{emptyText}</p>;
   }
@@ -24,9 +41,34 @@ function TextList({ emptyText, items }: { emptyText: string; items: string[] }) 
   return (
     <ul>
       {items.map((item) => (
-        <li key={item}>{item}</li>
+        <li key={item}>
+          <span>{item}</span>
+          {onSelect ? (
+            <button type="button" onClick={() => onSelect(item)}>
+              Record decision
+            </button>
+          ) : null}
+        </li>
       ))}
     </ul>
+  );
+}
+
+function OpportunityDecisionHandoffSummary({ handoff }: { handoff: OpportunityDecisionHandoff }) {
+  return (
+    <section className="decision-summary" aria-label="Opportunity decision handoff">
+      <h2>Opportunity decision handoff</h2>
+      <p>{handoff.message}</p>
+      <dl className="metadata-grid">
+        <Metadata label="Decision" value={handoff.decisionId} />
+        <Metadata label="Status" value={handoff.decisionStatus} />
+        <Metadata label="Source brief" value={handoff.sourceBriefId} />
+        <Metadata label="Sources" value={handoff.sourceCount} />
+        <Metadata label="Focus" value={handoff.focus} />
+        <Metadata label="Provenance" value={handoff.provenanceMode.replace('_', ' ')} />
+      </dl>
+      <p className="notice">{handoff.boundary}</p>
+    </section>
   );
 }
 
@@ -87,7 +129,10 @@ function OpportunityProvenanceSummary({ provenance }: { provenance: OpportunityI
   );
 }
 
-export function OpportunityPanel({ error, loading, opportunity }: OpportunityPanelProps) {
+export function OpportunityPanel({ error, loading, onCreateDecision, opportunity, sourceBrief }: OpportunityPanelProps) {
+  const [selectedRecommendation, setSelectedRecommendation] = useState<string | null>(null);
+  const [createdHandoff, setCreatedHandoff] = useState<OpportunityDecisionHandoff | null>(null);
+
   if (loading) {
     return <main className="command-brief">Loading opportunity...</main>;
   }
@@ -135,8 +180,30 @@ export function OpportunityPanel({ error, loading, opportunity }: OpportunityPan
 
       <section aria-label="Opportunity recommendations">
         <h2>Recommended actions</h2>
-        <TextList items={opportunity.recommendedActions} emptyText="No Opportunity recommendations are available." />
+        <TextList
+          items={opportunity.recommendedActions}
+          emptyText="No Opportunity recommendations are available."
+          onSelect={sourceBrief && onCreateDecision ? setSelectedRecommendation : undefined}
+        />
       </section>
+
+      {sourceBrief && selectedRecommendation && onCreateDecision ? (
+        <DecisionRecordCreate
+          brief={sourceBrief}
+          recommendation={selectedRecommendation}
+          onCancel={() => setSelectedRecommendation(null)}
+          onCreate={async (request) => {
+            const decision = await onCreateDecision(request);
+            if (decision) {
+              setCreatedHandoff(deriveOpportunityDecisionHandoff(decision, opportunity));
+            }
+            setSelectedRecommendation(null);
+            return decision;
+          }}
+        />
+      ) : null}
+
+      {createdHandoff ? <OpportunityDecisionHandoffSummary handoff={createdHandoff} /> : null}
 
       <section aria-label="Opportunity watchlist">
         <h2>Watchlist</h2>

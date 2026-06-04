@@ -38,6 +38,24 @@ test('renders dedicated opportunity surface with provenance and read-only bounda
   await assertNoBrowserDiagnostics();
 });
 
+test('records an Opportunity decision handoff without queueing or execution', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  const recommendations = page.getByLabel('Opportunity recommendations');
+  await recommendations.getByRole('button', { name: 'Record decision' }).first().click();
+  await page.getByLabel('Create decision record').getByLabel('Rationale').fill('Commander reviewed the Opportunity recommendation.');
+  await page.getByLabel('Create decision record').getByLabel('Expected result').fill('Opportunity decision is tracked for later approval review.');
+  await page.getByLabel('Create decision record').getByRole('button', { name: 'Record decision' }).click();
+
+  await expectVisibleText(page, 'Opportunity decision handoff');
+  await expectVisibleText(page, 'was recorded from Opportunity recommendation');
+  await expectVisibleText(page, 'Approval, queueing, research scheduling, worker dispatch, ESI fetch, EVE writes');
+  await expect(page.getByLabel('Opportunity decision handoff').getByText('proposed').first()).toBeVisible();
+  await assertNoBrowserDiagnostics();
+});
+
 test('renders decision records surface with selected detail', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
 
