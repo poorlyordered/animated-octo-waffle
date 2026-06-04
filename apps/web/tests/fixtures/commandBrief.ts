@@ -1,4 +1,4 @@
-import type { CommandBrief, ResearchRequest } from '@gryyk/contracts';
+import type { CommandBrief, OpportunityIngestionProvenance, ResearchRequest } from '@gryyk/contracts';
 
 export const processedBrief: CommandBrief = {
   id: 'brief-1',
@@ -58,4 +58,38 @@ export const failedRequest: ResearchRequest = {
   createdAt: '2026-05-31T12:00:00.000Z',
   updatedAt: '2026-05-31T12:00:30.000Z',
   errorMessage: 'Processor timed out'
+};
+
+export const opportunityIngestionProvenance: OpportunityIngestionProvenance = {
+  mode: 'latest_research',
+  focus: processedBrief.focus,
+  sourceCount: 1,
+  briefCount: 1,
+  sectionStatuses: [
+    { key: 'sources', status: 'present' },
+    { key: 'impacts', status: 'present' },
+    { key: 'recommendations', status: 'present' },
+    { key: 'watchlist', status: 'present' }
+  ],
+  history: [
+    {
+      id: processedRequest.id,
+      status: 'processed',
+      requestedAt: processedRequest.createdAt,
+      updatedAt: processedRequest.updatedAt,
+      requestedBy: processedRequest.requestedBy,
+      sourceCount: 1,
+      sectionStatuses: [
+        { key: 'sources', status: 'present' },
+        { key: 'impacts', status: 'present' },
+        { key: 'recommendations', status: 'present' },
+        { key: 'watchlist', status: 'present' }
+      ],
+      boundary:
+        'Opportunity ingestion history is read-only. This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, or execute external services.'
+    }
+  ],
+  message: 'Latest Opportunity context is linked to processed research history.',
+  boundary:
+    'Opportunity ingestion history is read-only. This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, or execute external services.'
 };

@@ -15,6 +15,8 @@ test('renders command brief surface with operating leg coverage', async ({ page 
   await expectNonBlankSurface(page, 'command brief');
   await expectHeading(page, 'Corporation state');
   await expectVisibleText(page, 'Browser smoke brief confirms the command surface renders with deterministic opportunity context.');
+  await expectVisibleText(page, 'Latest Opportunity context is linked to processed browser research history.');
+  await expectVisibleText(page, 'This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, or execute external services.');
   await expectVisibleText(page, 'Browser smoke recommendation for command validation.');
   await expect(page.getByLabel('Operating model coverage').first()).toBeVisible();
   await assertNoBrowserDiagnostics();

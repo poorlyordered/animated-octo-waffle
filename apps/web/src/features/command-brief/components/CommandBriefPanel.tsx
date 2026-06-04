@@ -3,6 +3,7 @@ import type { CommandBrief, CreateDecisionRecordRequest, DecisionRecord } from '
 import type { CommandBriefViewModel } from '@gryyk/contracts';
 import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
 import { DecisionRecordSummary } from '../../decision-records/components/DecisionRecordSummary';
+import { OpportunityIngestionProvenancePanel } from './OpportunityIngestionProvenancePanel';
 import { OperatingLegCoverage } from './OperatingLegCoverage';
 
 interface CommandBriefPanelProps {
@@ -86,7 +87,12 @@ export function CommandBriefPanel({ loading = false, error = null, viewModel, on
   }
 
   if (displayState === 'empty') {
-    return <main className="command-brief empty-state">No command brief has been processed yet.</main>;
+    return (
+      <main className="command-brief empty-state">
+        <p>No command brief has been processed yet.</p>
+        <OpportunityIngestionProvenancePanel provenance={viewModel.opportunityProvenance} />
+      </main>
+    );
   }
 
   if (displayState === 'failed' && !brief) {
@@ -132,6 +138,7 @@ export function CommandBriefPanel({ loading = false, error = null, viewModel, on
           </section>
 
           <OperatingLegCoverage coverage={brief.coverage} />
+          <OpportunityIngestionProvenancePanel provenance={viewModel.opportunityProvenance} />
 
           <ListSection title="Strategic impacts" items={brief.strategicImpacts} />
           <ListSection title="Recommended actions" items={brief.recommendedActions} brief={brief} onCreateDecision={onCreateDecision} />
@@ -151,7 +158,9 @@ export function CommandBriefPanel({ loading = false, error = null, viewModel, on
             </section>
           ) : null}
         </>
-      ) : null}
+      ) : (
+        <OpportunityIngestionProvenancePanel provenance={viewModel.opportunityProvenance} />
+      )}
     </main>
   );
 }

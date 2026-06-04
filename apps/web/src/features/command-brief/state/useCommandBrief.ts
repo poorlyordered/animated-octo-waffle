@@ -22,6 +22,7 @@ interface UseCommandBriefState {
 const emptyViewModel: CommandBriefViewModel = {
   brief: null,
   request: null,
+  opportunityProvenance: null,
   displayState: 'empty'
 };
 
@@ -45,7 +46,10 @@ export function useCommandBrief({ focus }: UseCommandBriefOptions): UseCommandBr
         setState({
           error: null,
           requestKey,
-          viewModel: deriveDisplayState(briefResponse.brief, statusResponse.request)
+          viewModel: {
+            ...deriveDisplayState(briefResponse.brief, statusResponse.request),
+            opportunityProvenance: briefResponse.opportunityProvenance ?? null
+          }
         });
       })
       .catch((error: unknown) => {

@@ -79,6 +79,12 @@ M11 allows a commander to record a proposed decision from an eligible Numbers fo
 
 M17 makes that approval handoff browser-visible. Numbers follow-up action responses now include computed approval handoff metadata showing whether a decision is approval-blocked, queue-ready, linked to queued work, or duplicate-safe. The browser renders the decision and queue linkage without letting browser inputs forge approval, queue state, provenance, dispatch, retry, EVE write, wallet, asset, contract, role, or external execution metadata.
 
+## Opportunity Research Layer
+
+The Opportunity Research Layer is currently represented by processed command briefs from MongoDB `research_briefs` and recent research status from `research_requests`. It surfaces official-news opportunity context through source references, strategic impacts, recommendations, watchlists, and operating-leg coverage.
+
+M19 adds browser-safe Opportunity ingestion provenance to the command brief response and browser surface. The browser shows whether Opportunity context is linked to processed research history, historical command brief records, or unavailable research history; it also shows source count, brief count, sources/impacts/recommendations/watchlist status, recent research history, and no-execution boundary language. This remains read-only: no research scheduling, worker dispatch, ESI fetch, EVE write, or external-service execution occurs in browser or request paths.
+
 ## People Operating Layer
 
 The People Operating Layer reads processed member profiles and leadership follow-ups from MongoDB `member_profiles` and `leadership_followups`. It shows member identity, role context, activity, delegation, source coverage, and approval-gated follow-up creation.

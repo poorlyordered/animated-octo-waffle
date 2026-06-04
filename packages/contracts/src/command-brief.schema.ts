@@ -13,6 +13,41 @@ export const operatingLegCoverageSchema = z.object({
   missingReasons: z.array(z.string())
 });
 
+export const opportunityIngestionModeSchema = z.enum(['latest_research', 'historical_brief', 'unavailable']);
+export const opportunityIngestionSectionKeySchema = z.enum(['sources', 'impacts', 'recommendations', 'watchlist']);
+export const opportunityIngestionSectionStatusSchema = z.object({
+  key: opportunityIngestionSectionKeySchema,
+  status: z.enum(['present', 'missing', 'stale'])
+});
+
+export const opportunityIngestionHistoryItemSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(['queued', 'raw_captured', 'processing', 'processed', 'failed']),
+  requestedAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  requestedBy: z.string().min(1).optional(),
+  sourceCount: z.number().int().nonnegative().optional(),
+  failure: z
+    .object({
+      reason: z.string().min(1),
+      failedAt: z.string().datetime()
+    })
+    .optional(),
+  sectionStatuses: z.array(opportunityIngestionSectionStatusSchema),
+  boundary: z.string().min(1)
+});
+
+export const opportunityIngestionProvenanceSchema = z.object({
+  mode: opportunityIngestionModeSchema,
+  focus: z.string().min(1),
+  sourceCount: z.number().int().nonnegative(),
+  briefCount: z.number().int().nonnegative(),
+  sectionStatuses: z.array(opportunityIngestionSectionStatusSchema),
+  history: z.array(opportunityIngestionHistoryItemSchema),
+  message: z.string().min(1),
+  boundary: z.string().min(1)
+});
+
 export const commandBriefSchema = z.object({
   id: z.string().min(1),
   corporationId: z.string().min(1),
@@ -44,7 +79,8 @@ export const researchRequestSchema = z.object({
 });
 
 export const commandBriefResponseSchema = z.object({
-  brief: commandBriefSchema.nullable()
+  brief: commandBriefSchema.nullable(),
+  opportunityProvenance: opportunityIngestionProvenanceSchema.optional()
 });
 
 export const researchStatusResponseSchema = z.object({
