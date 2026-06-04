@@ -19,8 +19,10 @@ import {
 } from '../../tests/fixtures/workerHandoff';
 import {
   approvedNumbersFollowUpDecisionResponse,
+  approvedNumbersFollowUpDecisionStatusResponse,
   numbersFollowUpDecisionResponse,
-  numbersFollowUpQueueResponse
+  numbersFollowUpQueueResponse,
+  rejectedNumbersFollowUpDecisionStatusResponse
 } from '../../tests/fixtures/numbersFollowUpActions';
 import {
   esiSyncRetryCancelResponse,
@@ -62,6 +64,8 @@ export const commandSurfaceFixtures = {
   numbersFollowUpActions: {
     decision: numbersFollowUpDecisionResponse,
     approvedDecision: approvedNumbersFollowUpDecisionResponse,
+    approvedStatus: approvedNumbersFollowUpDecisionStatusResponse,
+    rejectedStatus: rejectedNumbersFollowUpDecisionStatusResponse,
     queue: numbersFollowUpQueueResponse
   },
   decisionRecords: {

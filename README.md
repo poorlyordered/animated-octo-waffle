@@ -79,6 +79,8 @@ M11 allows a commander to record a proposed decision from an eligible Numbers fo
 
 M17 makes that approval handoff browser-visible. Numbers follow-up action responses now include computed approval handoff metadata showing whether a decision is approval-blocked, queue-ready, linked to queued work, or duplicate-safe. The browser renders the decision and queue linkage without letting browser inputs forge approval, queue state, provenance, dispatch, retry, EVE write, wallet, asset, contract, role, or external execution metadata.
 
+M21 adds explicit approve/reject controls for Numbers-origin proposed decisions. Approval updates the decision record and makes the handoff queue-ready, but it does not create queued work; queue creation remains a separate commander action. Rejection closes the decision as queue-blocked. These status actions do not dispatch workers, schedule retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## Opportunity Research Layer
 
 The Opportunity Research Layer is currently represented by processed command briefs from MongoDB `research_briefs` and recent research status from `research_requests`. It surfaces official-news opportunity context through source references, strategic impacts, recommendations, watchlists, and operating-leg coverage.
@@ -112,6 +114,8 @@ M20 adds commander-side cancellation and server-owned policy metadata for retry 
 The Decision Record Loop stores normalized decision records in the existing MongoDB `strategic_decisions` collection. Existing strategic decision fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `gryykSynthesis`, and `timestamp` are treated as legacy-compatible inputs and normalized at the app boundary.
 
 Decision records remain separate from executed actions and automation queue entries. Player-impacting decisions require explicit approval metadata before action-like progression, and this MVP still does not execute game actions or external-service changes.
+
+Numbers-origin decision approval now has a scoped browser workflow. The server verifies the decision source context against the requested Numbers snapshot and follow-up candidate before approving or rejecting, then returns browser-safe handoff metadata for the updated status.
 
 For write-flow validation, use the isolated MongoDB database `gryyk47_greenfield_test` by setting `MONGODB_DB=gryyk47_greenfield_test` in local environment. It has seeded `research_briefs`, `research_requests`, and `strategic_decisions` records for the configured corporation scope.
 

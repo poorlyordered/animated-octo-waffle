@@ -5,9 +5,15 @@ import type {
   NumbersFollowUpDecisionResponse,
   NumbersFollowUpQueueResponse,
   NumbersLiveProvenance,
-  NumbersSnapshot
+  NumbersSnapshot,
+  UpdateNumbersFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
-import { createNumbersFollowUpDecision, createNumbersFollowUpQueue, getNumbersSnapshot } from '../services/numbersClient';
+import {
+  createNumbersFollowUpDecision,
+  createNumbersFollowUpQueue,
+  getNumbersSnapshot,
+  updateNumbersFollowUpDecisionStatus
+} from '../services/numbersClient';
 
 interface NumbersState {
   error: string | null;
@@ -18,11 +24,15 @@ interface NumbersState {
     candidateId: string,
     request: CreateNumbersFollowUpDecisionRequest
   ) => Promise<NumbersFollowUpDecisionResponse>;
+  updateDecisionStatus: (
+    candidateId: string,
+    request: UpdateNumbersFollowUpDecisionStatusRequest
+  ) => Promise<NumbersFollowUpDecisionResponse>;
   createQueue: (candidateId: string, request: CreateNumbersFollowUpQueueRequest) => Promise<NumbersFollowUpQueueResponse>;
 }
 
 export function useNumbersSnapshot(focus = 'corporation'): NumbersState {
-  const [state, setState] = useState<Omit<NumbersState, 'createDecision' | 'createQueue'>>({
+  const [state, setState] = useState<Omit<NumbersState, 'createDecision' | 'updateDecisionStatus' | 'createQueue'>>({
     error: null,
     liveProvenance: null,
     loading: true,
@@ -61,6 +71,7 @@ export function useNumbersSnapshot(focus = 'corporation'): NumbersState {
   return {
     ...state,
     createDecision: createNumbersFollowUpDecision,
+    updateDecisionStatus: updateNumbersFollowUpDecisionStatus,
     createQueue: createNumbersFollowUpQueue
   };
 }

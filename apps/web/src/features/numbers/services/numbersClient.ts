@@ -6,7 +6,8 @@ import {
   type CreateNumbersFollowUpQueueRequest,
   type NumbersFollowUpDecisionResponse,
   type NumbersFollowUpQueueResponse,
-  type NumbersSnapshotResponse
+  type NumbersSnapshotResponse,
+  type UpdateNumbersFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
 
 export async function getNumbersSnapshot(focus = 'corporation'): Promise<NumbersSnapshotResponse> {
@@ -26,6 +27,23 @@ export async function createNumbersFollowUpDecision(
 ): Promise<NumbersFollowUpDecisionResponse> {
   const response = await fetch(`/api/numbers/follow-ups/${encodeURIComponent(candidateId)}/decision`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return numbersFollowUpDecisionResponseSchema.parse(await response.json());
+}
+
+export async function updateNumbersFollowUpDecisionStatus(
+  candidateId: string,
+  request: UpdateNumbersFollowUpDecisionStatusRequest
+): Promise<NumbersFollowUpDecisionResponse> {
+  const response = await fetch(`/api/numbers/follow-ups/${encodeURIComponent(candidateId)}/decision/status`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
   });

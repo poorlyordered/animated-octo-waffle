@@ -65,6 +65,26 @@ export const approvedNumbersFollowUpDecision: DecisionRecord = {
   updatedAt: '2026-06-02T12:05:00.000Z'
 };
 
+export const approvedNumbersFollowUpDecisionStatus: DecisionRecord = {
+  ...approvedNumbersFollowUpDecision,
+  id: numbersFollowUpDecision.id
+};
+
+export const rejectedNumbersFollowUpDecision: DecisionRecord = {
+  ...numbersFollowUpDecision,
+  status: 'rejected',
+  statusHistory: [
+    ...numbersFollowUpDecision.statusHistory,
+    {
+      fromStatus: 'proposed',
+      toStatus: 'rejected',
+      changedAt: '2026-06-02T12:06:00.000Z',
+      note: 'Commander rejected this Numbers follow-up.'
+    }
+  ],
+  updatedAt: '2026-06-02T12:06:00.000Z'
+};
+
 export const numbersFollowUpQueueItem: AutomationQueueItem = {
   ...queuedItem,
   id: 'queue-numbers-follow-up-1',
@@ -118,12 +138,41 @@ export const queuedNumbersApprovalHandoff: NumbersApprovalHandoff = {
   boundary: 'Queued work handoff only. No worker was dispatched and no execution occurred.'
 };
 
+export const rejectedNumbersApprovalHandoff: NumbersApprovalHandoff = {
+  ...proposedNumbersApprovalHandoff,
+  decisionId: rejectedNumbersFollowUpDecision.id,
+  decisionStatus: 'rejected',
+  approvalRequired: false,
+  queueReady: false,
+  message: `Decision ${rejectedNumbersFollowUpDecision.id} is rejected. Queued work cannot be created from this decision.`
+};
+
 export const numbersFollowUpDecisionResponse: NumbersFollowUpDecisionResponse = {
   decision: numbersFollowUpDecision,
   origin: numbersFollowUpOrigin,
   approvalHandoff: proposedNumbersApprovalHandoff,
   message:
     'Decision recorded. No EVE action, wallet action, asset action, worker dispatch, or external execution was performed.'
+};
+
+export const approvedNumbersFollowUpDecisionStatusResponse: NumbersFollowUpDecisionResponse = {
+  decision: approvedNumbersFollowUpDecisionStatus,
+  origin: numbersFollowUpOrigin,
+  approvalHandoff: {
+    ...approvedNumbersApprovalHandoff,
+    decisionId: approvedNumbersFollowUpDecisionStatus.id,
+    message: `Decision ${approvedNumbersFollowUpDecisionStatus.id} is approved and ready for queued work.`
+  },
+  message:
+    'Decision approved. Queue creation remains a separate commander action; no queued work, worker dispatch, EVE action, wallet action, asset action, or external execution was performed.'
+};
+
+export const rejectedNumbersFollowUpDecisionStatusResponse: NumbersFollowUpDecisionResponse = {
+  decision: rejectedNumbersFollowUpDecision,
+  origin: numbersFollowUpOrigin,
+  approvalHandoff: rejectedNumbersApprovalHandoff,
+  message:
+    'Decision rejected. No queued work, worker dispatch, EVE action, wallet action, asset action, or external execution was performed.'
 };
 
 export const approvedNumbersFollowUpDecisionResponse: NumbersFollowUpDecisionResponse = {

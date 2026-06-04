@@ -173,6 +173,23 @@ button:disabled {
   opacity: 0.6;
 }
 
+button.secondary {
+  background: #111820;
+  color: #d8cfc0;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.button-row button,
+.button-row button + button {
+  margin-left: 0;
+}
+
 li {
   margin-bottom: 8px;
 }

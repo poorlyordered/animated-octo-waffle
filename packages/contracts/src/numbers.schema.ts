@@ -107,6 +107,14 @@ export const createNumbersFollowUpDecisionRequestSchema = z.object({
   expectedResult: z.string().min(1).optional()
 });
 
+export const updateNumbersFollowUpDecisionStatusRequestSchema = z.object({
+  snapshotId: z.string().min(1),
+  sourceDecisionId: z.string().min(1),
+  status: z.enum(['approved', 'rejected']),
+  approvalText: z.string().min(1).optional(),
+  note: z.string().min(1).optional()
+});
+
 export const numbersFollowUpDecisionResponseSchema = z.object({
   decision: decisionRecordSchema,
   origin: numbersFollowUpOriginSchema,
