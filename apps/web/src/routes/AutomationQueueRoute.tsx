@@ -31,6 +31,7 @@ export function AutomationQueueRoute() {
       <AutomationQueueDetail
         queueItem={automationQueue.selectedQueueItem?.queueItem ?? null}
         handoff={automationQueue.selectedQueueItem?.handoff}
+        onCancelHandoffRetry={automationQueue.cancelHandoffRetry}
         onPrepareHandoff={automationQueue.prepareHandoff}
         onScheduleHandoffRetry={automationQueue.scheduleHandoffRetry}
       />

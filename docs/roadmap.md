@@ -418,12 +418,32 @@ Validation:
 - Spec: `specs/019-opportunity-ingestion-provenance`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M20: Retry Cancellation and Policy Controls - Complete
+
+Goal: add commander-side cancellation and visible retry policy controls for scheduled or blocked retry requests.
+
+Delivered capabilities:
+
+- `canceled` retry status with canceled timestamp, actor, and reason metadata
+- Browser-safe retry policy metadata on retry summaries
+- Atomic cancellation of latest scheduled or blocked worker handoff retries
+- Atomic cancellation of latest scheduled or blocked ESI sync retries
+- Browser cancel controls on automation queue and ESI sync retry surfaces
+- Browser rendering for one-active-scheduled-retry policy, cancelable status policy, and no-execution boundary language
+- Contract, unit, and browser smoke coverage for cancellation, policy metadata, and no-execution copy
+- No worker dispatch, retry claim, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/020-retry-cancellation-policy`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M20 selection after M19 review.
+Proceed to M21 selection after M20 review.
 
 Recommended next-slice candidates:
 
-- Retry cancellation and retry policy controls for scheduled or blocked retry requests.
 - Decision approval workflow improvements for Numbers-origin decisions.
 - Dedicated Opportunity surface once the command brief provenance model has settled.
+- Retry rescheduling or retry history management once cancellation behavior has been reviewed.

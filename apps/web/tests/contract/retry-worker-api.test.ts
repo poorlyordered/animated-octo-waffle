@@ -1,11 +1,14 @@
 import {
   retryRequestSummarySchema,
+  cancelRetryRequestSchema,
+  cancelRetryResponseSchema,
   retryWorkerReadyResponseSchema,
   retryWorkerRequestSchema,
   retryWorkerResponseSchema
 } from '@gryyk/contracts';
 import {
   completedHandoffRetry,
+  handoffRetryCancelResponse,
   retryWorkerEsiBlockedResponse,
   retryWorkerHandoffCompletedResponse,
   retryWorkerReadyResponse
@@ -25,6 +28,15 @@ describe('Retry worker API contract', () => {
     expect(retryWorkerRequestSchema.parse({ workerId: 'retry-worker-1' })).toEqual({
       workerId: 'retry-worker-1'
     });
+  });
+
+  it('accepts commander retry cancellation payloads and responses', () => {
+    expect(cancelRetryRequestSchema.parse({ reason: 'Commander canceled retry after policy review.' }).reason).toContain('canceled');
+    const parsed = cancelRetryResponseSchema.parse(handoffRetryCancelResponse);
+
+    expect(parsed.retry.status).toBe('canceled');
+    expect(parsed.retry.policy.canCancel).toBe(false);
+    expect(parsed.retry.boundary).toContain('Retry canceled');
   });
 
   it('accepts completed handoff retry execution responses', () => {

@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import type { Db, Filter } from 'mongodb';
 import {
   blockRetryRequest,
+  cancelLatestRetryRequestForTarget,
   claimRetryRequest,
   completeRetryRequest,
   assertNoUnsafeRetryFields,
@@ -64,6 +65,9 @@ function matches(document: Document, filter: Filter<Document>): boolean {
       if ('$lte' in operators) {
         return typeof document[key] === 'string' && typeof operators.$lte === 'string' && document[key] <= operators.$lte;
       }
+      if ('$in' in operators && Array.isArray(operators.$in)) {
+        return operators.$in.includes(document[key]);
+      }
     }
 
     return document[key] === expected;
@@ -102,7 +106,11 @@ describe('retry request store', () => {
     expect(retryRequestSummary(first.retry)).toMatchObject({
       targetType: 'worker_handoff',
       targetId: 'handoff-1',
-      status: 'scheduled'
+      status: 'scheduled',
+      policy: {
+        canCancel: true,
+        activeScheduledLimit: 1
+      }
     });
   });
 
@@ -144,6 +152,40 @@ describe('retry request store', () => {
     expect(duplicateClaim).toBeNull();
     expect(blocked?.status).toBe('blocked');
     expect(retryRequestSummary(blocked!).blockedReason).toContain('Only failed');
+  });
+
+  it('cancels only scheduled or blocked retries for a target', async () => {
+    const { db } = createDb([retryDocument()]);
+
+    const canceled = await cancelLatestRetryRequestForTarget(
+      db,
+      '123456789',
+      'worker_handoff',
+      'handoff-1',
+      { reason: 'Commander canceled retry after policy review.' },
+      'commander',
+      new Date('2026-06-02T18:04:00.000Z')
+    );
+    const duplicateCancel = await cancelLatestRetryRequestForTarget(
+      db,
+      '123456789',
+      'worker_handoff',
+      'handoff-1',
+      { reason: 'Cancel again.' },
+      'commander',
+      new Date('2026-06-02T18:05:00.000Z')
+    );
+    const summary = retryRequestSummary(canceled!);
+
+    expect(summary).toMatchObject({
+      status: 'canceled',
+      canceledBy: 'commander',
+      cancelReason: 'Commander canceled retry after policy review.',
+      policy: {
+        canCancel: false
+      }
+    });
+    expect(duplicateCancel).toBeNull();
   });
 
   it('completes claimed retries with safe replacement summaries', async () => {

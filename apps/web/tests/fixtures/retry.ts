@@ -1,4 +1,26 @@
-import type { RetryRequestSummary, RetryWorkerReadyResponse, RetryWorkerResponse, ScheduleRetryResponse } from '@gryyk/contracts';
+import type {
+  CancelRetryResponse,
+  RetryPolicySummary,
+  RetryRequestSummary,
+  RetryWorkerReadyResponse,
+  RetryWorkerResponse,
+  ScheduleRetryResponse
+} from '@gryyk/contracts';
+
+export const cancelableRetryPolicy: RetryPolicySummary = {
+  canSchedule: false,
+  canCancel: true,
+  activeScheduledLimit: 1,
+  cancelableStatuses: ['scheduled', 'blocked'],
+  boundary:
+    'Retry policy: one active scheduled retry is allowed per target. Scheduled and blocked retries can be canceled; claimed and completed retries cannot.'
+};
+
+export const finalRetryPolicy: RetryPolicySummary = {
+  ...cancelableRetryPolicy,
+  canSchedule: true,
+  canCancel: false
+};
 
 export const handoffRetry: RetryRequestSummary = {
   id: 'retry-handoff-1',
@@ -7,6 +29,7 @@ export const handoffRetry: RetryRequestSummary = {
   status: 'scheduled',
   reason: 'Commander approved retry scheduling for failed worker handoff.',
   createdAt: '2026-06-02T17:30:00.000Z',
+  policy: cancelableRetryPolicy,
   boundary: 'Retry scheduled only. No worker was dispatched and no execution occurred.'
 };
 
@@ -17,6 +40,7 @@ export const esiSyncRetry: RetryRequestSummary = {
   status: 'scheduled',
   reason: 'Commander approved retry scheduling for failed ESI sync.',
   createdAt: '2026-06-02T17:31:00.000Z',
+  policy: cancelableRetryPolicy,
   boundary: 'Retry scheduled only. No worker was dispatched and no execution occurred.'
 };
 
@@ -36,6 +60,7 @@ export const completedHandoffRetry: RetryRequestSummary = {
     summary: 'Prepared replacement worker handoff from commander-approved retry.',
     executedAt: '2026-06-02T17:33:00.000Z'
   },
+  policy: finalRetryPolicy,
   boundary: 'Retry execution is worker-only and uses prior commander approval.'
 };
 
@@ -47,7 +72,19 @@ export const blockedEsiSyncRetry: RetryRequestSummary = {
   claimedAt: '2026-06-02T17:34:00.000Z',
   blockedAt: '2026-06-02T17:35:00.000Z',
   blockedReason: 'Active ESI consent is required before this sync retry can be queued.',
+  policy: cancelableRetryPolicy,
   boundary: 'Retry execution is worker-only and uses prior commander approval.'
+};
+
+export const canceledHandoffRetry: RetryRequestSummary = {
+  ...handoffRetry,
+  id: 'retry-handoff-canceled',
+  status: 'canceled',
+  canceledAt: '2026-06-02T17:36:00.000Z',
+  canceledBy: 'commander',
+  cancelReason: 'Commander canceled retry after policy review.',
+  policy: finalRetryPolicy,
+  boundary: 'Retry canceled by commander. No worker was dispatched and no execution occurred.'
 };
 
 export const handoffRetryResponse: ScheduleRetryResponse = {
@@ -58,6 +95,19 @@ export const handoffRetryResponse: ScheduleRetryResponse = {
 export const esiSyncRetryResponse: ScheduleRetryResponse = {
   retry: esiSyncRetry,
   duplicate: false
+};
+
+export const handoffRetryCancelResponse: CancelRetryResponse = {
+  retry: canceledHandoffRetry
+};
+
+export const esiSyncRetryCancelResponse: CancelRetryResponse = {
+  retry: {
+    ...canceledHandoffRetry,
+    id: 'retry-esi-sync-canceled',
+    targetType: 'esi_sync_request',
+    targetId: 'sync-request-failed'
+  }
 };
 
 export const retryWorkerReadyResponse: RetryWorkerReadyResponse = {

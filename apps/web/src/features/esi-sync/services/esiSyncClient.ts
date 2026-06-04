@@ -1,10 +1,14 @@
 import {
   esiSyncStatusResponseSchema,
+  cancelRetryRequestSchema,
+  cancelRetryResponseSchema,
   prepareEsiSyncResponseSchema,
   revokeEsiVaultResponseSchema,
   scheduleRetryRequestSchema,
   scheduleRetryResponseSchema,
   startEsiSyncConsentResponseSchema,
+  type CancelRetryRequest,
+  type CancelRetryResponse,
   type EsiSyncStatusResponse,
   type PrepareEsiSyncRequest,
   type PrepareEsiSyncResponse,
@@ -42,6 +46,25 @@ export async function scheduleEsiSyncRetry(
   }
 
   return scheduleRetryResponseSchema.parse(await response.json());
+}
+
+export async function cancelEsiSyncRetry(
+  syncRequestId: string,
+  request: CancelRetryRequest
+): Promise<CancelRetryResponse> {
+  const response = await fetch(`/api/esi-sync/${encodeURIComponent(syncRequestId)}/retry/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cancelRetryRequestSchema.parse(request))
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const message = body && typeof body === 'object' && 'message' in body ? String(body.message) : `Request failed: ${response.status}`;
+    throw new Error(message);
+  }
+
+  return cancelRetryResponseSchema.parse(await response.json());
 }
 
 export async function startEsiSyncConsent(

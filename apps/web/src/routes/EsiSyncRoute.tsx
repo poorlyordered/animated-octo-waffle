@@ -9,6 +9,7 @@ export function EsiSyncRoute() {
       error={esiSync.error}
       loading={esiSync.loading}
       status={esiSync.status}
+      onCancelRetry={esiSync.cancelRetry}
       onPrepareSync={esiSync.prepareSync}
       onRevokeVault={esiSync.revokeVault}
       onScheduleRetry={esiSync.scheduleRetry}

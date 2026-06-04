@@ -2,17 +2,26 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   EsiSyncDomain,
   EsiSyncStatusResponse,
+  CancelRetryResponse,
   PrepareEsiSyncResponse,
   RevokeEsiVaultResponse,
   ScheduleRetryResponse,
   StartEsiSyncConsentResponse
 } from '@gryyk/contracts';
-import { getEsiSyncStatus, prepareEsiSync, revokeEsiVault, scheduleEsiSyncRetry, startEsiSyncConsent } from '../services/esiSyncClient';
+import {
+  cancelEsiSyncRetry,
+  getEsiSyncStatus,
+  prepareEsiSync,
+  revokeEsiVault,
+  scheduleEsiSyncRetry,
+  startEsiSyncConsent
+} from '../services/esiSyncClient';
 
 interface EsiSyncState {
   error: string | null;
   loading: boolean;
   status: EsiSyncStatusResponse | null;
+  cancelRetry: (syncRequestId: string, reason: string) => Promise<CancelRetryResponse>;
   prepareSync: (domain: EsiSyncDomain) => Promise<PrepareEsiSyncResponse>;
   revokeVault: () => Promise<RevokeEsiVaultResponse>;
   scheduleRetry: (syncRequestId: string, reason: string) => Promise<ScheduleRetryResponse>;
@@ -20,7 +29,9 @@ interface EsiSyncState {
 }
 
 export function useEsiSync(): EsiSyncState {
-  const [state, setState] = useState<Omit<EsiSyncState, 'prepareSync' | 'revokeVault' | 'scheduleRetry' | 'startConsent'>>({
+  const [state, setState] = useState<
+    Omit<EsiSyncState, 'cancelRetry' | 'prepareSync' | 'revokeVault' | 'scheduleRetry' | 'startConsent'>
+  >({
     error: null,
     loading: true,
     status: null
@@ -58,6 +69,11 @@ export function useEsiSync(): EsiSyncState {
 
   return {
     ...state,
+    cancelRetry: async (syncRequestId, reason) => {
+      const response = await cancelEsiSyncRetry(syncRequestId, { reason });
+      await refresh();
+      return response;
+    },
     prepareSync: async (domain) => {
       const response = await prepareEsiSync({ domain });
       await refresh();

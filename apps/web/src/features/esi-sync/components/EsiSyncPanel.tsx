@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type {
   EsiSyncDomain,
   EsiSyncStatusResponse,
+  CancelRetryResponse,
   PrepareEsiSyncResponse,
   RevokeEsiVaultResponse,
   ScheduleRetryResponse,
@@ -12,6 +13,7 @@ interface EsiSyncPanelProps {
   error: string | null;
   loading: boolean;
   status: EsiSyncStatusResponse | null;
+  onCancelRetry?: (syncRequestId: string, reason: string) => Promise<CancelRetryResponse>;
   onPrepareSync: (domain: EsiSyncDomain) => Promise<PrepareEsiSyncResponse>;
   onRevokeVault: () => Promise<RevokeEsiVaultResponse>;
   onScheduleRetry?: (syncRequestId: string, reason: string) => Promise<ScheduleRetryResponse>;
@@ -23,6 +25,7 @@ export function EsiSyncPanel({
   loading,
   status,
   onPrepareSync,
+  onCancelRetry,
   onRevokeVault,
   onScheduleRetry,
   onStartConsent
@@ -81,6 +84,22 @@ export function EsiSyncPanel({
       setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Duplicate: ${response.duplicate ? 'yes' : 'no'}.`);
     } catch (actionError) {
       setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to schedule ESI sync retry.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleCancelRetry(syncRequestId: string) {
+    if (!onCancelRetry) {
+      return;
+    }
+
+    setBusyAction(`cancel-retry-${syncRequestId}`);
+    try {
+      const response = await onCancelRetry(syncRequestId, 'Commander canceled retry after policy review.');
+      setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}.`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to cancel ESI sync retry.');
     } finally {
       setBusyAction(null);
     }
@@ -199,13 +218,26 @@ export function EsiSyncPanel({
                     Retry {item.retry.status}: {item.retry.reason}
                     {item.retry.claimedBy ? ` Claimed by ${item.retry.claimedBy}.` : ''}
                     {item.retry.completedAt ? ` Completed ${new Date(item.retry.completedAt).toLocaleString()}.` : ''}
+                    {item.retry.canceledAt ? ` Canceled ${new Date(item.retry.canceledAt).toLocaleString()}.` : ''}
+                    {item.retry.cancelReason ? ` Reason: ${item.retry.cancelReason}` : ''}
                     {item.retry.result ? ` Replacement ${item.retry.result.replacementTargetId} is ${item.retry.result.replacementTargetStatus}.` : ''}
                     {item.retry.blockedReason ? ` Blocked: ${item.retry.blockedReason}` : ''}
+                    {' '}
+                    {item.retry.policy.boundary}
                   </p>
                 ) : null}
                 {item.status === 'failed' ? (
                   <button type="button" disabled={!onScheduleRetry || busyAction === `retry-${item.id}`} onClick={() => void handleScheduleRetry(item.id)}>
                     {busyAction === `retry-${item.id}` ? 'Scheduling...' : 'Schedule retry'}
+                  </button>
+                ) : null}
+                {item.retry ? (
+                  <button
+                    type="button"
+                    disabled={!item.retry.policy.canCancel || !onCancelRetry || busyAction === `cancel-retry-${item.id}`}
+                    onClick={() => void handleCancelRetry(item.id)}
+                  >
+                    {busyAction === `cancel-retry-${item.id}` ? 'Canceling...' : 'Cancel retry'}
                   </button>
                 ) : null}
                 <p className="notice">{item.boundary}</p>
