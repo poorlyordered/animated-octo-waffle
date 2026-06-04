@@ -580,12 +580,34 @@ Validation:
 - Spec: `specs/027-opportunity-approval-handoff`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
 
+### M28: Decision List Pagination and Persisted Filters - Complete
+
+Goal: keep the decision loop scannable as mixed Numbers and Opportunity decisions grow.
+
+Delivered capabilities:
+
+- Browser-local status/source/page-size filter persistence
+- Safe defaults for invalid or missing persisted filter settings
+- Bounded page size options for decision list review
+- Current-page result window with range summary
+- Previous/next pagination controls with first/last-page disabled states
+- Filter and page-size changes reset to page 1
+- Expanded browser fixtures for multi-page decision review
+- Unit coverage for persisted settings parsing, local storage read/write, and clamped pagination
+- Browser smoke coverage for page navigation, filter reset, and reload persistence
+- No backend route, durable preference storage, approval mutation, queue creation, worker dispatch, retry, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/028-decision-list-pagination-persistence`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, targeted post-fix browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M28 selection after M27 review.
+Proceed to M29 selection after M28 review.
 
 Recommended next-slice candidates:
 
-- Decision list pagination or persisted filters if the browser-local review model becomes crowded.
 - Retry policy controls beyond the current one-active-scheduled-retry boundary if commander workflows require more nuance.
 - Opportunity queued-work detail handoff or worker preparation once Opportunity queue creation has been reviewed.
+- Decision saved views or backend filtering only if local pagination is not enough for real decision volume.

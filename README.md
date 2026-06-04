@@ -129,6 +129,8 @@ Numbers-origin decision approval now has a scoped browser workflow. The server v
 
 M24 adds browser-local decision list filters and workload counts. The decision loop can filter by status and source domain, labels Opportunity/brief vs Numbers follow-up records, and shows visible, total, proposed, approved, rejected, and player-impacting counts. Filtering does not approve decisions, create queued work, dispatch workers, retry, write to EVE, or execute external services.
 
+M28 adds browser-local decision list pagination and persisted status/source/page-size filters. The list shows a bounded page, range summary, and previous/next controls while preserving filter settings in local storage. Pagination and filter persistence organize records only; they do not approve decisions, create queued work, dispatch workers, retry, fetch ESI, write to EVE, or execute external services.
+
 For write-flow validation, use the isolated MongoDB database `gryyk47_greenfield_test` by setting `MONGODB_DB=gryyk47_greenfield_test` in local environment. It has seeded `research_briefs`, `research_requests`, and `strategic_decisions` records for the configured corporation scope.
 
 ## Automation Queue

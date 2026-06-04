@@ -103,12 +103,22 @@ test('filters decision records by status and source', async ({ page }, testInfo)
 
   const decisionRecords = page.getByLabel('Decision records');
   const filters = page.getByLabel('Decision filters');
+  const pagination = page.getByLabel('Decision pagination');
 
   await expectVisibleText(page, 'Browser smoke decision record recommendation.');
   await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
   await expectVisibleText(page, 'Decision filters organize records only.');
+  await filters.getByLabel('Page size').selectOption('3');
+  await expectVisibleText(page, 'Page 1 of 3. Showing 1-3 of 8.');
+  await expect(decisionRecords.getByText('Browser smoke rejected decision.')).toHaveCount(0);
+  await pagination.getByRole('button', { name: 'Next' }).click();
+  await expectVisibleText(page, 'Page 2 of 3. Showing 4-6 of 8.');
+  await expectVisibleText(page, 'Browser smoke rejected decision.');
+  await pagination.getByRole('button', { name: 'Previous' }).click();
+  await expectVisibleText(page, 'Page 1 of 3. Showing 1-3 of 8.');
 
   await filters.getByLabel('Status').selectOption('rejected');
+  await expectVisibleText(page, 'Page 1 of 1. Showing 1-1 of 1.');
   await expectVisibleText(page, 'Browser smoke rejected decision.');
   await expect(decisionRecords.getByText('Browser smoke decision record recommendation.')).toHaveCount(0);
 
@@ -117,6 +127,12 @@ test('filters decision records by status and source', async ({ page }, testInfo)
   await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
   await expectVisibleText(page, 'Source: Numbers follow-up');
   await expect(decisionRecords.getByText('Browser smoke approved decision for queue links.')).toHaveCount(0);
+
+  await page.reload();
+  const reloadedFilters = page.getByLabel('Decision filters');
+  await expect(reloadedFilters.getByLabel('Source')).toHaveValue('numbers');
+  await expect(reloadedFilters.getByLabel('Page size')).toHaveValue('3');
+  await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
 
   await assertNoBrowserDiagnostics();
 });
