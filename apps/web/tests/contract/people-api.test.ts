@@ -10,12 +10,18 @@ import {
   linkedDecisionFollowUp,
   linkedQueueFollowUp,
   openFollowUp,
+  peopleIngestionProvenance,
   playerImpactingFollowUp
 } from '../fixtures/people';
 
 describe('People API contract', () => {
   it('accepts member list and detail responses', () => {
-    expect(memberProfileListResponseSchema.parse({ members: [completeMember] }).members[0].displayName).toBe('Ari Voss');
+    const parsed = memberProfileListResponseSchema.parse({
+      members: [completeMember],
+      ingestionProvenance: peopleIngestionProvenance
+    });
+    expect(parsed.members[0].displayName).toBe('Ari Voss');
+    expect(parsed.ingestionProvenance?.history[0].status).toBe('completed');
     expect(memberProfileDetailResponseSchema.parse({ member: completeMember, followUps: [openFollowUp] }).followUps[0].status).toBe('open');
   });
 

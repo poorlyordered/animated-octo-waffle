@@ -79,6 +79,12 @@ M11 allows a commander to record a proposed decision from an eligible Numbers fo
 
 M17 makes that approval handoff browser-visible. Numbers follow-up action responses now include computed approval handoff metadata showing whether a decision is approval-blocked, queue-ready, linked to queued work, or duplicate-safe. The browser renders the decision and queue linkage without letting browser inputs forge approval, queue state, provenance, dispatch, retry, EVE write, wallet, asset, contract, role, or external execution metadata.
 
+## People Operating Layer
+
+The People Operating Layer reads processed member profiles and leadership follow-ups from MongoDB `member_profiles` and `leadership_followups`. It shows member identity, role context, activity, delegation, source coverage, and approval-gated follow-up creation.
+
+M18 adds browser-safe People ingestion provenance to the member list surface. The browser shows whether People profiles are linked to completed ingestion history, historical profile records, or unavailable ingestion history; it also shows source count, profile count, identity/roles/activity/delegation status, recent ingestion history, and no-execution boundary language. This remains read-only: no retry scheduling, worker dispatch, ESI fetch, EVE write, role mutation, access mutation, or external-service execution occurs in browser or request paths.
+
 ## ESI Token Vault Sync
 
 M12 adds explicit-consent ESI token vaulting for future live read ingestion. The commander can inspect vault status, start read-sync consent, revoke consent, and prepare a Numbers sync request from an active vault.

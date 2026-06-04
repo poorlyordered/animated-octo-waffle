@@ -1,5 +1,6 @@
 import { PeopleFollowUpCreate } from '../features/people/components/PeopleFollowUpCreate';
 import { PeopleFollowUpList } from '../features/people/components/PeopleFollowUpList';
+import { PeopleIngestionProvenancePanel } from '../features/people/components/PeopleIngestionProvenancePanel';
 import { PeopleMemberDetail } from '../features/people/components/PeopleMemberDetail';
 import { PeopleMemberList } from '../features/people/components/PeopleMemberList';
 import { usePeople } from '../features/people/state/usePeople';
@@ -33,6 +34,7 @@ export function PeopleRoute() {
         }}
         onActivityFilterChange={people.setActivityFilter}
       />
+      <PeopleIngestionProvenancePanel provenance={people.ingestionProvenance} />
       <PeopleMemberDetail member={people.selectedMember} followUps={people.selectedMemberFollowUps} />
       <PeopleFollowUpCreate member={people.selectedMember} onCreate={people.createMemberFollowUp} />
       <PeopleFollowUpList

@@ -2,7 +2,14 @@ import { completedItem, failedItem, queuedItem } from '../../tests/fixtures/auto
 import { processedBrief, processedRequest } from '../../tests/fixtures/commandBrief';
 import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
 import { numbersLiveProvenance, numbersSnapshot } from '../../tests/fixtures/numbers';
-import { completeMember, missingLinkFollowUp, openFollowUp, playerImpactingFollowUp, staleMember } from '../../tests/fixtures/people';
+import {
+  completeMember,
+  missingLinkFollowUp,
+  openFollowUp,
+  peopleIngestionProvenance,
+  playerImpactingFollowUp,
+  staleMember
+} from '../../tests/fixtures/people';
 import {
   blockedHandoff,
   claimedHandoff,
@@ -136,6 +143,10 @@ export const commandSurfaceFixtures = {
     ]
   },
   people: {
+    ingestionProvenance: {
+      ...peopleIngestionProvenance,
+      message: 'Latest People profiles are linked to completed browser ingestion history.'
+    },
     followUps: [
       {
         ...openFollowUp,

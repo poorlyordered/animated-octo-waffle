@@ -4,10 +4,16 @@ import type {
   FollowUpPriority,
   FollowUpStatus,
   LeadershipFollowUp,
-  MemberProfile
+  MemberProfile,
+  PeopleIngestionProvenance
 } from '../../../packages/contracts/src/index';
 import { findAutomationQueueItem } from './automation-queue-store';
 import { findDecisionRecord } from './decision-record-store';
+import {
+  aggregatePeopleIngestionSectionStatuses,
+  buildPeopleIngestionProvenance,
+  listPeopleIngestionHistory
+} from './people-ingestion-history';
 import {
   normalizeLeadershipFollowUpDocument,
   normalizeMemberProfileDocument,
@@ -73,6 +79,16 @@ export async function listMemberProfiles(
 export async function findMemberProfile(db: Db, corporationId: string, id: string): Promise<MemberProfile | null> {
   const document = await db.collection(memberCollectionName).findOne(idFilter(id, corporationId));
   return document ? normalizeMemberProfileDocument(document as MemberProfileDocument) : null;
+}
+
+export async function getPeopleIngestionProvenance(
+  db: Db,
+  corporationId: string,
+  members: MemberProfile[]
+): Promise<PeopleIngestionProvenance> {
+  const fallbackSections = aggregatePeopleIngestionSectionStatuses(members);
+  const history = await listPeopleIngestionHistory(db, corporationId, fallbackSections);
+  return buildPeopleIngestionProvenance(members, history);
 }
 
 export async function listLeadershipFollowUps(

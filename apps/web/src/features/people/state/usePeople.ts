@@ -3,12 +3,14 @@ import type {
   CreateLeadershipFollowUpRequest,
   FollowUpStatus,
   LeadershipFollowUp,
-  MemberProfile
+  MemberProfile,
+  PeopleIngestionProvenance
 } from '@gryyk/contracts';
 import { createFollowUp, getMember, listFollowUps, listMembers } from '../services/peopleClient';
 
 interface PeopleState {
   members: MemberProfile[];
+  ingestionProvenance: PeopleIngestionProvenance | null;
   followUps: LeadershipFollowUp[];
   selectedMember: MemberProfile | null;
   selectedMemberFollowUps: LeadershipFollowUp[];
@@ -29,6 +31,7 @@ interface UsePeopleState extends PeopleState {
 export function usePeople(): UsePeopleState {
   const [state, setState] = useState<PeopleState>({
     members: [],
+    ingestionProvenance: null,
     followUps: [],
     selectedMember: null,
     selectedMemberFollowUps: [],
@@ -57,6 +60,7 @@ export function usePeople(): UsePeopleState {
         setState((current) => ({
           ...current,
           members: memberResponse.members,
+          ingestionProvenance: memberResponse.ingestionProvenance ?? null,
           followUps: followUpResponse.followUps,
           selectedMember: current.selectedMember ?? selectedMember,
           selectedMemberFollowUps: current.selectedMember

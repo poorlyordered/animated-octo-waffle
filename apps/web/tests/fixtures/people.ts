@@ -1,4 +1,4 @@
-import type { LeadershipFollowUp, MemberProfile } from '@gryyk/contracts';
+import type { LeadershipFollowUp, MemberProfile, PeopleIngestionProvenance } from '@gryyk/contracts';
 import { approvedDecision } from './decisionRecords';
 import { queuedItem } from './automationQueue';
 
@@ -91,6 +91,40 @@ export const missingDataMember: MemberProfile = {
     delegation: 'missing',
     missingReasons: ['Role context is missing.', 'Activity timestamp is missing.', 'Delegation notes are missing.']
   }
+};
+
+export const peopleIngestionProvenance: PeopleIngestionProvenance = {
+  mode: 'latest_ingestion',
+  sourceCount: 3,
+  profileCount: 3,
+  sectionStatuses: [
+    { key: 'identity', status: 'present' },
+    { key: 'roles', status: 'missing' },
+    { key: 'activity', status: 'stale' },
+    { key: 'delegation', status: 'missing' }
+  ],
+  history: [
+    {
+      id: 'people-sync-1',
+      status: 'completed',
+      requestedAt: '2026-06-02T09:00:00.000Z',
+      claimedBy: 'people-worker',
+      claimedAt: '2026-06-02T09:05:00.000Z',
+      completedAt: '2026-06-02T09:20:00.000Z',
+      sourceCount: 3,
+      sectionStatuses: [
+        { key: 'identity', status: 'present' },
+        { key: 'roles', status: 'missing' },
+        { key: 'activity', status: 'stale' },
+        { key: 'delegation', status: 'missing' }
+      ],
+      boundary:
+        'People ingestion history is read-only. This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.'
+    }
+  ],
+  message: 'Latest People profiles are linked to completed ingestion history.',
+  boundary:
+    'People ingestion history is read-only. This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.'
 };
 
 export const openFollowUp: LeadershipFollowUp = {
