@@ -1,7 +1,11 @@
 import {
   prepareWorkerHandoffRequestSchema,
+  cancelRetryRequestSchema,
+  cancelRetryResponseSchema,
   scheduleRetryRequestSchema,
   scheduleRetryResponseSchema,
+  type CancelRetryRequest,
+  type CancelRetryResponse,
   workerHandoffListResponseSchema,
   workerHandoffResponseSchema,
   type PrepareWorkerHandoffRequest,
@@ -48,6 +52,21 @@ export async function scheduleWorkerHandoffRetry(
   });
 
   return parseJson(response, scheduleRetryResponseSchema);
+}
+
+export async function cancelWorkerHandoffRetry(
+  handoffId: string,
+  request: CancelRetryRequest
+): Promise<CancelRetryResponse> {
+  const response = await fetch(`/api/worker-handoffs/${encodeURIComponent(handoffId)}/retry/cancel`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(cancelRetryRequestSchema.parse(request))
+  });
+
+  return parseJson(response, cancelRetryResponseSchema);
 }
 
 export async function listWorkerHandoffs(filters: {

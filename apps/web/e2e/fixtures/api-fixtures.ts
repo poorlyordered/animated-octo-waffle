@@ -11,6 +11,8 @@ async function json(route: Route, body: unknown) {
 }
 
 export async function installCommandSurfaceApiFixtures(page: Page) {
+  let workerHandoffRetryOverride: unknown = null;
+
   await page.route('**/api/eve-session**', (route) => {
     if (route.request().method() === 'POST') {
       return json(route, {
@@ -71,6 +73,10 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
       return json(route, response);
     }
 
+    if (url.pathname.endsWith('/retry/cancel')) {
+      return json(route, commandSurfaceFixtures.retries.esiSyncCancel);
+    }
+
     if (url.pathname.endsWith('/retry')) {
       return json(route, commandSurfaceFixtures.retries.esiSync);
     }
@@ -106,6 +112,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
         commandSurfaceFixtures.automationQueue.queueItems.find((item) => item.id === detailMatch[1]) ??
         commandSurfaceFixtures.automationQueue.queueItems[0];
       const handoff = commandSurfaceFixtures.automationQueue.handoffs.find((item) => item.queueItemId === queueItem.id);
+      const retry = handoff?.id === 'handoff-browser-failed' && workerHandoffRetryOverride ? workerHandoffRetryOverride : handoff?.retry;
       return json(route, {
         queueItem,
         handoff: handoff
@@ -120,7 +127,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
               progress: handoff.progress,
               result: handoff.result,
               failure: handoff.failure,
-              retry: handoff.retry
+              retry
             }
           : undefined
       });
@@ -133,7 +140,14 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     return json(route, commandSurfaceFixtures.automationQueue);
   });
 
-  await page.route('**/api/worker-handoffs/*/retry', (route) => json(route, commandSurfaceFixtures.retries.handoff));
+  await page.route('**/api/worker-handoffs/*/retry/cancel', (route) => {
+    workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoffCancel.retry;
+    return json(route, commandSurfaceFixtures.retries.handoffCancel);
+  });
+  await page.route('**/api/worker-handoffs/*/retry', (route) => {
+    workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoff.retry;
+    return json(route, commandSurfaceFixtures.retries.handoff);
+  });
 
   await page.route('**/api/people/members/*', (route) => {
     const member = commandSurfaceFixtures.people.members[0];

@@ -4,6 +4,7 @@ import {
   workerFailRequestSchema,
   workerHandoffStatusSchema,
   workerProgressRequestSchema,
+  cancelRetryRequestSchema,
   scheduleRetryRequestSchema
 } from '../../packages/contracts/src/index';
 import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
@@ -19,6 +20,7 @@ import {
 } from './_shared/worker-handoff-store';
 import {
   assertNoUnsafeRetryFields,
+  cancelLatestRetryRequestForTarget,
   createOrFindScheduledRetryRequest,
   findLatestRetryRequest,
   retryRequestSummary
@@ -31,7 +33,7 @@ function handoffPathId(event: FunctionEvent): string | null {
 }
 
 function handoffActionPath(event: FunctionEvent): { id: string; action: string } | null {
-  const match = event.path?.match(/\/worker-handoffs\/([^/]+)\/(claim|progress|complete|fail|retry)$/);
+  const match = event.path?.match(/\/worker-handoffs\/([^/]+)\/(claim|progress|complete|fail|retry|retry\/cancel)$/);
   return match ? { id: match[1], action: match[2] } : null;
 }
 
@@ -85,6 +87,19 @@ export async function handler(event: FunctionEvent) {
           request
         );
         return jsonResponse(duplicate ? 200 : 201, { retry: retryRequestSummary(retry), duplicate });
+      }
+
+      if (actionPath.action === 'retry/cancel') {
+        assertNoUnsafeRetryFields(body);
+        const request = cancelRetryRequestSchema.parse(body);
+        const handoff = await findWorkerHandoff(db, corporationId, actionPath.id);
+        if (!handoff) {
+          return safeErrorResponse('Worker handoff not found', 404);
+        }
+        const retry = await cancelLatestRetryRequestForTarget(db, corporationId, 'worker_handoff', handoff.id, request);
+        return retry
+          ? jsonResponse(200, { retry: retryRequestSummary(retry) })
+          : safeErrorResponse('Only scheduled or blocked worker handoff retries can be canceled', 409);
       }
 
       assertWorkerCallbackAuthorized(event);

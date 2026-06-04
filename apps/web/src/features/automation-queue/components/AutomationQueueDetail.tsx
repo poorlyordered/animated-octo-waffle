@@ -1,15 +1,22 @@
 import { useState } from 'react';
-import type { AutomationQueueItem, ScheduleRetryResponse, WorkerHandoffSummary } from '@gryyk/contracts';
+import type { AutomationQueueItem, CancelRetryResponse, ScheduleRetryResponse, WorkerHandoffSummary } from '@gryyk/contracts';
 import { OperatingLegCoverage } from '../../command-brief/components/OperatingLegCoverage';
 
 interface AutomationQueueDetailProps {
   queueItem: AutomationQueueItem | null;
   handoff?: WorkerHandoffSummary;
+  onCancelHandoffRetry?: (handoffId: string, reason: string) => Promise<CancelRetryResponse>;
   onPrepareHandoff: (queueItemId: string) => Promise<unknown>;
   onScheduleHandoffRetry?: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
 }
 
-export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, onScheduleHandoffRetry }: AutomationQueueDetailProps) {
+export function AutomationQueueDetail({
+  queueItem,
+  handoff,
+  onCancelHandoffRetry,
+  onPrepareHandoff,
+  onScheduleHandoffRetry
+}: AutomationQueueDetailProps) {
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
   const [retryBusy, setRetryBusy] = useState(false);
 
@@ -19,6 +26,7 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, on
 
   const canPrepareHandoff = queueItem.status !== 'completed' && queueItem.status !== 'canceled';
   const canScheduleRetry = handoff?.status === 'failed' && Boolean(onScheduleHandoffRetry);
+  const canCancelRetry = Boolean(handoff?.retry?.policy.canCancel && onCancelHandoffRetry);
 
   async function handleScheduleRetry() {
     if (!handoff || !onScheduleHandoffRetry) {
@@ -31,6 +39,22 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, on
       setRetryStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Duplicate: ${response.duplicate ? 'yes' : 'no'}.`);
     } catch (error) {
       setRetryStatus(error instanceof Error ? error.message : 'Unable to schedule retry.');
+    } finally {
+      setRetryBusy(false);
+    }
+  }
+
+  async function handleCancelRetry() {
+    if (!handoff || !onCancelHandoffRetry) {
+      return;
+    }
+
+    setRetryBusy(true);
+    try {
+      const response = await onCancelHandoffRetry(handoff.id, 'Commander canceled retry after policy review.');
+      setRetryStatus(`${response.retry.boundary} Retry status: ${response.retry.status}.`);
+    } catch (error) {
+      setRetryStatus(error instanceof Error ? error.message : 'Unable to cancel retry.');
     } finally {
       setRetryBusy(false);
     }
@@ -123,8 +147,12 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, on
                   {handoff.retry.status}: {handoff.retry.reason}
                   {handoff.retry.claimedBy ? ` Claimed by ${handoff.retry.claimedBy}.` : ''}
                   {handoff.retry.completedAt ? ` Completed ${new Date(handoff.retry.completedAt).toLocaleString()}.` : ''}
+                  {handoff.retry.canceledAt ? ` Canceled ${new Date(handoff.retry.canceledAt).toLocaleString()}.` : ''}
+                  {handoff.retry.cancelReason ? ` Reason: ${handoff.retry.cancelReason}` : ''}
                   {handoff.retry.result ? ` Replacement ${handoff.retry.result.replacementTargetId} is ${handoff.retry.result.replacementTargetStatus}.` : ''}
                   {handoff.retry.blockedReason ? ` Blocked: ${handoff.retry.blockedReason}` : ''}
+                  {' '}
+                  {handoff.retry.policy.boundary}
                 </dd>
               </div>
             ) : null}
@@ -138,6 +166,11 @@ export function AutomationQueueDetail({ queueItem, handoff, onPrepareHandoff, on
         {handoff?.status === 'failed' ? (
           <button type="button" disabled={!canScheduleRetry || retryBusy} onClick={() => void handleScheduleRetry()}>
             {retryBusy ? 'Scheduling...' : 'Schedule retry'}
+          </button>
+        ) : null}
+        {handoff?.retry ? (
+          <button type="button" disabled={!canCancelRetry || retryBusy} onClick={() => void handleCancelRetry()}>
+            {retryBusy ? 'Canceling...' : 'Cancel retry'}
           </button>
         ) : null}
         {retryStatus ? <p className="notice">{retryStatus}</p> : null}

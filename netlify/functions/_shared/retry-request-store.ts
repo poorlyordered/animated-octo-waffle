@@ -1,6 +1,8 @@
 import { ObjectId, type Db } from 'mongodb';
 import type {
+  CancelRetryRequest,
   RetryExecutionResult,
+  RetryPolicySummary,
   RetryRequestSummary,
   RetryRequestStatus,
   RetryTargetType,
@@ -10,6 +12,9 @@ import type {
 const collectionName = 'retry_requests';
 const retryScheduledBoundary = 'Retry scheduled only. No worker was dispatched and no execution occurred.';
 const retryWorkerBoundary = 'Retry execution is worker-only and uses prior commander approval.';
+const retryCanceledBoundary = 'Retry canceled by commander. No worker was dispatched and no execution occurred.';
+const retryPolicyBoundary =
+  'Retry policy: one active scheduled retry is allowed per target. Scheduled and blocked retries can be canceled; claimed and completed retries cannot.';
 const unsafeRetryFields = new Set([
   'accessToken',
   'refreshToken',
@@ -44,6 +49,9 @@ export interface RetryRequestDocument {
   completedAt?: string;
   blockedAt?: string;
   blockedReason?: string;
+  canceledAt?: string;
+  canceledBy?: string;
+  cancelReason?: string;
   result?: RetryExecutionResult;
   updatedAt: string;
 }
@@ -156,7 +164,8 @@ export function retryRequestSummary(retry: RetryRequestDocument): RetryRequestSu
     status: retry.status,
     reason: retry.reason,
     createdAt: retry.createdAt,
-    boundary: retry.status === 'scheduled' ? retryScheduledBoundary : retryWorkerBoundary
+    policy: retryPolicySummary(retry),
+    boundary: retryBoundary(retry.status)
   };
 
   if (retry.notBefore) {
@@ -177,11 +186,74 @@ export function retryRequestSummary(retry: RetryRequestDocument): RetryRequestSu
   if (retry.blockedReason) {
     summary.blockedReason = retry.blockedReason;
   }
+  if (retry.canceledAt) {
+    summary.canceledAt = retry.canceledAt;
+  }
+  if (retry.canceledBy) {
+    summary.canceledBy = retry.canceledBy;
+  }
+  if (retry.cancelReason) {
+    summary.cancelReason = retry.cancelReason;
+  }
   if (retry.result) {
     summary.result = retry.result;
   }
 
   return summary;
+}
+
+export function retryPolicySummary(retry: Pick<RetryRequestDocument, 'status'>): RetryPolicySummary {
+  return {
+    canSchedule: retry.status !== 'scheduled' && retry.status !== 'claimed',
+    canCancel: retry.status === 'scheduled' || retry.status === 'blocked',
+    activeScheduledLimit: 1,
+    cancelableStatuses: ['scheduled', 'blocked'],
+    boundary: retryPolicyBoundary
+  };
+}
+
+function retryBoundary(status: RetryRequestStatus): string {
+  if (status === 'scheduled') {
+    return retryScheduledBoundary;
+  }
+
+  if (status === 'canceled') {
+    return retryCanceledBoundary;
+  }
+
+  return retryWorkerBoundary;
+}
+
+export async function cancelLatestRetryRequestForTarget(
+  db: Db,
+  corporationId: string,
+  targetType: RetryTargetType,
+  targetId: string,
+  request: CancelRetryRequest,
+  canceledBy = 'commander',
+  now = new Date()
+): Promise<RetryRequestDocument | null> {
+  const nowIso = now.toISOString();
+  const document = await db.collection(collectionName).findOneAndUpdate(
+    {
+      corporationId,
+      targetType,
+      targetId,
+      status: { $in: ['scheduled', 'blocked'] satisfies RetryRequestStatus[] }
+    },
+    {
+      $set: {
+        status: 'canceled' satisfies RetryRequestStatus,
+        canceledAt: nowIso,
+        canceledBy,
+        cancelReason: request.reason,
+        updatedAt: nowIso
+      }
+    },
+    { sort: { updatedAt: -1, createdAt: -1 }, returnDocument: 'after' }
+  );
+
+  return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
 }
 
 export async function claimRetryRequest(

@@ -1,6 +1,7 @@
 import {
   prepareEsiSyncRequestSchema,
   revokeEsiVaultRequestSchema,
+  cancelRetryRequestSchema,
   scheduleRetryRequestSchema,
   startEsiSyncConsentRequestSchema
 } from '../../packages/contracts/src/index';
@@ -18,6 +19,7 @@ import {
 import { createOrFindQueuedSyncRequest, findSyncRequest, listRecentSyncRequests, syncRequestSummary } from './_shared/esi-sync-request-store';
 import {
   assertNoUnsafeRetryFields,
+  cancelLatestRetryRequestForTarget,
   createOrFindScheduledRetryRequest,
   findLatestRetryRequest,
   retryRequestSummary
@@ -173,6 +175,26 @@ export async function handler(event: FunctionEvent) {
         request
       );
       return jsonResponse(duplicate ? 200 : 201, { retry: retryRequestSummary(retry), duplicate });
+    }
+
+    const cancelRetryMatch = path.match(/\/esi-sync\/([^/]+)\/retry\/cancel$/);
+    if (cancelRetryMatch) {
+      assertNoUnsafeRetryFields(body);
+      const request = cancelRetryRequestSchema.parse(body);
+      const syncRequest = await findSyncRequest(db, decodeURIComponent(cancelRetryMatch[1]));
+      if (!syncRequest || syncRequest.corporationId !== corporationId) {
+        return safeErrorResponse('ESI sync request not found', 404);
+      }
+      const retry = await cancelLatestRetryRequestForTarget(
+        db,
+        corporationId,
+        'esi_sync_request',
+        syncRequest.id ?? syncRequest._id?.toString() ?? '',
+        request
+      );
+      return retry
+        ? jsonResponse(200, { retry: retryRequestSummary(retry) })
+        : safeErrorResponse('Only scheduled or blocked ESI sync retries can be canceled', 409);
     }
 
     return safeErrorResponse('ESI sync path is invalid', 404);
