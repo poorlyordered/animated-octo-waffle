@@ -458,12 +458,31 @@ Validation:
 - Spec: `specs/021-decision-approval-workflow`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
 
+### M22: Dedicated Opportunity Surface - Complete
+
+Goal: promote Opportunity from command brief subsection to first-class operating surface.
+
+Delivered capabilities:
+
+- Dedicated Opportunity operating layer in the command-center sequence
+- Opportunity summary, strategic impacts, recommendations, watchlist, and source references from processed command briefs
+- Opportunity provenance mode, focus, source count, brief count, section status, and recent research history on the dedicated surface
+- Client-side Opportunity surface view model for processed and unavailable states
+- Explicit read-only boundary language for research scheduling, worker dispatch, ESI fetch, EVE writes, wallet/asset/contract/role mutation, and external execution
+- Browser smoke coverage for the dedicated Opportunity surface
+- No new backend route, durable collection, research scheduling, worker dispatch, ESI fetch, EVE write, or external-service execution
+
+Validation:
+
+- Spec: `specs/022-dedicated-opportunity-surface`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M22 selection after M21 review.
+Proceed to M23 selection after M22 review.
 
 Recommended next-slice candidates:
 
-- Dedicated Opportunity surface once the command brief provenance model has settled.
 - Retry rescheduling or retry history management once cancellation behavior has been reviewed.
 - Decision approval list/filter improvements now that Numbers-origin approve/reject exists.
+- Opportunity decision handoff from dedicated surface once Opportunity-specific provenance is stable.

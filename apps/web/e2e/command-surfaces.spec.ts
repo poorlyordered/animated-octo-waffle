@@ -22,6 +22,22 @@ test('renders command brief surface with operating leg coverage', async ({ page 
   await assertNoBrowserDiagnostics();
 });
 
+test('renders dedicated opportunity surface with provenance and read-only boundaries', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  await expectHeading(page, 'Opportunity operating layer');
+  await expectVisibleText(page, 'Browser smoke brief confirms the command surface renders with deterministic opportunity context.');
+  await expectVisibleText(page, 'Browser smoke impact validates opportunity context.');
+  await expectVisibleText(page, 'Browser smoke recommendation for command validation.');
+  await expectVisibleText(page, 'Browser smoke watchlist item');
+  await expectVisibleText(page, 'Latest Opportunity context is linked to processed browser research history.');
+  await expectVisibleText(page, 'Opportunity surface is read-only.');
+  await expect(page.getByLabel('Opportunity section status')).toBeVisible();
+  await assertNoBrowserDiagnostics();
+});
+
 test('renders decision records surface with selected detail', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
 

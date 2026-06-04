@@ -87,6 +87,8 @@ The Opportunity Research Layer is currently represented by processed command bri
 
 M19 adds browser-safe Opportunity ingestion provenance to the command brief response and browser surface. The browser shows whether Opportunity context is linked to processed research history, historical command brief records, or unavailable research history; it also shows source count, brief count, sources/impacts/recommendations/watchlist status, recent research history, and no-execution boundary language. This remains read-only: no research scheduling, worker dispatch, ESI fetch, EVE write, or external-service execution occurs in browser or request paths.
 
+M22 adds a dedicated Opportunity operating layer in the command center. It reuses the existing command brief and Opportunity provenance APIs to show summary, strategic impacts, recommendations, watchlist, source references, section status, and recent research history as a first-class read-only surface. It does not schedule research, dispatch workers, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## People Operating Layer
 
 The People Operating Layer reads processed member profiles and leadership follow-ups from MongoDB `member_profiles` and `leadership_followups`. It shows member identity, role context, activity, delegation, source coverage, and approval-gated follow-up creation.

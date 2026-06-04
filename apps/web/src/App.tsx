@@ -1,4 +1,5 @@
 import { CommandBriefRoute } from './routes/CommandBriefRoute';
+import { OpportunityRoute } from './routes/OpportunityRoute';
 import { NumbersRoute } from './routes/NumbersRoute';
 import { DecisionRecordsRoute } from './routes/DecisionRecordsRoute';
 import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
@@ -12,6 +13,7 @@ export function App() {
     <>
       <SessionStatus />
       <CommandBriefRoute />
+      <OpportunityRoute />
       <NumbersRoute />
       <DecisionRecordsRoute />
       <AutomationQueueRoute />
