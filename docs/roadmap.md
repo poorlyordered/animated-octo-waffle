@@ -399,12 +399,31 @@ Validation:
 - Spec: `specs/018-people-ingestion-provenance`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M19: Opportunity Ingestion Provenance - Complete
+
+Goal: extend the browser-safe sync visibility pattern to Opportunity research and command brief provenance.
+
+Delivered capabilities:
+
+- Optional Opportunity ingestion provenance on command brief responses
+- Bounded, corporation- and focus-scoped recent Opportunity research history from `research_requests`
+- Provenance modes for processed research history, historical command brief records, and unavailable history
+- Section coverage for sources, impacts, recommendations, and watchlist
+- Browser rendering for provenance mode, focus, source count, brief count, section status, recent history, and no-execution boundary language
+- Contract, unit, and browser smoke coverage for provenance parsing, history normalization, fallback behavior, and no-execution copy
+- No research scheduling, worker dispatch, work claim, ESI fetch, EVE write, or external-service execution
+
+Validation:
+
+- Spec: `specs/019-opportunity-ingestion-provenance`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M19 selection after M18 review.
+Proceed to M20 selection after M19 review.
 
 Recommended next-slice candidates:
 
-- Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.
 - Retry cancellation and retry policy controls for scheduled or blocked retry requests.
 - Decision approval workflow improvements for Numbers-origin decisions.
+- Dedicated Opportunity surface once the command brief provenance model has settled.

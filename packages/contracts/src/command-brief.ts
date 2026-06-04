@@ -17,6 +17,42 @@ export interface OperatingLegCoverage {
   missingReasons: string[];
 }
 
+export const opportunityIngestionModes = ['latest_research', 'historical_brief', 'unavailable'] as const;
+export type OpportunityIngestionMode = (typeof opportunityIngestionModes)[number];
+
+export type OpportunityIngestionSectionKey = 'sources' | 'impacts' | 'recommendations' | 'watchlist';
+
+export interface OpportunityIngestionSectionStatus {
+  key: OpportunityIngestionSectionKey;
+  status: CoverageState;
+}
+
+export interface OpportunityIngestionHistoryItem {
+  id: string;
+  status: ResearchStatus;
+  requestedAt: string;
+  updatedAt: string;
+  requestedBy?: string;
+  sourceCount?: number;
+  failure?: {
+    reason: string;
+    failedAt: string;
+  };
+  sectionStatuses: OpportunityIngestionSectionStatus[];
+  boundary: string;
+}
+
+export interface OpportunityIngestionProvenance {
+  mode: OpportunityIngestionMode;
+  focus: string;
+  sourceCount: number;
+  briefCount: number;
+  sectionStatuses: OpportunityIngestionSectionStatus[];
+  history: OpportunityIngestionHistoryItem[];
+  message: string;
+  boundary: string;
+}
+
 export interface CommandBrief {
   id: string;
   corporationId: string;
@@ -49,6 +85,7 @@ export interface ResearchRequest {
 
 export interface CommandBriefResponse {
   brief: CommandBrief | null;
+  opportunityProvenance?: OpportunityIngestionProvenance;
 }
 
 export interface ResearchStatusResponse {
@@ -58,6 +95,7 @@ export interface ResearchStatusResponse {
 export interface CommandBriefViewModel {
   brief: CommandBrief | null;
   request: ResearchRequest | null;
+  opportunityProvenance?: OpportunityIngestionProvenance | null;
   displayState: DisplayState;
   staleReason?: string;
 }

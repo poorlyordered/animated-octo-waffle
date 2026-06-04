@@ -1,13 +1,14 @@
 import { commandBriefResponseSchema } from '@gryyk/contracts';
 import { getAuthScope } from '../../../../netlify/functions/_shared/auth-scope';
-import { processedBrief } from '../fixtures/commandBrief';
+import { opportunityIngestionProvenance, processedBrief } from '../fixtures/commandBrief';
 
 describe('GET /api/command-brief contract', () => {
   it('accepts a processed command brief response with provenance metadata', () => {
-    const parsed = commandBriefResponseSchema.parse({ brief: processedBrief });
+    const parsed = commandBriefResponseSchema.parse({ brief: processedBrief, opportunityProvenance: opportunityIngestionProvenance });
 
     expect(parsed.brief?.promptVersion).toBe('official-news-brief-v1');
     expect(parsed.brief?.sourceReferences).toHaveLength(1);
+    expect(parsed.opportunityProvenance?.history[0].status).toBe('processed');
   });
 
   it('accepts an empty command brief response', () => {
