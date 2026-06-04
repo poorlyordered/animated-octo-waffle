@@ -33,6 +33,15 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
   await page.route('**/api/numbers**', (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/decision/status')) {
+      const body = route.request().postDataJSON() as { status?: string } | null;
+      return json(
+        route,
+        body?.status === 'rejected'
+          ? commandSurfaceFixtures.numbersFollowUpActions.rejectedStatus
+          : commandSurfaceFixtures.numbersFollowUpActions.approvedStatus
+      );
+    }
     if (url.pathname.endsWith('/decision')) {
       const candidateId = decodeURIComponent(url.pathname.split('/').at(-2) ?? '');
       return json(

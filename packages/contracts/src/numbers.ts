@@ -115,6 +115,14 @@ export interface CreateNumbersFollowUpDecisionRequest {
   expectedResult?: string;
 }
 
+export interface UpdateNumbersFollowUpDecisionStatusRequest {
+  snapshotId: string;
+  sourceDecisionId: string;
+  status: Extract<DecisionStatus, 'approved' | 'rejected'>;
+  approvalText?: string;
+  note?: string;
+}
+
 export interface NumbersFollowUpDecisionResponse {
   decision: DecisionRecord;
   origin: NumbersFollowUpOrigin;

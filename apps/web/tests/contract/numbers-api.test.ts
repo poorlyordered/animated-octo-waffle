@@ -2,7 +2,8 @@ import {
   numbersLiveProvenanceSchema,
   numbersFollowUpDecisionResponseSchema,
   numbersFollowUpQueueResponseSchema,
-  numbersSnapshotResponseSchema
+  numbersSnapshotResponseSchema,
+  updateNumbersFollowUpDecisionStatusRequestSchema
 } from '@gryyk/contracts';
 import { numbersLiveProvenance, numbersSnapshot } from '../fixtures/numbers';
 import {
@@ -11,7 +12,9 @@ import {
   numbersFollowUpOrigin,
   numbersFollowUpQueueItem,
   numbersFollowUpQueueResponse,
-  approvedNumbersFollowUpDecisionResponse
+  approvedNumbersFollowUpDecisionResponse,
+  approvedNumbersFollowUpDecisionStatusResponse,
+  rejectedNumbersFollowUpDecisionStatusResponse
 } from '../fixtures/numbersFollowUpActions';
 import { getAuthScope } from '../../../../netlify/functions/_shared/auth-scope';
 
@@ -115,5 +118,49 @@ describe('Numbers API contract', () => {
     expect(body).not.toContain('token');
     expect(body).not.toContain('secret');
     expect(body).not.toContain('dispatchTarget');
+  });
+
+  it('accepts scoped follow-up decision approval requests and responses without queue creation', () => {
+    const request = updateNumbersFollowUpDecisionStatusRequestSchema.parse({
+      snapshotId: numbersSnapshot.id,
+      sourceDecisionId: numbersFollowUpDecision.id,
+      status: 'approved',
+      approvalText: 'Commander approves this Numbers follow-up for queued planning.',
+      note: 'Approval captured in M21.'
+    });
+    const parsed = numbersFollowUpDecisionResponseSchema.parse(approvedNumbersFollowUpDecisionStatusResponse);
+
+    expect(request.status).toBe('approved');
+    expect(parsed.decision.status).toBe('approved');
+    expect(parsed.decision.approval?.approvalText).toContain('approve');
+    expect(parsed.approvalHandoff.queueReady).toBe(true);
+    expect(parsed.approvalHandoff.queueItemId).toBeUndefined();
+    expect(parsed.message).toContain('Queue creation remains a separate commander action');
+  });
+
+  it('accepts scoped follow-up decision rejection responses as queue blocked', () => {
+    const request = updateNumbersFollowUpDecisionStatusRequestSchema.parse({
+      snapshotId: numbersSnapshot.id,
+      sourceDecisionId: numbersFollowUpDecision.id,
+      status: 'rejected',
+      note: 'Commander rejected this recommendation.'
+    });
+    const parsed = numbersFollowUpDecisionResponseSchema.parse(rejectedNumbersFollowUpDecisionStatusResponse);
+
+    expect(request.status).toBe('rejected');
+    expect(parsed.decision.status).toBe('rejected');
+    expect(parsed.approvalHandoff.approvalRequired).toBe(false);
+    expect(parsed.approvalHandoff.queueReady).toBe(false);
+    expect(parsed.approvalHandoff.message).toContain('Queued work cannot be created');
+  });
+
+  it('rejects unsupported follow-up decision status requests', () => {
+    expect(() =>
+      updateNumbersFollowUpDecisionStatusRequestSchema.parse({
+        snapshotId: numbersSnapshot.id,
+        sourceDecisionId: numbersFollowUpDecision.id,
+        status: 'delegated'
+      })
+    ).toThrow();
   });
 });

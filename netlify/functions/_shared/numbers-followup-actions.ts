@@ -37,6 +37,10 @@ const unsafeRequestFields = new Set([
   'externalService'
 ]);
 
+const unsafeStatusRequestFields = new Set(
+  [...unsafeRequestFields].filter((field) => field !== 'approvalText')
+);
+
 const approvalBoundary = 'Approval handoff only. No worker was dispatched and no execution occurred.';
 const queueBoundary = 'Queued work handoff only. No worker was dispatched and no execution occurred.';
 
@@ -53,6 +57,19 @@ export function assertNoUnsafeNumbersFollowUpFields(value: unknown): void {
   }
 }
 
+export function assertNoUnsafeNumbersFollowUpStatusFields(value: unknown): void {
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+  const unsafeField = Object.keys(record).find((key) => unsafeStatusRequestFields.has(key));
+
+  if (unsafeField) {
+    throw new Error(`Unsafe Numbers follow-up status field rejected: ${unsafeField}`);
+  }
+}
+
 export function numbersApprovalHandoff(
   origin: NumbersFollowUpOrigin,
   decision: DecisionRecord,
@@ -60,7 +77,7 @@ export function numbersApprovalHandoff(
 ): NumbersApprovalHandoff {
   const queueItem = options.queueItem;
   const queueReady = decision.status === 'approved';
-  const approvalRequired = !queueReady;
+  const approvalRequired = decision.status === 'proposed';
 
   const handoff: NumbersApprovalHandoff = {
     candidateId: origin.candidateId,
@@ -74,7 +91,9 @@ export function numbersApprovalHandoff(
       ? `${options.duplicate ? 'Existing queued work is linked' : 'Queued work is linked'} to approved Numbers decision ${decision.id}.`
       : queueReady
         ? `Decision ${decision.id} is approved and ready for queued work.`
-        : `Decision ${decision.id} is ${decision.status}. Approval is required before queued work can be created.`,
+        : decision.status === 'rejected'
+          ? `Decision ${decision.id} is rejected. Queued work cannot be created from this decision.`
+          : `Decision ${decision.id} is ${decision.status}. Approval is required before queued work can be created.`,
     boundary: queueItem ? queueBoundary : approvalBoundary
   };
 

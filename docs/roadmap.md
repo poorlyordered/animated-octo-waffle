@@ -438,12 +438,32 @@ Validation:
 - Spec: `specs/020-retry-cancellation-policy`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M21: Decision Approval Workflow Improvements - Complete
+
+Goal: let commanders approve or reject Numbers-origin proposed decisions while keeping queue creation separate and explicit.
+
+Delivered capabilities:
+
+- Numbers-scoped decision status action for approving or rejecting follow-up decisions
+- Server verification that the decision source context matches the requested Numbers snapshot and follow-up candidate
+- Explicit approval text support for approved decisions and rejection notes in decision status history
+- Browser-safe approval handoff metadata recomputed after approval or rejection
+- Numbers browser controls for approve and reject after a decision is recorded
+- Queue creation remains a separate commander action visible only after approved status
+- Unsafe approval metadata, queue status, provenance, dispatch, retry, EVE write, wallet, asset, contract, role, and external execution field rejection
+- No queued work creation, worker dispatch, handoff claim, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution during approval or rejection
+
+Validation:
+
+- Spec: `specs/021-decision-approval-workflow`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M21 selection after M20 review.
+Proceed to M22 selection after M21 review.
 
 Recommended next-slice candidates:
 
-- Decision approval workflow improvements for Numbers-origin decisions.
 - Dedicated Opportunity surface once the command brief provenance model has settled.
 - Retry rescheduling or retry history management once cancellation behavior has been reviewed.
+- Decision approval list/filter improvements now that Numbers-origin approve/reject exists.
