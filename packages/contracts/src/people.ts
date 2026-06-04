@@ -36,6 +36,47 @@ export interface PeopleDataCoverage {
   missingReasons: string[];
 }
 
+export const peopleIngestionStatuses = ['queued', 'claimed', 'completed', 'failed', 'cancelled'] as const;
+export type PeopleIngestionStatus = (typeof peopleIngestionStatuses)[number];
+
+export const peopleIngestionModes = ['latest_ingestion', 'historical_profiles', 'unavailable'] as const;
+export type PeopleIngestionMode = (typeof peopleIngestionModes)[number];
+
+export type PeopleIngestionSectionKey = 'identity' | 'roles' | 'activity' | 'delegation';
+
+export interface PeopleIngestionSectionStatus {
+  key: PeopleIngestionSectionKey;
+  status: PeopleCoverageState;
+}
+
+export interface PeopleIngestionFailure {
+  reason: string;
+  failedAt: string;
+}
+
+export interface PeopleIngestionHistoryItem {
+  id: string;
+  status: PeopleIngestionStatus;
+  requestedAt: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  completedAt?: string;
+  sourceCount?: number;
+  failure?: PeopleIngestionFailure;
+  sectionStatuses: PeopleIngestionSectionStatus[];
+  boundary: string;
+}
+
+export interface PeopleIngestionProvenance {
+  mode: PeopleIngestionMode;
+  sourceCount: number;
+  profileCount: number;
+  sectionStatuses: PeopleIngestionSectionStatus[];
+  history: PeopleIngestionHistoryItem[];
+  message: string;
+  boundary: string;
+}
+
 export interface FollowUpSummary {
   open: number;
   blocked: number;
@@ -107,6 +148,7 @@ export interface CreateLeadershipFollowUpRequest {
 
 export interface MemberProfileListResponse {
   members: MemberProfile[];
+  ingestionProvenance?: PeopleIngestionProvenance;
 }
 
 export interface MemberProfileDetailResponse {

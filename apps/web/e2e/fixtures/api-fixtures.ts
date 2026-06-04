@@ -142,7 +142,12 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
       member
     });
   });
-  await page.route('**/api/people/members**', (route) => json(route, { members: commandSurfaceFixtures.people.members }));
+  await page.route('**/api/people/members**', (route) =>
+    json(route, {
+      ingestionProvenance: commandSurfaceFixtures.people.ingestionProvenance,
+      members: commandSurfaceFixtures.people.members
+    })
+  );
   await page.route('**/api/people/follow-ups**', (route) => {
     if (route.request().method() !== 'GET') {
       return json(route, { followUp: commandSurfaceFixtures.people.followUps[0] });

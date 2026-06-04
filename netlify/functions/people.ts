@@ -9,6 +9,7 @@ import { getMongoDb } from './_shared/mongo';
 import {
   createLeadershipFollowUp,
   findMemberProfile,
+  getPeopleIngestionProvenance,
   listLeadershipFollowUps,
   listMemberProfiles
 } from './_shared/people-store';
@@ -62,7 +63,8 @@ export async function handler(event: FunctionEvent) {
         activity: activity === 'active' || activity === 'stale' || activity === 'missing' ? activity : undefined,
         needsFollowUp: booleanFilter(event.queryStringParameters?.needsFollowUp)
       });
-      return jsonResponse(200, { members });
+      const ingestionProvenance = await getPeopleIngestionProvenance(db, corporationId, members);
+      return jsonResponse(200, { members, ingestionProvenance });
     }
 
     if (method === 'GET' && path.includes('/people/follow-ups')) {

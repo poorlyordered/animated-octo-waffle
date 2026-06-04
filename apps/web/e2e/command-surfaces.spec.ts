@@ -51,6 +51,8 @@ test('renders people surface with member and leadership follow-up content', asyn
 
   await expectHeading(page, 'People operating layer');
   await expectVisibleText(page, 'Browser Smoke Pilot');
+  await expectVisibleText(page, 'Latest People profiles are linked to completed browser ingestion history.');
+  await expectVisibleText(page, 'This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.');
   await expectVisibleText(page, 'Browser smoke member profile renders leadership context.');
   await expectVisibleText(page, 'Browser smoke leadership follow-up.');
   await assertNoBrowserDiagnostics();

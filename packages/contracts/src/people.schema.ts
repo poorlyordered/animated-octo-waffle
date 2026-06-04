@@ -3,6 +3,9 @@ import { approvalSnapshotSchema } from './automation-queue.schema.js';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
 
 export const peopleCoverageStateSchema = z.enum(['present', 'missing', 'stale']);
+export const peopleIngestionStatusSchema = z.enum(['queued', 'claimed', 'completed', 'failed', 'cancelled']);
+export const peopleIngestionModeSchema = z.enum(['latest_ingestion', 'historical_profiles', 'unavailable']);
+export const peopleIngestionSectionKeySchema = z.enum(['identity', 'roles', 'activity', 'delegation']);
 export const followUpPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 export const followUpStatusSchema = z.enum(['open', 'blocked', 'completed', 'canceled']);
 
@@ -36,6 +39,39 @@ export const followUpSummarySchema = z.object({
   open: z.number().int().nonnegative(),
   blocked: z.number().int().nonnegative(),
   completed: z.number().int().nonnegative()
+});
+
+export const peopleIngestionSectionStatusSchema = z.object({
+  key: peopleIngestionSectionKeySchema,
+  status: peopleCoverageStateSchema
+});
+
+export const peopleIngestionFailureSchema = z.object({
+  reason: z.string().min(1),
+  failedAt: z.string().datetime()
+});
+
+export const peopleIngestionHistoryItemSchema = z.object({
+  id: z.string().min(1),
+  status: peopleIngestionStatusSchema,
+  requestedAt: z.string().datetime(),
+  claimedBy: z.string().min(1).optional(),
+  claimedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+  sourceCount: z.number().int().nonnegative().optional(),
+  failure: peopleIngestionFailureSchema.optional(),
+  sectionStatuses: z.array(peopleIngestionSectionStatusSchema),
+  boundary: z.string().min(1)
+});
+
+export const peopleIngestionProvenanceSchema = z.object({
+  mode: peopleIngestionModeSchema,
+  sourceCount: z.number().int().nonnegative(),
+  profileCount: z.number().int().nonnegative(),
+  sectionStatuses: z.array(peopleIngestionSectionStatusSchema),
+  history: z.array(peopleIngestionHistoryItemSchema),
+  message: z.string().min(1),
+  boundary: z.string().min(1)
 });
 
 export const memberProfileSchema = z.object({
@@ -102,7 +138,8 @@ export const createLeadershipFollowUpRequestSchema = z.object({
 });
 
 export const memberProfileListResponseSchema = z.object({
-  members: z.array(memberProfileSchema)
+  members: z.array(memberProfileSchema),
+  ingestionProvenance: peopleIngestionProvenanceSchema.optional()
 });
 
 export const memberProfileDetailResponseSchema = z.object({

@@ -380,12 +380,31 @@ Validation:
 - Spec: `specs/017-numbers-approval-handoff`
 - Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
 
+### M18: People Ingestion Provenance - Complete
+
+Goal: extend the browser-safe sync visibility pattern to People member profile provenance.
+
+Delivered capabilities:
+
+- Optional People ingestion provenance on member list responses
+- Bounded, corporation-scoped recent People ingestion history from `people_ingestion_requests`
+- Provenance modes for completed ingestion history, historical profile records, and unavailable history
+- Conservative section coverage aggregation for identity, roles, activity, and delegation
+- Browser rendering for provenance mode, source count, profile count, section status, recent history, and no-execution boundary language
+- Contract, unit, and browser smoke coverage for provenance parsing, history normalization, fallback behavior, and no-execution copy
+- No retry scheduling, worker dispatch, work claim, ESI fetch, EVE write, role mutation, access mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/018-people-ingestion-provenance`
+- Local validation covered lint, typecheck, Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M18 selection after M17 review.
+Proceed to M19 selection after M18 review.
 
 Recommended next-slice candidates:
 
-- People or Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.
+- Opportunity ingestion history/provenance using the same browser-safe sync visibility pattern.
 - Retry cancellation and retry policy controls for scheduled or blocked retry requests.
 - Decision approval workflow improvements for Numbers-origin decisions.
