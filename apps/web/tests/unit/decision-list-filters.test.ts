@@ -2,7 +2,11 @@ import {
   decisionListCounts,
   decisionSourceDomain,
   decisionSourceLabel,
-  filterDecisionRecords
+  filterDecisionRecords,
+  paginateDecisionRecords,
+  parseDecisionListSettings,
+  readDecisionListSettings,
+  writeDecisionListSettings
 } from '../../src/features/decision-records/services/decisionListFilters';
 import { approvedDecision, proposedDecision, rejectedDecision } from '../fixtures/decisionRecords';
 import { numbersFollowUpDecision } from '../fixtures/numbersFollowUpActions';
@@ -40,5 +44,57 @@ describe('decision list filters', () => {
     expect(counts.approved).toBe(1);
     expect(counts.rejected).toBe(1);
     expect(counts.playerImpacting).toBe(0);
+  });
+
+  it('parses persisted decision list settings safely', () => {
+    expect(parseDecisionListSettings({ status: 'approved', source: 'numbers', pageSize: 3 })).toEqual({
+      status: 'approved',
+      source: 'numbers',
+      pageSize: 3
+    });
+    expect(parseDecisionListSettings({ status: 'invalid', source: 'unsafe', pageSize: 999 })).toEqual({
+      status: 'all',
+      source: 'all',
+      pageSize: 5
+    });
+  });
+
+  it('reads and writes browser-local decision list settings', () => {
+    const storage = new Map<string, string>();
+    const adapter = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value)
+    };
+
+    writeDecisionListSettings(adapter, 'decision-settings', {
+      status: 'rejected',
+      source: 'opportunity',
+      pageSize: 10
+    });
+
+    expect(readDecisionListSettings(adapter, 'decision-settings')).toEqual({
+      status: 'rejected',
+      source: 'opportunity',
+      pageSize: 10
+    });
+    storage.set('decision-settings', '{bad json');
+    expect(readDecisionListSettings(adapter, 'decision-settings')).toEqual({
+      status: 'all',
+      source: 'all',
+      pageSize: 5
+    });
+  });
+
+  it('paginates visible decisions with clamped page bounds', () => {
+    const firstPage = paginateDecisionRecords(decisions, 1, 3);
+    const secondPage = paginateDecisionRecords(decisions, 2, 3);
+    const clampedPage = paginateDecisionRecords(decisions, 99, 3);
+
+    expect(firstPage.items.map((decision) => decision.id)).toEqual([proposedDecision.id, approvedDecision.id, rejectedDecision.id]);
+    expect(firstPage.startIndex).toBe(1);
+    expect(firstPage.endIndex).toBe(3);
+    expect(firstPage.totalPages).toBe(2);
+    expect(secondPage.items.map((decision) => decision.id)).toEqual([numbersFollowUpDecision.id]);
+    expect(clampedPage.page).toBe(2);
   });
 });

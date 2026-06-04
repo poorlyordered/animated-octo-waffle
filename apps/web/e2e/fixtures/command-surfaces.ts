@@ -101,6 +101,21 @@ export const commandSurfaceFixtures = {
         ...numbersFollowUpDecision,
         id: 'decision-browser-numbers',
         sourceRecommendation: 'Browser smoke Numbers follow-up decision.'
+      },
+      {
+        ...proposedDecision,
+        id: 'decision-browser-proposed-2',
+        sourceRecommendation: 'Browser smoke second Opportunity decision.'
+      },
+      {
+        ...approvedDecision,
+        id: 'decision-browser-approved-2',
+        sourceRecommendation: 'Browser smoke second approved decision.'
+      },
+      {
+        ...proposedDecision,
+        id: 'decision-browser-proposed-3',
+        sourceRecommendation: 'Browser smoke third Opportunity decision.'
       }
     ]
   },

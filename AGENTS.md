@@ -5,7 +5,7 @@ Read these before changing product behavior:
 1. `.specify/memory/constitution.md`
 2. `docs/roadmap.md`
 3. Active feature docs under `specs/` as indicated by `.specify/feature.json`
-4. Current implementation plan: `specs/027-opportunity-approval-handoff/plan.md`
+4. Current implementation plan: `specs/028-decision-list-pagination-persistence/plan.md`
 
 Use Spec Kit for major work: constitution, specify, clarify when needed, plan, tasks, analyze, implement. Keep generated specs and implementation in sync.
 
