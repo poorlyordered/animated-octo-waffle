@@ -53,6 +53,34 @@ test('records an Opportunity decision handoff without queueing or execution', as
   await expectVisibleText(page, 'was recorded from Opportunity recommendation');
   await expectVisibleText(page, 'Approval, queueing, research scheduling, worker dispatch, ESI fetch, EVE writes');
   await expect(page.getByLabel('Opportunity decision handoff').getByText('proposed').first()).toBeVisible();
+
+  await page.getByLabel('Opportunity decision approval controls').getByRole('button', { name: 'Approve decision' }).click();
+  await expectVisibleText(page, 'Decision approved. Queue creation remains a separate commander action.');
+  await expectVisibleText(page, 'approved and ready for queued work');
+  await expectVisibleText(page, 'Opportunity approval handoff only. No queued work, research scheduling, worker dispatch');
+
+  await page.getByLabel('Opportunity queue controls').getByRole('button', { name: 'Create queued work' }).click();
+  await expectVisibleText(page, 'Queued work created.');
+  await expectVisibleText(page, 'Queued work queue-browser-opportunity is linked to approved Opportunity decision');
+  await expectVisibleText(page, 'Opportunity queued work handoff only. No worker was dispatched');
+  await assertNoBrowserDiagnostics();
+});
+
+test('rejects an Opportunity decision without queueing work', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  const recommendations = page.getByLabel('Opportunity recommendations');
+  await recommendations.getByRole('button', { name: 'Record decision' }).first().click();
+  await page.getByLabel('Create decision record').getByLabel('Rationale').fill('Commander rejects the Opportunity recommendation after review.');
+  await page.getByLabel('Create decision record').getByLabel('Expected result').fill('Opportunity decision is closed without queued work.');
+  await page.getByLabel('Create decision record').getByRole('button', { name: 'Record decision' }).click();
+
+  await page.getByLabel('Opportunity decision approval controls').getByRole('button', { name: 'Reject decision' }).click();
+  await expectVisibleText(page, 'Decision rejected. No queued work was created.');
+  await expectVisibleText(page, 'was rejected; queued work cannot be created');
+  await expect(page.getByLabel('Opportunity queue controls')).toHaveCount(0);
   await assertNoBrowserDiagnostics();
 });
 

@@ -559,12 +559,33 @@ Validation:
 - Spec: `specs/026-retry-rescheduling-controls`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
 
+### M27: Opportunity Approval Handoff - Complete
+
+Goal: let commanders approve or reject Opportunity-origin decisions and create queued work only as a separate explicit action.
+
+Delivered capabilities:
+
+- Opportunity decision handoff now shows approval required/resolved and queue ready/blocked/linkage states
+- Approve and reject controls appear after recording a proposed Opportunity decision
+- Opportunity approval uses the existing decision status workflow and does not create queued work
+- Opportunity queue creation appears only after approved status
+- Opportunity queued work uses the existing automation queue workflow
+- Browser-visible queue handoff shows queue item id/status after creation
+- Unit coverage for proposed, approved, queued, and rejected Opportunity handoff derivation
+- Browser smoke coverage for approve-then-queue and reject-without-queue workflows
+- No new backend route, automatic queue creation, research scheduling, worker dispatch, handoff preparation, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/027-opportunity-approval-handoff`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M27 selection after M26 review.
+Proceed to M28 selection after M27 review.
 
 Recommended next-slice candidates:
 
-- Opportunity approval or queue handoff once Opportunity decision recording has been reviewed.
 - Decision list pagination or persisted filters if the browser-local review model becomes crowded.
 - Retry policy controls beyond the current one-active-scheduled-retry boundary if commander workflows require more nuance.
+- Opportunity queued-work detail handoff or worker preparation once Opportunity queue creation has been reviewed.

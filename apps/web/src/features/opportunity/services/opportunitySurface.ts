@@ -7,6 +7,7 @@ import type {
   OpportunityIngestionProvenance,
   SourceReference
 } from '@gryyk/contracts';
+import type { AutomationQueueItem } from '@gryyk/contracts';
 
 export interface OpportunitySurfaceViewModel {
   displayState: DisplayState;
@@ -29,6 +30,10 @@ export interface OpportunitySurfaceViewModel {
 export interface OpportunityDecisionHandoff {
   decisionId: string;
   decisionStatus: DecisionRecord['status'];
+  approvalRequired: boolean;
+  queueReady: boolean;
+  queueItemId?: string;
+  queueStatus?: AutomationQueueItem['status'];
   sourceBriefId: string;
   sourceRecommendation: string;
   sourceCount: number;
@@ -43,6 +48,12 @@ const readOnlyBoundary =
 
 const decisionHandoffBoundary =
   'Opportunity decision handoff only. Approval, queueing, research scheduling, worker dispatch, ESI fetch, EVE writes, wallet or asset movement, contract or role changes, and external execution remain separate workflows.';
+
+const approvalHandoffBoundary =
+  'Opportunity approval handoff only. No queued work, research scheduling, worker dispatch, ESI fetch, EVE write, wallet action, asset action, contract action, role change, or external execution was performed.';
+
+const queueHandoffBoundary =
+  'Opportunity queued work handoff only. No worker was dispatched, no handoff was prepared, and no EVE or external-service action was performed.';
 
 const unavailableCoverage: OperatingLegCoverage = {
   numbers: 'missing',
@@ -80,17 +91,32 @@ export function deriveOpportunitySurface(viewModel: CommandBriefViewModel): Oppo
 
 export function deriveOpportunityDecisionHandoff(
   decision: DecisionRecord,
-  opportunity: OpportunitySurfaceViewModel
+  opportunity: OpportunitySurfaceViewModel,
+  queueItem?: AutomationQueueItem
 ): OpportunityDecisionHandoff {
+  const queueReady = decision.status === 'approved';
+  const approvalRequired = decision.status === 'proposed';
+  const queueDescription = queueItem
+    ? `Queued work ${queueItem.id} is linked to approved Opportunity decision ${decision.id}.`
+    : queueReady
+      ? `Decision ${decision.id} is approved and ready for queued work.`
+      : decision.status === 'rejected'
+        ? `Decision ${decision.id} was rejected; queued work cannot be created.`
+        : `Decision ${decision.id} requires approval before queued work.`;
+
   return {
     decisionId: decision.id,
     decisionStatus: decision.status,
+    approvalRequired,
+    queueReady,
+    queueItemId: queueItem?.id,
+    queueStatus: queueItem?.status,
     sourceBriefId: decision.sourceBriefId,
     sourceRecommendation: decision.sourceRecommendation,
     sourceCount: opportunity.sourceCount,
     focus: opportunity.provenance?.focus ?? decision.sourceProvenance.focus,
     provenanceMode: opportunity.provenance?.mode ?? 'unavailable',
-    message: `Decision ${decision.id} was recorded from Opportunity recommendation "${decision.sourceRecommendation}" as ${decision.status}.`,
-    boundary: decisionHandoffBoundary
+    message: `Decision ${decision.id} was recorded from Opportunity recommendation "${decision.sourceRecommendation}" as ${decision.status}. ${queueDescription}`,
+    boundary: queueItem ? queueHandoffBoundary : queueReady || decision.status === 'rejected' ? approvalHandoffBoundary : decisionHandoffBoundary
   };
 }
