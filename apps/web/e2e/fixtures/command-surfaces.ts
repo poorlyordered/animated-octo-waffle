@@ -28,8 +28,10 @@ import {
 import {
   esiSyncRetryCancelResponse,
   esiSyncRetryResponse,
+  esiSyncRetryRescheduleResponse,
   handoffRetryCancelResponse,
-  handoffRetryResponse
+  handoffRetryResponse,
+  handoffRetryRescheduleResponse
 } from '../../tests/fixtures/retry';
 import {
   activeEsiSyncStatusWithHistory,
@@ -218,7 +220,9 @@ export const commandSurfaceFixtures = {
   retries: {
     handoff: handoffRetryResponse,
     handoffCancel: handoffRetryCancelResponse,
+    handoffReschedule: handoffRetryRescheduleResponse,
     esiSync: esiSyncRetryResponse,
-    esiSyncCancel: esiSyncRetryCancelResponse
+    esiSyncCancel: esiSyncRetryCancelResponse,
+    esiSyncReschedule: esiSyncRetryRescheduleResponse
   }
 };

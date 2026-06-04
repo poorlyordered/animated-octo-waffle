@@ -2,6 +2,8 @@ import {
   retryRequestSummarySchema,
   cancelRetryRequestSchema,
   cancelRetryResponseSchema,
+  rescheduleRetryRequestSchema,
+  rescheduleRetryResponseSchema,
   retryWorkerReadyResponseSchema,
   retryWorkerRequestSchema,
   retryWorkerResponseSchema
@@ -9,6 +11,7 @@ import {
 import {
   completedHandoffRetry,
   handoffRetryCancelResponse,
+  handoffRetryRescheduleResponse,
   retryWorkerEsiBlockedResponse,
   retryWorkerHandoffCompletedResponse,
   retryWorkerReadyResponse
@@ -36,7 +39,25 @@ describe('Retry worker API contract', () => {
 
     expect(parsed.retry.status).toBe('canceled');
     expect(parsed.retry.policy.canCancel).toBe(false);
+    expect(parsed.retry.policy.canReschedule).toBe(false);
     expect(parsed.retry.boundary).toContain('Retry canceled');
+  });
+
+  it('accepts commander retry reschedule payloads and responses', () => {
+    expect(
+      rescheduleRetryRequestSchema.parse({
+        reason: 'Commander deferred scheduled worker handoff retry for later review.',
+        notBefore: '2026-06-02T18:30:00.000Z'
+      })
+    ).toEqual({
+      reason: 'Commander deferred scheduled worker handoff retry for later review.',
+      notBefore: '2026-06-02T18:30:00.000Z'
+    });
+    const parsed = rescheduleRetryResponseSchema.parse(handoffRetryRescheduleResponse);
+
+    expect(parsed.retry.status).toBe('scheduled');
+    expect(parsed.retry.notBefore).toBe('2026-06-02T18:30:00.000Z');
+    expect(parsed.retry.policy.canReschedule).toBe(true);
   });
 
   it('accepts completed handoff retry execution responses', () => {

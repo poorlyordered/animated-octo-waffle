@@ -63,6 +63,7 @@ describe('ESI sync API contract', () => {
     });
 
     expect(parsed.history?.[0].retry?.status).toBe('blocked');
+    expect(parsed.history?.[0].retryHistory).toHaveLength(3);
     expect(parsed.history?.[0].retry?.blockedReason).toContain('Active ESI consent');
   });
 

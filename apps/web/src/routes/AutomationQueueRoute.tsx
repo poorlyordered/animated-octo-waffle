@@ -33,6 +33,7 @@ export function AutomationQueueRoute() {
         handoff={automationQueue.selectedQueueItem?.handoff}
         onCancelHandoffRetry={automationQueue.cancelHandoffRetry}
         onPrepareHandoff={automationQueue.prepareHandoff}
+        onRescheduleHandoffRetry={automationQueue.rescheduleHandoffRetry}
         onScheduleHandoffRetry={automationQueue.scheduleHandoffRetry}
       />
     </main>

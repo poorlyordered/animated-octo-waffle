@@ -55,6 +55,7 @@ export interface WorkerHandoff {
   result?: WorkerCompletionResult;
   failure?: HandoffFailure;
   retry?: RetryRequestSummary;
+  retryHistory?: RetryRequestSummary[];
 }
 
 export interface WorkerHandoffSummary {
@@ -69,6 +70,7 @@ export interface WorkerHandoffSummary {
   result?: WorkerCompletionResult;
   failure?: HandoffFailure;
   retry?: RetryRequestSummary;
+  retryHistory?: RetryRequestSummary[];
 }
 
 export interface PrepareWorkerHandoffRequest {

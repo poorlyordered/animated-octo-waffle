@@ -517,12 +517,54 @@ Validation:
 - Spec: `specs/024-decision-list-filters`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
 
+### M25: Retry History Management - Complete
+
+Goal: make retry attempts auditable beyond the latest retry status.
+
+Delivered capabilities:
+
+- Bounded retry history for worker handoff detail responses
+- Bounded retry history for automation queue detail handoff summaries
+- Bounded retry history for Numbers ESI sync history items
+- Latest `retry` field preserved for existing schedule and cancel controls
+- Browser display for scheduled, canceled, blocked, completed, replacement, and policy metadata across recent attempts
+- Store helper scoped by corporation, target type, target id, and bounded limit
+- Contract/unit coverage for retry history arrays and scoped history listing
+- Browser smoke coverage for worker handoff and ESI sync retry history visibility
+- No retry rescheduling, policy editing, worker dispatch, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/025-retry-history-management`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
+### M26: Retry Rescheduling Controls - Complete
+
+Goal: let commanders defer already scheduled retry work without canceling and recreating the retry record.
+
+Delivered capabilities:
+
+- Retry policy summaries now expose server-owned `canReschedule` eligibility
+- Scheduled worker handoff retries can be rescheduled with a new reason and optional not-before time
+- Scheduled Numbers ESI sync retries can be rescheduled with a new reason and optional not-before time
+- Rescheduling preserves retry id, target, and scheduled status
+- Blocked, claimed, completed, and canceled retries remain non-reschedulable
+- Browser controls for rescheduling scheduled retries on worker handoff and ESI sync surfaces
+- Contract/unit coverage for reschedule payloads, policy eligibility, and scheduled-only store mutation
+- Browser smoke coverage for worker handoff and ESI sync reschedule controls
+- No retry policy editing, worker dispatch, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/026-retry-rescheduling-controls`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M25 selection after M24 review.
+Proceed to M27 selection after M26 review.
 
 Recommended next-slice candidates:
 
-- Retry rescheduling or retry history management once cancellation behavior has been reviewed.
 - Opportunity approval or queue handoff once Opportunity decision recording has been reviewed.
 - Decision list pagination or persisted filters if the browser-local review model becomes crowded.
+- Retry policy controls beyond the current one-active-scheduled-retry boundary if commander workflows require more nuance.

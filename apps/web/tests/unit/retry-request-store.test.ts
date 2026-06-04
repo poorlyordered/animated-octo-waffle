@@ -7,7 +7,9 @@ import {
   completeRetryRequest,
   assertNoUnsafeRetryFields,
   createOrFindScheduledRetryRequest,
+  listRetryRequestsForTarget,
   listDueScheduledRetryRequests,
+  rescheduleLatestRetryRequestForTarget,
   retryRequestSummary
 } from '../../../../netlify/functions/_shared/retry-request-store';
 
@@ -18,11 +20,18 @@ function createDb(initial: Document[]) {
   const collection = {
     findOne: jest.fn(async (filter: Filter<Document>) => documents.find((item) => matches(item, filter)) ?? null),
     find: jest.fn((filter: Filter<Document>) => ({
-      sort: jest.fn(() => ({
-        limit: jest.fn(() => ({
-          toArray: jest.fn(async () => documents.filter((item) => matches(item, filter)))
-        }))
-      }))
+      sort: jest.fn((sortSpec: Record<string, 1 | -1>) => {
+        const sorted = documents.filter((item) => matches(item, filter)).sort((left, right) => compareDocuments(left, right, sortSpec));
+        return {
+          limit: jest.fn((limit: number) => {
+            const limited = sorted.slice(0, limit);
+            return {
+              next: jest.fn(async () => limited[0] ?? null),
+              toArray: jest.fn(async () => limited)
+            };
+          })
+        };
+      })
     })),
     findOneAndUpdate: jest.fn(async (filter: Filter<Document>, update: Document) => {
       const index = documents.findIndex((item) => matches(item, filter));
@@ -49,6 +58,20 @@ function createDb(initial: Document[]) {
   };
 
   return { db: { collection: () => collection } as unknown as Db, documents };
+}
+
+function compareDocuments(left: Document, right: Document, sortSpec: Record<string, 1 | -1>): number {
+  for (const [key, direction] of Object.entries(sortSpec)) {
+    const leftValue = String(left[key] ?? '');
+    const rightValue = String(right[key] ?? '');
+    if (leftValue === rightValue) {
+      continue;
+    }
+
+    return leftValue > rightValue ? direction : -direction;
+  }
+
+  return 0;
 }
 
 function matches(document: Document, filter: Filter<Document>): boolean {
@@ -109,6 +132,7 @@ describe('retry request store', () => {
       status: 'scheduled',
       policy: {
         canCancel: true,
+        canReschedule: true,
         activeScheduledLimit: 1
       }
     });
@@ -133,6 +157,19 @@ describe('retry request store', () => {
     const due = await listDueScheduledRetryRequests(db, new Date('2026-06-02T18:00:00.000Z'));
 
     expect(due.map((item) => item.id)).toEqual(['retry-due']);
+  });
+
+  it('lists bounded retry history for one scoped target', async () => {
+    const { db } = createDb([
+      retryDocument({ id: 'retry-old', updatedAt: '2026-06-02T17:00:00.000Z' }),
+      retryDocument({ id: 'retry-new', updatedAt: '2026-06-02T18:00:00.000Z' }),
+      retryDocument({ id: 'retry-other-target', targetId: 'handoff-2', updatedAt: '2026-06-02T19:00:00.000Z' }),
+      retryDocument({ id: 'retry-other-corp', corporationId: '987654321', updatedAt: '2026-06-02T20:00:00.000Z' })
+    ]);
+
+    const history = await listRetryRequestsForTarget(db, '123456789', 'worker_handoff', 'handoff-1', 1);
+
+    expect(history.map((item) => item.id)).toEqual(['retry-new']);
   });
 
   it('claims and blocks scheduled retries', async () => {
@@ -182,10 +219,51 @@ describe('retry request store', () => {
       canceledBy: 'commander',
       cancelReason: 'Commander canceled retry after policy review.',
       policy: {
-        canCancel: false
+        canCancel: false,
+        canReschedule: false
       }
     });
     expect(duplicateCancel).toBeNull();
+  });
+
+  it('reschedules only scheduled retries for a target', async () => {
+    const { db } = createDb([
+      retryDocument(),
+      retryDocument({ id: 'retry-blocked', status: 'blocked', targetId: 'handoff-2' })
+    ]);
+
+    const rescheduled = await rescheduleLatestRetryRequestForTarget(
+      db,
+      '123456789',
+      'worker_handoff',
+      'handoff-1',
+      {
+        reason: 'Commander deferred scheduled worker handoff retry for later review.',
+        notBefore: '2026-06-02T19:00:00.000Z'
+      },
+      new Date('2026-06-02T18:10:00.000Z')
+    );
+    const blocked = await rescheduleLatestRetryRequestForTarget(
+      db,
+      '123456789',
+      'worker_handoff',
+      'handoff-2',
+      {
+        reason: 'Try to reschedule blocked retry.'
+      },
+      new Date('2026-06-02T18:11:00.000Z')
+    );
+    const summary = retryRequestSummary(rescheduled!);
+
+    expect(summary).toMatchObject({
+      status: 'scheduled',
+      reason: 'Commander deferred scheduled worker handoff retry for later review.',
+      notBefore: '2026-06-02T19:00:00.000Z',
+      policy: {
+        canReschedule: true
+      }
+    });
+    expect(blocked).toBeNull();
   });
 
   it('completes claimed retries with safe replacement summaries', async () => {

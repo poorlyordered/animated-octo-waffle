@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import type { AutomationQueueItem, CancelRetryResponse, ScheduleRetryResponse, WorkerHandoffSummary } from '@gryyk/contracts';
+import type {
+  AutomationQueueItem,
+  CancelRetryResponse,
+  RetryRequestSummary,
+  RescheduleRetryResponse,
+  ScheduleRetryResponse,
+  WorkerHandoffSummary
+} from '@gryyk/contracts';
 import { OperatingLegCoverage } from '../../command-brief/components/OperatingLegCoverage';
 
 interface AutomationQueueDetailProps {
@@ -7,6 +14,7 @@ interface AutomationQueueDetailProps {
   handoff?: WorkerHandoffSummary;
   onCancelHandoffRetry?: (handoffId: string, reason: string) => Promise<CancelRetryResponse>;
   onPrepareHandoff: (queueItemId: string) => Promise<unknown>;
+  onRescheduleHandoffRetry?: (handoffId: string, reason: string, notBefore?: string) => Promise<RescheduleRetryResponse>;
   onScheduleHandoffRetry?: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
 }
 
@@ -15,6 +23,7 @@ export function AutomationQueueDetail({
   handoff,
   onCancelHandoffRetry,
   onPrepareHandoff,
+  onRescheduleHandoffRetry,
   onScheduleHandoffRetry
 }: AutomationQueueDetailProps) {
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
@@ -27,6 +36,7 @@ export function AutomationQueueDetail({
   const canPrepareHandoff = queueItem.status !== 'completed' && queueItem.status !== 'canceled';
   const canScheduleRetry = handoff?.status === 'failed' && Boolean(onScheduleHandoffRetry);
   const canCancelRetry = Boolean(handoff?.retry?.policy.canCancel && onCancelHandoffRetry);
+  const canRescheduleRetry = Boolean(handoff?.retry?.policy.canReschedule && onRescheduleHandoffRetry);
 
   async function handleScheduleRetry() {
     if (!handoff || !onScheduleHandoffRetry) {
@@ -55,6 +65,27 @@ export function AutomationQueueDetail({
       setRetryStatus(`${response.retry.boundary} Retry status: ${response.retry.status}.`);
     } catch (error) {
       setRetryStatus(error instanceof Error ? error.message : 'Unable to cancel retry.');
+    } finally {
+      setRetryBusy(false);
+    }
+  }
+
+  async function handleRescheduleRetry() {
+    if (!handoff || !onRescheduleHandoffRetry) {
+      return;
+    }
+
+    setRetryBusy(true);
+    try {
+      const notBefore = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const response = await onRescheduleHandoffRetry(
+        handoff.id,
+        'Commander deferred scheduled worker handoff retry for later review.',
+        notBefore
+      );
+      setRetryStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Not before: ${response.retry.notBefore ?? 'unset'}.`);
+    } catch (error) {
+      setRetryStatus(error instanceof Error ? error.message : 'Unable to reschedule retry.');
     } finally {
       setRetryBusy(false);
     }
@@ -173,7 +204,23 @@ export function AutomationQueueDetail({
             {retryBusy ? 'Canceling...' : 'Cancel retry'}
           </button>
         ) : null}
+        {handoff?.retry ? (
+          <button type="button" disabled={!canRescheduleRetry || retryBusy} onClick={() => void handleRescheduleRetry()}>
+            {retryBusy ? 'Rescheduling...' : 'Reschedule retry'}
+          </button>
+        ) : null}
         {retryStatus ? <p className="notice">{retryStatus}</p> : null}
+        {handoff?.retryHistory && handoff.retryHistory.length > 0 ? (
+          <section aria-label="Worker handoff retry history">
+            <h4>Retry history</h4>
+            <ul>
+              {handoff.retryHistory.map((retry) => (
+                <li key={retry.id}>{retryAttemptSummary(retry)}</li>
+              ))}
+            </ul>
+            <p className="notice">Retry history is read-only. This view does not dispatch, execute, or reschedule work.</p>
+          </section>
+        ) : null}
         <p className="notice">Preparing handoff creates a durable record only. It does not dispatch, retry, or execute work.</p>
       </section>
 
@@ -204,4 +251,18 @@ export function AutomationQueueDetail({
       ) : null}
     </section>
   );
+}
+
+function retryAttemptSummary(retry: RetryRequestSummary): string {
+  const parts = [`${retry.status}: ${retry.reason}`];
+
+  if (retry.claimedBy) parts.push(`Claimed by ${retry.claimedBy}.`);
+  if (retry.completedAt) parts.push(`Completed ${new Date(retry.completedAt).toLocaleString()}.`);
+  if (retry.canceledAt) parts.push(`Canceled ${new Date(retry.canceledAt).toLocaleString()}.`);
+  if (retry.cancelReason) parts.push(`Reason: ${retry.cancelReason}`);
+  if (retry.result) parts.push(`Replacement ${retry.result.replacementTargetId} is ${retry.result.replacementTargetStatus}.`);
+  if (retry.blockedReason) parts.push(`Blocked: ${retry.blockedReason}`);
+  parts.push(retry.policy.boundary);
+
+  return parts.join(' ');
 }

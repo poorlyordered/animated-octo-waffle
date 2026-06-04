@@ -2,6 +2,7 @@ import {
   prepareEsiSyncRequestSchema,
   revokeEsiVaultRequestSchema,
   cancelRetryRequestSchema,
+  rescheduleRetryRequestSchema,
   scheduleRetryRequestSchema,
   startEsiSyncConsentRequestSchema
 } from '../../packages/contracts/src/index';
@@ -21,7 +22,8 @@ import {
   assertNoUnsafeRetryFields,
   cancelLatestRetryRequestForTarget,
   createOrFindScheduledRetryRequest,
-  findLatestRetryRequest,
+  listRetryRequestsForTarget,
+  rescheduleLatestRetryRequestForTarget,
   retryRequestSummary
 } from './_shared/retry-request-store';
 import { findActiveOrLatestVault, revokeActiveVault } from './_shared/esi-token-vault-store';
@@ -58,9 +60,15 @@ export async function handler(event: FunctionEvent) {
       const vault = await findActiveOrLatestVault(db, corporationId);
       const history = await listRecentSyncRequests(db, corporationId, 'numbers');
       for (const item of history) {
-        const retry = await findLatestRetryRequest(db, corporationId, 'esi_sync_request', item.id ?? item._id?.toString() ?? '');
-        if (retry) {
-          item.retry = retry;
+        const retries = await listRetryRequestsForTarget(
+          db,
+          corporationId,
+          'esi_sync_request',
+          item.id ?? item._id?.toString() ?? ''
+        );
+        if (retries.length > 0) {
+          item.retryHistory = retries;
+          item.retry = retries[0];
         }
       }
 
@@ -195,6 +203,26 @@ export async function handler(event: FunctionEvent) {
       return retry
         ? jsonResponse(200, { retry: retryRequestSummary(retry) })
         : safeErrorResponse('Only scheduled or blocked ESI sync retries can be canceled', 409);
+    }
+
+    const rescheduleRetryMatch = path.match(/\/esi-sync\/([^/]+)\/retry\/reschedule$/);
+    if (rescheduleRetryMatch) {
+      assertNoUnsafeRetryFields(body);
+      const request = rescheduleRetryRequestSchema.parse(body);
+      const syncRequest = await findSyncRequest(db, decodeURIComponent(rescheduleRetryMatch[1]));
+      if (!syncRequest || syncRequest.corporationId !== corporationId) {
+        return safeErrorResponse('ESI sync request not found', 404);
+      }
+      const retry = await rescheduleLatestRetryRequestForTarget(
+        db,
+        corporationId,
+        'esi_sync_request',
+        syncRequest.id ?? syncRequest._id?.toString() ?? '',
+        request
+      );
+      return retry
+        ? jsonResponse(200, { retry: retryRequestSummary(retry) })
+        : safeErrorResponse('Only scheduled ESI sync retries can be rescheduled', 409);
     }
 
     return safeErrorResponse('ESI sync path is invalid', 404);

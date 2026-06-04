@@ -16,6 +16,7 @@ export const retryExecutionResultSchema = z.object({
 export const retryPolicySummarySchema = z.object({
   canSchedule: z.boolean(),
   canCancel: z.boolean(),
+  canReschedule: z.boolean(),
   activeScheduledLimit: z.number().int().positive(),
   cancelableStatuses: z.array(z.enum(['scheduled', 'blocked'])),
   boundary: z.string().min(1)
@@ -51,12 +52,21 @@ export const cancelRetryRequestSchema = z.object({
   reason: z.string().min(1).max(500)
 }).strict();
 
+export const rescheduleRetryRequestSchema = z.object({
+  reason: z.string().min(1).max(500),
+  notBefore: z.string().datetime().optional()
+}).strict();
+
 export const scheduleRetryResponseSchema = z.object({
   retry: retryRequestSummarySchema,
   duplicate: z.boolean()
 });
 
 export const cancelRetryResponseSchema = z.object({
+  retry: retryRequestSummarySchema
+});
+
+export const rescheduleRetryResponseSchema = z.object({
   retry: retryRequestSummarySchema
 });
 

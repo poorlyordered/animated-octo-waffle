@@ -6,6 +6,7 @@ import type {
   CreateAutomationQueueItemRequest,
   CancelRetryResponse,
   QueueStatus,
+  RescheduleRetryResponse,
   ScheduleRetryResponse
 } from '@gryyk/contracts';
 import {
@@ -13,7 +14,12 @@ import {
   getAutomationQueueItem,
   listAutomationQueueItems
 } from '../services/automationQueueClient';
-import { cancelWorkerHandoffRetry, prepareWorkerHandoff, scheduleWorkerHandoffRetry } from '../services/workerHandoffClient';
+import {
+  cancelWorkerHandoffRetry,
+  prepareWorkerHandoff,
+  rescheduleWorkerHandoffRetry,
+  scheduleWorkerHandoffRetry
+} from '../services/workerHandoffClient';
 
 export interface SelectedAutomationQueueItem {
   queueItem: AutomationQueueItem;
@@ -33,6 +39,7 @@ interface UseAutomationQueueState extends AutomationQueueState {
   loadQueueItem: (id: string) => Promise<SelectedAutomationQueueItem>;
   cancelHandoffRetry: (handoffId: string, reason: string) => Promise<CancelRetryResponse>;
   prepareHandoff: (queueItemId: string) => Promise<WorkerHandoff>;
+  rescheduleHandoffRetry: (handoffId: string, reason: string, notBefore?: string) => Promise<RescheduleRetryResponse>;
   scheduleHandoffRetry: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
   selectQueueItem: (queueItem: AutomationQueueItem | null) => void;
   setStatusFilter: (status: QueueStatus | 'all') => void;
@@ -135,6 +142,19 @@ export function useAutomationQueue(): UseAutomationQueueState {
     return response;
   }
 
+  async function rescheduleHandoffRetry(
+    handoffId: string,
+    reason: string,
+    notBefore?: string
+  ): Promise<RescheduleRetryResponse> {
+    const response = await rescheduleWorkerHandoffRetry(handoffId, { reason, notBefore });
+    const selected = state.selectedQueueItem;
+    if (selected) {
+      await loadQueueItem(selected.queueItem.id);
+    }
+    return response;
+  }
+
   const queueItemsByDecision = useMemo(() => {
     return state.queueItems.reduce<Record<string, AutomationQueueItem[]>>((index, item) => {
       index[item.sourceDecisionId] = [...(index[item.sourceDecisionId] ?? []), item];
@@ -148,6 +168,7 @@ export function useAutomationQueue(): UseAutomationQueueState {
     loadQueueItem,
     cancelHandoffRetry,
     prepareHandoff,
+    rescheduleHandoffRetry,
     scheduleHandoffRetry,
     selectQueueItem: (queueItem) => {
       setState((current) => ({ ...current, selectedQueueItem: queueItem ? { queueItem } : null }));

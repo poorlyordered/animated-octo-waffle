@@ -4,6 +4,7 @@ import type {
   EsiSyncStatusResponse,
   CancelRetryResponse,
   PrepareEsiSyncResponse,
+  RescheduleRetryResponse,
   RevokeEsiVaultResponse,
   ScheduleRetryResponse,
   StartEsiSyncConsentResponse
@@ -12,6 +13,7 @@ import {
   cancelEsiSyncRetry,
   getEsiSyncStatus,
   prepareEsiSync,
+  rescheduleEsiSyncRetry,
   revokeEsiVault,
   scheduleEsiSyncRetry,
   startEsiSyncConsent
@@ -23,6 +25,7 @@ interface EsiSyncState {
   status: EsiSyncStatusResponse | null;
   cancelRetry: (syncRequestId: string, reason: string) => Promise<CancelRetryResponse>;
   prepareSync: (domain: EsiSyncDomain) => Promise<PrepareEsiSyncResponse>;
+  rescheduleRetry: (syncRequestId: string, reason: string, notBefore?: string) => Promise<RescheduleRetryResponse>;
   revokeVault: () => Promise<RevokeEsiVaultResponse>;
   scheduleRetry: (syncRequestId: string, reason: string) => Promise<ScheduleRetryResponse>;
   startConsent: () => Promise<StartEsiSyncConsentResponse>;
@@ -30,7 +33,7 @@ interface EsiSyncState {
 
 export function useEsiSync(): EsiSyncState {
   const [state, setState] = useState<
-    Omit<EsiSyncState, 'cancelRetry' | 'prepareSync' | 'revokeVault' | 'scheduleRetry' | 'startConsent'>
+    Omit<EsiSyncState, 'cancelRetry' | 'prepareSync' | 'rescheduleRetry' | 'revokeVault' | 'scheduleRetry' | 'startConsent'>
   >({
     error: null,
     loading: true,
@@ -76,6 +79,11 @@ export function useEsiSync(): EsiSyncState {
     },
     prepareSync: async (domain) => {
       const response = await prepareEsiSync({ domain });
+      await refresh();
+      return response;
+    },
+    rescheduleRetry: async (syncRequestId, reason, notBefore) => {
+      const response = await rescheduleEsiSyncRetry(syncRequestId, { reason, notBefore });
       await refresh();
       return response;
     },

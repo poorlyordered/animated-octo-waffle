@@ -14,7 +14,7 @@ import {
   prepareWorkerHandoff,
   workerHandoffSummaryFromHandoff
 } from './_shared/worker-handoff-store';
-import { findLatestRetryRequest, retryRequestSummary } from './_shared/retry-request-store';
+import { listRetryRequestsForTarget, retryRequestSummary } from './_shared/retry-request-store';
 import { assertNoExecutionRequest } from './_shared/worker-handoff-rules';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 
@@ -54,9 +54,10 @@ export async function handler(event: FunctionEvent) {
 
         const handoff = await findLatestWorkerHandoff(db, corporationId, queueItem.id);
         if (handoff) {
-          const retry = await findLatestRetryRequest(db, corporationId, 'worker_handoff', handoff.id);
-          if (retry) {
-            handoff.retry = retryRequestSummary(retry);
+          const retries = await listRetryRequestsForTarget(db, corporationId, 'worker_handoff', handoff.id);
+          if (retries.length > 0) {
+            handoff.retryHistory = retries.map(retryRequestSummary);
+            handoff.retry = handoff.retryHistory[0];
           }
         }
 

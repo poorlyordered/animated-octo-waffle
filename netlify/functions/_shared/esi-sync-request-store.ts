@@ -32,6 +32,7 @@ export interface EsiSyncRequestDocument {
   failure?: EsiSyncWorkerFailureSummary;
   result?: EsiSyncWorkerResultSummary;
   retry?: RetryRequestDocument;
+  retryHistory?: RetryRequestDocument[];
   createdAt: string;
   updatedAt: string;
 }
@@ -299,6 +300,9 @@ export function syncHistoryItem(syncRequest: EsiSyncRequestDocument): EsiSyncHis
   if (syncRequest.result) item.sourceCount = syncRequest.result.sourceCount;
   if (syncRequest.failure) item.failure = syncRequest.failure;
   if (syncRequest.retry) item.retry = retryRequestSummary(syncRequest.retry);
+  if (Array.isArray(syncRequest.retryHistory) && syncRequest.retryHistory.length > 0) {
+    item.retryHistory = syncRequest.retryHistory.map(retryRequestSummary);
+  }
 
   return item;
 }

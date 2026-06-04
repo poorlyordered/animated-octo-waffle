@@ -113,6 +113,10 @@ M16 adds a trusted retry worker path for due scheduled retries. Worker-authentic
 
 M20 adds commander-side cancellation and server-owned policy metadata for retry records. Scheduled and blocked retries can be canceled from the handoff and ESI sync surfaces with an auditable reason; claimed and completed retries remain non-cancelable. Retry summaries now state the one-active-scheduled-retry-per-target policy and no-execution boundary. Cancellation does not dispatch workers, claim retry work, execute retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
 
+M25 adds bounded retry history visibility for failed worker handoffs and Numbers ESI sync requests. The browser now shows recent retry attempts with scheduled, canceled, blocked, completed, replacement, and policy metadata while preserving the latest retry field for existing controls. Retry history is read-only: it does not reschedule retries, dispatch workers, execute retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
+M26 adds commander-side rescheduling for already scheduled retry records. Rescheduling updates the retry reason and optional not-before time while preserving the retry id, target, and scheduled status. Blocked, claimed, completed, and canceled retries cannot be rescheduled. Rescheduling does not dispatch workers, claim retry work, execute retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## Decision Record Loop
 
 The Decision Record Loop stores normalized decision records in the existing MongoDB `strategic_decisions` collection. Existing strategic decision fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `gryykSynthesis`, and `timestamp` are treated as legacy-compatible inputs and normalized at the app boundary.

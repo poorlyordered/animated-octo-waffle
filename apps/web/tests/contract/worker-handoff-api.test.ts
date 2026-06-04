@@ -54,6 +54,7 @@ describe('Worker Handoff API contract', () => {
     const parsed = workerHandoffResponseSchema.parse({ handoff: failedHandoffWithCompletedRetry });
 
     expect(parsed.handoff.retry?.status).toBe('completed');
+    expect(parsed.handoff.retryHistory).toHaveLength(3);
     expect(parsed.handoff.retry?.result?.replacementTargetStatus).toBe('ready');
   });
 
@@ -65,11 +66,13 @@ describe('Worker Handoff API contract', () => {
         status: readyHandoff.status,
         createdAt: readyHandoff.createdAt,
         updatedAt: readyHandoff.updatedAt,
-        progress: []
+        progress: [],
+        retryHistory: failedHandoffWithCompletedRetry.retryHistory
       }
     });
 
     expect(parsed.handoff?.status).toBe('ready');
+    expect(parsed.handoff?.retryHistory).toHaveLength(3);
   });
 
   it('does not include secrets or dispatch targets in browser-visible handoff JSON', () => {

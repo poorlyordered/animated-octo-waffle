@@ -1,6 +1,6 @@
 import type { WorkerHandoff } from '@gryyk/contracts';
 import { queuedItem } from './automationQueue';
-import { completedHandoffRetry, handoffRetry } from './retry';
+import { canceledHandoffRetry, completedHandoffRetry, handoffRetry } from './retry';
 
 export const readyHandoff: WorkerHandoff = {
   id: 'handoff-1',
@@ -78,10 +78,12 @@ export const failedHandoff: WorkerHandoff = {
     code: 'source_unavailable',
     failedAt: '2026-06-01T15:25:00.000Z'
   },
-  retry: handoffRetry
+  retry: handoffRetry,
+  retryHistory: [handoffRetry]
 };
 
 export const failedHandoffWithCompletedRetry: WorkerHandoff = {
   ...failedHandoff,
-  retry: completedHandoffRetry
+  retry: completedHandoffRetry,
+  retryHistory: [completedHandoffRetry, canceledHandoffRetry, handoffRetry]
 };
