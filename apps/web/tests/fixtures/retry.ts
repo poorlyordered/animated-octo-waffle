@@ -10,6 +10,7 @@ import type {
 export const cancelableRetryPolicy: RetryPolicySummary = {
   canSchedule: false,
   canCancel: true,
+  canReschedule: true,
   activeScheduledLimit: 1,
   cancelableStatuses: ['scheduled', 'blocked'],
   boundary:
@@ -19,7 +20,13 @@ export const cancelableRetryPolicy: RetryPolicySummary = {
 export const finalRetryPolicy: RetryPolicySummary = {
   ...cancelableRetryPolicy,
   canSchedule: true,
-  canCancel: false
+  canCancel: false,
+  canReschedule: false
+};
+
+export const blockedRetryPolicy: RetryPolicySummary = {
+  ...cancelableRetryPolicy,
+  canReschedule: false
 };
 
 export const handoffRetry: RetryRequestSummary = {
@@ -72,7 +79,7 @@ export const blockedEsiSyncRetry: RetryRequestSummary = {
   claimedAt: '2026-06-02T17:34:00.000Z',
   blockedAt: '2026-06-02T17:35:00.000Z',
   blockedReason: 'Active ESI consent is required before this sync retry can be queued.',
-  policy: cancelableRetryPolicy,
+  policy: blockedRetryPolicy,
   boundary: 'Retry execution is worker-only and uses prior commander approval.'
 };
 
@@ -90,6 +97,20 @@ export const canceledHandoffRetry: RetryRequestSummary = {
 export const handoffRetryResponse: ScheduleRetryResponse = {
   retry: handoffRetry,
   duplicate: false
+};
+
+export const rescheduledHandoffRetry: RetryRequestSummary = {
+  ...handoffRetry,
+  id: 'retry-handoff-rescheduled',
+  reason: 'Commander deferred scheduled worker handoff retry for later review.',
+  notBefore: '2026-06-02T18:30:00.000Z'
+};
+
+export const rescheduledEsiSyncRetry: RetryRequestSummary = {
+  ...esiSyncRetry,
+  id: 'retry-esi-sync-rescheduled',
+  reason: 'Commander deferred scheduled ESI sync retry for later review.',
+  notBefore: '2026-06-02T18:31:00.000Z'
 };
 
 export const esiSyncRetryResponse: ScheduleRetryResponse = {
@@ -112,6 +133,14 @@ export const esiSyncRetryCancelResponse: CancelRetryResponse = {
 };
 
 export const canceledEsiSyncRetry: RetryRequestSummary = esiSyncRetryCancelResponse.retry;
+
+export const handoffRetryRescheduleResponse = {
+  retry: rescheduledHandoffRetry
+};
+
+export const esiSyncRetryRescheduleResponse = {
+  retry: rescheduledEsiSyncRetry
+};
 
 export const retryWorkerReadyResponse: RetryWorkerReadyResponse = {
   retries: [handoffRetry, esiSyncRetry]

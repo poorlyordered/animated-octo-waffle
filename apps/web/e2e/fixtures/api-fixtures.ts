@@ -82,6 +82,10 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
       return json(route, response);
     }
 
+    if (url.pathname.endsWith('/retry/reschedule')) {
+      return json(route, commandSurfaceFixtures.retries.esiSyncReschedule);
+    }
+
     if (url.pathname.endsWith('/retry/cancel')) {
       return json(route, commandSurfaceFixtures.retries.esiSyncCancel);
     }
@@ -157,6 +161,10 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   await page.route('**/api/worker-handoffs/*/retry/cancel', (route) => {
     workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoffCancel.retry;
     return json(route, commandSurfaceFixtures.retries.handoffCancel);
+  });
+  await page.route('**/api/worker-handoffs/*/retry/reschedule', (route) => {
+    workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoffReschedule.retry;
+    return json(route, commandSurfaceFixtures.retries.handoffReschedule);
   });
   await page.route('**/api/worker-handoffs/*/retry', (route) => {
     workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoff.retry;

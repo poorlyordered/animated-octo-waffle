@@ -5,6 +5,7 @@ import {
   workerHandoffStatusSchema,
   workerProgressRequestSchema,
   cancelRetryRequestSchema,
+  rescheduleRetryRequestSchema,
   scheduleRetryRequestSchema
 } from '../../packages/contracts/src/index';
 import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
@@ -23,6 +24,7 @@ import {
   cancelLatestRetryRequestForTarget,
   createOrFindScheduledRetryRequest,
   listRetryRequestsForTarget,
+  rescheduleLatestRetryRequestForTarget,
   retryRequestSummary
 } from './_shared/retry-request-store';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
@@ -33,7 +35,7 @@ function handoffPathId(event: FunctionEvent): string | null {
 }
 
 function handoffActionPath(event: FunctionEvent): { id: string; action: string } | null {
-  const match = event.path?.match(/\/worker-handoffs\/([^/]+)\/(claim|progress|complete|fail|retry|retry\/cancel)$/);
+  const match = event.path?.match(/\/worker-handoffs\/([^/]+)\/(claim|progress|complete|fail|retry|retry\/cancel|retry\/reschedule)$/);
   return match ? { id: match[1], action: match[2] } : null;
 }
 
@@ -100,6 +102,19 @@ export async function handler(event: FunctionEvent) {
         return retry
           ? jsonResponse(200, { retry: retryRequestSummary(retry) })
           : safeErrorResponse('Only scheduled or blocked worker handoff retries can be canceled', 409);
+      }
+
+      if (actionPath.action === 'retry/reschedule') {
+        assertNoUnsafeRetryFields(body);
+        const request = rescheduleRetryRequestSchema.parse(body);
+        const handoff = await findWorkerHandoff(db, corporationId, actionPath.id);
+        if (!handoff) {
+          return safeErrorResponse('Worker handoff not found', 404);
+        }
+        const retry = await rescheduleLatestRetryRequestForTarget(db, corporationId, 'worker_handoff', handoff.id, request);
+        return retry
+          ? jsonResponse(200, { retry: retryRequestSummary(retry) })
+          : safeErrorResponse('Only scheduled worker handoff retries can be rescheduled', 409);
       }
 
       assertWorkerCallbackAuthorized(event);

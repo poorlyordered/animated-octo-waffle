@@ -9,6 +9,7 @@ import {
   createOrFindScheduledRetryRequest,
   listRetryRequestsForTarget,
   listDueScheduledRetryRequests,
+  rescheduleLatestRetryRequestForTarget,
   retryRequestSummary
 } from '../../../../netlify/functions/_shared/retry-request-store';
 
@@ -131,6 +132,7 @@ describe('retry request store', () => {
       status: 'scheduled',
       policy: {
         canCancel: true,
+        canReschedule: true,
         activeScheduledLimit: 1
       }
     });
@@ -217,10 +219,51 @@ describe('retry request store', () => {
       canceledBy: 'commander',
       cancelReason: 'Commander canceled retry after policy review.',
       policy: {
-        canCancel: false
+        canCancel: false,
+        canReschedule: false
       }
     });
     expect(duplicateCancel).toBeNull();
+  });
+
+  it('reschedules only scheduled retries for a target', async () => {
+    const { db } = createDb([
+      retryDocument(),
+      retryDocument({ id: 'retry-blocked', status: 'blocked', targetId: 'handoff-2' })
+    ]);
+
+    const rescheduled = await rescheduleLatestRetryRequestForTarget(
+      db,
+      '123456789',
+      'worker_handoff',
+      'handoff-1',
+      {
+        reason: 'Commander deferred scheduled worker handoff retry for later review.',
+        notBefore: '2026-06-02T19:00:00.000Z'
+      },
+      new Date('2026-06-02T18:10:00.000Z')
+    );
+    const blocked = await rescheduleLatestRetryRequestForTarget(
+      db,
+      '123456789',
+      'worker_handoff',
+      'handoff-2',
+      {
+        reason: 'Try to reschedule blocked retry.'
+      },
+      new Date('2026-06-02T18:11:00.000Z')
+    );
+    const summary = retryRequestSummary(rescheduled!);
+
+    expect(summary).toMatchObject({
+      status: 'scheduled',
+      reason: 'Commander deferred scheduled worker handoff retry for later review.',
+      notBefore: '2026-06-02T19:00:00.000Z',
+      policy: {
+        canReschedule: true
+      }
+    });
+    expect(blocked).toBeNull();
   });
 
   it('completes claimed retries with safe replacement summaries', async () => {

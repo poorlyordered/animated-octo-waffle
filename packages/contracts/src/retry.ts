@@ -7,6 +7,7 @@ export type RetryRequestStatus = (typeof retryRequestStatuses)[number];
 export interface RetryPolicySummary {
   canSchedule: boolean;
   canCancel: boolean;
+  canReschedule: boolean;
   activeScheduledLimit: number;
   cancelableStatuses: Array<'scheduled' | 'blocked'>;
   boundary: string;
@@ -52,12 +53,21 @@ export interface CancelRetryRequest {
   reason: string;
 }
 
+export interface RescheduleRetryRequest {
+  reason: string;
+  notBefore?: string;
+}
+
 export interface ScheduleRetryResponse {
   retry: RetryRequestSummary;
   duplicate: boolean;
 }
 
 export interface CancelRetryResponse {
+  retry: RetryRequestSummary;
+}
+
+export interface RescheduleRetryResponse {
   retry: RetryRequestSummary;
 }
 

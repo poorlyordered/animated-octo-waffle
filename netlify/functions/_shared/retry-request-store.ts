@@ -6,6 +6,7 @@ import type {
   RetryRequestSummary,
   RetryRequestStatus,
   RetryTargetType,
+  RescheduleRetryRequest,
   ScheduleRetryRequest
 } from '../../../packages/contracts/src/index';
 
@@ -225,6 +226,7 @@ export function retryPolicySummary(retry: Pick<RetryRequestDocument, 'status'>):
   return {
     canSchedule: retry.status !== 'scheduled' && retry.status !== 'claimed',
     canCancel: retry.status === 'scheduled' || retry.status === 'blocked',
+    canReschedule: retry.status === 'scheduled',
     activeScheduledLimit: 1,
     cancelableStatuses: ['scheduled', 'blocked'],
     boundary: retryPolicyBoundary
@@ -241,6 +243,42 @@ function retryBoundary(status: RetryRequestStatus): string {
   }
 
   return retryWorkerBoundary;
+}
+
+export async function rescheduleLatestRetryRequestForTarget(
+  db: Db,
+  corporationId: string,
+  targetType: RetryTargetType,
+  targetId: string,
+  request: RescheduleRetryRequest,
+  now = new Date()
+): Promise<RetryRequestDocument | null> {
+  const nowIso = now.toISOString();
+  const set: Partial<RetryRequestDocument> = {
+    reason: request.reason,
+    updatedAt: nowIso
+  };
+  const unset: Record<string, string> = {};
+
+  if (request.notBefore) {
+    set.notBefore = request.notBefore;
+  } else {
+    unset.notBefore = '';
+  }
+
+  const update = Object.keys(unset).length > 0 ? { $set: set, $unset: unset } : { $set: set };
+  const document = await db.collection(collectionName).findOneAndUpdate(
+    {
+      corporationId,
+      targetType,
+      targetId,
+      status: 'scheduled'
+    },
+    update,
+    { sort: { updatedAt: -1, createdAt: -1 }, returnDocument: 'after' }
+  );
+
+  return document ? normalizeRetryRequestDocument(document as unknown as RetryRequestDocument) : null;
 }
 
 export async function cancelLatestRetryRequestForTarget(
