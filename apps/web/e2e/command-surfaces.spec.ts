@@ -68,6 +68,31 @@ test('renders decision records surface with selected detail', async ({ page }, t
   await assertNoBrowserDiagnostics();
 });
 
+test('filters decision records by status and source', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  const decisionRecords = page.getByLabel('Decision records');
+  const filters = page.getByLabel('Decision filters');
+
+  await expectVisibleText(page, 'Browser smoke decision record recommendation.');
+  await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
+  await expectVisibleText(page, 'Decision filters organize records only.');
+
+  await filters.getByLabel('Status').selectOption('rejected');
+  await expectVisibleText(page, 'Browser smoke rejected decision.');
+  await expect(decisionRecords.getByText('Browser smoke decision record recommendation.')).toHaveCount(0);
+
+  await filters.getByLabel('Status').selectOption('all');
+  await filters.getByLabel('Source').selectOption('numbers');
+  await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
+  await expectVisibleText(page, 'Source: Numbers follow-up');
+  await expect(decisionRecords.getByText('Browser smoke approved decision for queue links.')).toHaveCount(0);
+
+  await assertNoBrowserDiagnostics();
+});
+
 test('renders automation queue surface with queued work detail', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
 

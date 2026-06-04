@@ -497,12 +497,32 @@ Validation:
 - Spec: `specs/023-opportunity-decision-handoff`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
 
+### M24: Decision List Filters - Complete
+
+Goal: improve decision-loop review after Numbers and Opportunity decision flows were added.
+
+Delivered capabilities:
+
+- Browser-local decision status filters for proposed, approved, delegated, done, and rejected records
+- Browser-local source filters for Opportunity/brief and Numbers follow-up decisions
+- Source-domain labels on decision list rows
+- Workload counts for visible, total, proposed, approved, rejected, and player-impacting decisions
+- Mixed-source browser fixtures covering Opportunity/brief, Numbers follow-up, approved, proposed, rejected, and player-impacting decisions
+- Unit coverage for filter derivation, source labels, and counts
+- Browser smoke coverage for status/source filtering and no-execution boundary language
+- No backend route, durable collection, approval mutation, queue creation, worker dispatch, retry, ESI fetch, EVE write, or external-service execution
+
+Validation:
+
+- Spec: `specs/024-decision-list-filters`
+- Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M24 selection after M23 review.
+Proceed to M25 selection after M24 review.
 
 Recommended next-slice candidates:
 
 - Retry rescheduling or retry history management once cancellation behavior has been reviewed.
-- Decision approval list/filter improvements now that Numbers-origin approve/reject and Opportunity decision handoff exist.
 - Opportunity approval or queue handoff once Opportunity decision recording has been reviewed.
+- Decision list pagination or persisted filters if the browser-local review model becomes crowded.
