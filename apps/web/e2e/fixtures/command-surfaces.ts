@@ -1,6 +1,6 @@
 import { completedItem, failedItem, queuedItem } from '../../tests/fixtures/automationQueue';
 import { opportunityIngestionProvenance, processedBrief, processedRequest } from '../../tests/fixtures/commandBrief';
-import { approvedDecision, playerImpactingDecision, proposedDecision } from '../../tests/fixtures/decisionRecords';
+import { approvedDecision, playerImpactingDecision, proposedDecision, rejectedDecision } from '../../tests/fixtures/decisionRecords';
 import { numbersLiveProvenance, numbersSnapshot } from '../../tests/fixtures/numbers';
 import {
   completeMember,
@@ -20,6 +20,7 @@ import {
 import {
   approvedNumbersFollowUpDecisionResponse,
   approvedNumbersFollowUpDecisionStatusResponse,
+  numbersFollowUpDecision,
   numbersFollowUpDecisionResponse,
   numbersFollowUpQueueResponse,
   rejectedNumbersFollowUpDecisionStatusResponse
@@ -88,6 +89,16 @@ export const commandSurfaceFixtures = {
         id: 'decision-browser-player-impacting',
         rationale: 'Requires explicit approval before action-like progression.',
         sourceRecommendation: 'Browser smoke player-impacting decision.'
+      },
+      {
+        ...rejectedDecision,
+        id: 'decision-browser-rejected',
+        sourceRecommendation: 'Browser smoke rejected decision.'
+      },
+      {
+        ...numbersFollowUpDecision,
+        id: 'decision-browser-numbers',
+        sourceRecommendation: 'Browser smoke Numbers follow-up decision.'
       }
     ]
   },
