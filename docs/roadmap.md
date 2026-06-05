@@ -623,12 +623,32 @@ Validation:
 - Spec: `specs/029-retry-policy-controls`
 - Local validation covered lint, typecheck, full Jest tests, targeted Playwright browser smoke tests, and production build
 
+### M30: Opportunity Worker Handoff - Complete
+
+Goal: let commanders review Opportunity queued-work detail and explicitly prepare worker handoffs from the Opportunity surface.
+
+Delivered capabilities:
+
+- Opportunity queued-work detail after approved Opportunity queue creation
+- Queue item id, status, task intent, expected output, and attempts shown without leaving the Opportunity surface
+- Worker handoff state shown as not prepared or ready with handoff id/status
+- Explicit Prepare worker handoff control wired to the existing automation queue handoff workflow
+- Opportunity queued-work handoff view model with browser-safe no-execution boundary copy
+- Unit coverage for queued-work detail before and after handoff preparation
+- Browser smoke coverage for Opportunity decision approval, queue creation, queued-work detail, and worker handoff preparation
+- No worker dispatch, handoff claim, retry scheduling, worker execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/030-opportunity-worker-handoff`
+- Local validation covered lint, typecheck, full Jest tests, targeted Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M30 selection after M29 review.
+Proceed to M31 selection after M30 review.
 
 Recommended next-slice candidates:
 
-- Opportunity queued-work detail handoff or worker preparation once Opportunity queue creation has been reviewed.
 - Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
 - Opportunity or People retry policy extension only after the new worker handoff and Numbers controls have been reviewed in browser.
+- Opportunity worker handoff retry controls only after Opportunity handoff preparation has been reviewed.

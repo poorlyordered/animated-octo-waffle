@@ -13,6 +13,7 @@ export function OpportunityRoute() {
       {...opportunity}
       onCreateDecision={decisionRecords.createDecision}
       onCreateQueue={automationQueue.createQueueItem}
+      onPrepareWorkerHandoff={automationQueue.prepareHandoff}
       onUpdateDecisionStatus={decisionRecords.updateStatus}
     />
   );
