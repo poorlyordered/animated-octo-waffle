@@ -123,6 +123,8 @@ M29 adds server-owned retry delay policy controls for scheduled worker handoff a
 
 M30 adds Opportunity queued-work detail and explicit worker handoff preparation on the Opportunity surface. After an approved Opportunity decision creates queued work, the browser shows queue detail and lets the commander prepare a durable worker handoff through the existing automation queue handoff workflow. Handoff preparation does not dispatch workers, claim work, schedule retries, execute work, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
 
+M31 adds Opportunity worker handoff retry controls for failed prepared handoffs. The Opportunity surface can schedule, reschedule, apply retry delay policy, and cancel handoff retries through the existing worker handoff retry APIs. Retry controls update retry records only; they do not dispatch workers, claim work, execute retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## Decision Record Loop
 
 The Decision Record Loop stores normalized decision records in the existing MongoDB `strategic_decisions` collection. Existing strategic decision fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `gryykSynthesis`, and `timestamp` are treated as legacy-compatible inputs and normalized at the app boundary.

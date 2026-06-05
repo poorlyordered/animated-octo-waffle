@@ -7,7 +7,7 @@ import {
 import { queuedItem } from '../fixtures/automationQueue';
 import { opportunityIngestionProvenance, processedBrief, processedRequest } from '../fixtures/commandBrief';
 import { approvedDecision, proposedDecision, rejectedDecision } from '../fixtures/decisionRecords';
-import { readyHandoff } from '../fixtures/workerHandoff';
+import { failedHandoffWithCompletedRetry, readyHandoff } from '../fixtures/workerHandoff';
 
 describe('Opportunity surface view model', () => {
   it('derives first-class Opportunity sections from processed command brief state', () => {
@@ -179,5 +179,25 @@ describe('Opportunity surface view model', () => {
     expect(prepared.handoffStatus).toBe('ready');
     expect(prepared.boundary).toContain('does not dispatch');
     expect(JSON.stringify(prepared)).not.toContain('executeNow');
+  });
+
+  it('derives Opportunity queued work detail for failed handoffs with retry metadata', () => {
+    const failed = deriveOpportunityQueuedWorkHandoff(
+      {
+        ...queuedItem,
+        id: 'queue-opportunity-1',
+        sourceDecisionId: 'decision-opportunity-approved'
+      },
+      {
+        ...failedHandoffWithCompletedRetry,
+        id: 'handoff-opportunity-failed'
+      }
+    );
+
+    expect(failed.handoffId).toBe('handoff-opportunity-failed');
+    expect(failed.handoffStatus).toBe('failed');
+    expect(failed.message).toContain('failed');
+    expect(failed.boundary).toContain('retry');
+    expect(JSON.stringify(failed)).not.toContain('dispatchTarget');
   });
 });

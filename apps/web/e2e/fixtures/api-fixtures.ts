@@ -159,9 +159,13 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
 
     if (handoffMatch) {
       const queueItem = commandSurfaceFixtures.automationQueue.queueItems.find((item) => item.id === handoffMatch[1]);
+      const opportunityHandoff =
+        handoffMatch[1] === 'queue-browser-opportunity'
+          ? commandSurfaceFixtures.automationQueue.handoffs.find((item) => item.id === 'handoff-browser-opportunity-failed')
+          : null;
       return json(route, {
         handoff: {
-          ...commandSurfaceFixtures.automationQueue.handoffs[0],
+          ...(opportunityHandoff ?? commandSurfaceFixtures.automationQueue.handoffs[0]),
           queueItemId: queueItem?.id ?? handoffMatch[1]
         }
       });

@@ -643,12 +643,34 @@ Validation:
 - Spec: `specs/030-opportunity-worker-handoff`
 - Local validation covered lint, typecheck, full Jest tests, targeted Playwright browser smoke tests, and production build
 
+### M31: Opportunity Handoff Retry Controls - Complete
+
+Goal: let commanders manage retries for failed Opportunity worker handoffs without leaving the Opportunity surface.
+
+Delivered capabilities:
+
+- Failed Opportunity worker handoff details shown in queued-work detail
+- Schedule handoff retry control for failed Opportunity handoffs
+- Cancel and reschedule controls for scheduled Opportunity handoff retries
+- Retry delay policy controls reused from server-owned retry policy metadata
+- Local Opportunity handoff detail updates after retry schedule, cancel, and reschedule responses
+- Browser-visible retry history and no-execution boundary language
+- Existing worker handoff retry APIs reused; no Opportunity-specific retry route added
+- Unit coverage for failed Opportunity handoff retry metadata
+- Browser smoke coverage for schedule, reschedule, delay policy, and cancel controls
+- No worker dispatch, handoff claim, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/031-opportunity-handoff-retry-controls`
+- Local validation covered lint, typecheck, full Jest tests, targeted Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M31 selection after M30 review.
+Proceed to M32 selection after M31 review.
 
 Recommended next-slice candidates:
 
 - Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
 - Opportunity or People retry policy extension only after the new worker handoff and Numbers controls have been reviewed in browser.
-- Opportunity worker handoff retry controls only after Opportunity handoff preparation has been reviewed.
+- People follow-up approval or queued-work handoff parity if the People operating layer should match the Numbers and Opportunity command loops.
