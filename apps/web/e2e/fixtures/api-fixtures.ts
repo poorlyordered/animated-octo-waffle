@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import type { SessionStateResponse } from '@gryyk/contracts';
+import type { RetryRequestSummary, SessionStateResponse } from '@gryyk/contracts';
 import { commandSurfaceFixtures } from './command-surfaces';
 
 async function json(route: Route, body: unknown) {
@@ -11,7 +11,7 @@ async function json(route: Route, body: unknown) {
 }
 
 export async function installCommandSurfaceApiFixtures(page: Page) {
-  let workerHandoffRetryOverride: unknown = null;
+  let workerHandoffRetryOverride: RetryRequestSummary | null = null;
 
   await page.route('**/api/eve-session**', (route) => {
     if (route.request().method() === 'POST') {
@@ -59,6 +59,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   });
 
   let esiSyncStatus = commandSurfaceFixtures.esiSync.active;
+  let esiSyncRetryOverride: RetryRequestSummary | null = null;
   let preparedOnce = false;
   await page.route('**/api/esi-sync/**', (route) => {
     const url = new URL(route.request().url());
@@ -83,7 +84,15 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     }
 
     if (url.pathname.endsWith('/retry/reschedule')) {
-      return json(route, commandSurfaceFixtures.retries.esiSyncReschedule);
+      const body = route.request().postDataJSON() as { reason?: string; notBefore?: string } | null;
+      esiSyncRetryOverride = {
+        ...commandSurfaceFixtures.retries.esiSyncReschedule.retry,
+        reason: body?.reason ?? commandSurfaceFixtures.retries.esiSyncReschedule.retry.reason,
+        notBefore: body?.notBefore
+      };
+      return json(route, {
+        retry: esiSyncRetryOverride
+      });
     }
 
     if (url.pathname.endsWith('/retry/cancel')) {
@@ -94,7 +103,24 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
       return json(route, commandSurfaceFixtures.retries.esiSync);
     }
 
-    return json(route, esiSyncStatus);
+    const statusWithRetryOverride = esiSyncRetryOverride
+      ? {
+          ...esiSyncStatus,
+          history: esiSyncStatus.history?.map((item) =>
+            item.id === 'sync-request-failed'
+              ? {
+                  ...item,
+                  retry: esiSyncRetryOverride,
+                  retryHistory: [
+                    esiSyncRetryOverride,
+                    ...(item.retryHistory ?? []).filter((retry) => retry.id !== esiSyncRetryOverride.id)
+                  ]
+                }
+              : item
+          )
+        }
+      : esiSyncStatus;
+    return json(route, statusWithRetryOverride);
   });
 
   await page.route('**/api/decision-records**', (route) => {
@@ -194,8 +220,13 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     return json(route, commandSurfaceFixtures.retries.handoffCancel);
   });
   await page.route('**/api/worker-handoffs/*/retry/reschedule', (route) => {
-    workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoffReschedule.retry;
-    return json(route, commandSurfaceFixtures.retries.handoffReschedule);
+    const body = route.request().postDataJSON() as { reason?: string; notBefore?: string } | null;
+    workerHandoffRetryOverride = {
+      ...commandSurfaceFixtures.retries.handoffReschedule.retry,
+      reason: body?.reason ?? commandSurfaceFixtures.retries.handoffReschedule.retry.reason,
+      notBefore: body?.notBefore
+    };
+    return json(route, { retry: workerHandoffRetryOverride });
   });
   await page.route('**/api/worker-handoffs/*/retry', (route) => {
     workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoff.retry;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type {
   AutomationQueueItem,
   CancelRetryResponse,
+  RetryPolicyDelayOption,
   RetryRequestSummary,
   RescheduleRetryResponse,
   ScheduleRetryResponse,
@@ -70,17 +71,17 @@ export function AutomationQueueDetail({
     }
   }
 
-  async function handleRescheduleRetry() {
+  async function handleRescheduleRetry(option: RetryPolicyDelayOption = defaultRetryDelayOption) {
     if (!handoff || !onRescheduleHandoffRetry) {
       return;
     }
 
     setRetryBusy(true);
     try {
-      const notBefore = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const notBefore = retryDelayNotBefore(option);
       const response = await onRescheduleHandoffRetry(
         handoff.id,
-        'Commander deferred scheduled worker handoff retry for later review.',
+        `Commander applied retry policy control "${option.label}" for scheduled worker handoff retry.`,
         notBefore
       );
       setRetryStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Not before: ${response.retry.notBefore ?? 'unset'}.`);
@@ -209,6 +210,24 @@ export function AutomationQueueDetail({
             {retryBusy ? 'Rescheduling...' : 'Reschedule retry'}
           </button>
         ) : null}
+        {handoff?.retry?.policy.canReschedule ? (
+          <section aria-label="Worker handoff retry policy controls">
+            <h4>Retry policy controls</h4>
+            <div className="form-actions">
+              {handoff.retry.policy.delayOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.key}
+                  disabled={!canRescheduleRetry || retryBusy}
+                  onClick={() => void handleRescheduleRetry(option)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="notice">Retry policy controls update scheduled retry timing only. They do not dispatch, claim, or execute work.</p>
+          </section>
+        ) : null}
         {retryStatus ? <p className="notice">{retryStatus}</p> : null}
         {handoff?.retryHistory && handoff.retryHistory.length > 0 ? (
           <section aria-label="Worker handoff retry history">
@@ -265,4 +284,18 @@ function retryAttemptSummary(retry: RetryRequestSummary): string {
   parts.push(retry.policy.boundary);
 
   return parts.join(' ');
+}
+
+const defaultRetryDelayOption: RetryPolicyDelayOption = {
+  key: 'one_hour',
+  label: 'Defer 1 hour',
+  delayHours: 1
+};
+
+function retryDelayNotBefore(option: RetryPolicyDelayOption): string | undefined {
+  if (option.delayHours === 0) {
+    return undefined;
+  }
+
+  return new Date(Date.now() + option.delayHours * 60 * 60 * 1000).toISOString();
 }

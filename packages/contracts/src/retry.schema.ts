@@ -13,12 +13,19 @@ export const retryExecutionResultSchema = z.object({
   executedAt: z.string().datetime()
 });
 
+export const retryPolicyDelayOptionSchema = z.object({
+  key: z.enum(['immediate', 'one_hour', 'six_hours', 'next_day']),
+  label: z.string().min(1),
+  delayHours: z.number().int().nonnegative()
+});
+
 export const retryPolicySummarySchema = z.object({
   canSchedule: z.boolean(),
   canCancel: z.boolean(),
   canReschedule: z.boolean(),
   activeScheduledLimit: z.number().int().positive(),
   cancelableStatuses: z.array(z.enum(['scheduled', 'blocked'])),
+  delayOptions: z.array(retryPolicyDelayOptionSchema),
   boundary: z.string().min(1)
 });
 

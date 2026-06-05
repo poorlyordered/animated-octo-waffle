@@ -58,6 +58,7 @@ describe('Retry worker API contract', () => {
     expect(parsed.retry.status).toBe('scheduled');
     expect(parsed.retry.notBefore).toBe('2026-06-02T18:30:00.000Z');
     expect(parsed.retry.policy.canReschedule).toBe(true);
+    expect(parsed.retry.policy.delayOptions.map((option) => option.key)).toEqual(['immediate', 'one_hour', 'six_hours', 'next_day']);
   });
 
   it('accepts completed handoff retry execution responses', () => {

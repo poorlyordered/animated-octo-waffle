@@ -13,8 +13,14 @@ export const cancelableRetryPolicy: RetryPolicySummary = {
   canReschedule: true,
   activeScheduledLimit: 1,
   cancelableStatuses: ['scheduled', 'blocked'],
+  delayOptions: [
+    { key: 'immediate', label: 'Run when due', delayHours: 0 },
+    { key: 'one_hour', label: 'Defer 1 hour', delayHours: 1 },
+    { key: 'six_hours', label: 'Defer 6 hours', delayHours: 6 },
+    { key: 'next_day', label: 'Defer 24 hours', delayHours: 24 }
+  ],
   boundary:
-    'Retry policy: one active scheduled retry is allowed per target. Scheduled and blocked retries can be canceled; claimed and completed retries cannot.'
+    'Retry policy: one active scheduled retry is allowed per target. Scheduled retries can be deferred by commander policy controls. Scheduled and blocked retries can be canceled; claimed and completed retries cannot.'
 };
 
 export const finalRetryPolicy: RetryPolicySummary = {

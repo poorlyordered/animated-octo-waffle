@@ -26,6 +26,9 @@ test('shows active ESI vault status and prepares queued read sync', async ({ pag
   await expectVisibleText(page, 'Retry policy: one active scheduled retry is allowed per target.');
   await page.getByLabel('ESI sync history').getByRole('button', { name: 'Reschedule retry' }).first().click();
   await expectVisibleText(page, 'Retry status: scheduled. Not before:');
+  await expectVisibleText(page, 'Retry policy controls update scheduled retry timing only. They do not dispatch, claim, execute, or fetch ESI data.');
+  await page.getByLabel('sync-request-failed retry policy controls').getByRole('button', { name: 'Defer 6 hours' }).click();
+  await expectVisibleText(page, 'Commander applied retry policy control "Defer 6 hours"');
   await page.getByLabel('ESI sync history').getByRole('button', { name: 'Schedule retry', exact: true }).first().click();
   await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
   await page.getByLabel('ESI sync history').getByRole('button', { name: 'Cancel retry' }).first().click();
