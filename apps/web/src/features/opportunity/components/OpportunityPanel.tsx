@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import type {
   AutomationQueueItem,
+  CancelRetryResponse,
   CommandBrief,
   CreateAutomationQueueItemRequest,
   CreateDecisionRecordRequest,
   DecisionRecord,
+  RescheduleRetryResponse,
+  RetryPolicyDelayOption,
+  ScheduleRetryResponse,
   UpdateDecisionStatusRequest,
   WorkerHandoffSummary
 } from '@gryyk/contracts';
@@ -23,9 +27,12 @@ interface OpportunityPanelProps {
   error: string | null;
   opportunity: OpportunitySurfaceViewModel;
   sourceBrief?: CommandBrief | null;
+  onCancelHandoffRetry?: (handoffId: string, reason: string) => Promise<CancelRetryResponse>;
   onCreateQueue?: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem>;
   onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
   onPrepareWorkerHandoff?: (queueItemId: string) => Promise<WorkerHandoffSummary>;
+  onRescheduleHandoffRetry?: (handoffId: string, reason: string, notBefore?: string) => Promise<RescheduleRetryResponse>;
+  onScheduleHandoffRetry?: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
   onUpdateDecisionStatus?: (decisionId: string, request: UpdateDecisionStatusRequest) => Promise<DecisionRecord>;
 }
 
@@ -95,14 +102,24 @@ function OpportunityDecisionHandoffSummary({ handoff }: { handoff: OpportunityDe
 function OpportunityQueuedWorkDetailSummary({
   detail,
   handoff,
+  onCancelRetry,
   onPrepare,
+  onRescheduleRetry,
+  onScheduleRetry,
   preparing
 }: {
   detail: OpportunityQueuedWorkDetail;
   handoff: OpportunityQueuedWorkHandoff;
+  onCancelRetry?: () => void;
   onPrepare?: () => void;
+  onRescheduleRetry?: (option?: RetryPolicyDelayOption) => void;
+  onScheduleRetry?: () => void;
   preparing: boolean;
 }) {
+  const canScheduleRetry = detail.handoff?.status === 'failed' && Boolean(onScheduleRetry);
+  const canCancelRetry = Boolean(detail.handoff?.retry?.policy.canCancel && onCancelRetry);
+  const canRescheduleRetry = Boolean(detail.handoff?.retry?.policy.canReschedule && onRescheduleRetry);
+
   return (
     <section className="decision-summary" aria-label="Opportunity queued work detail">
       <h2>Opportunity queued work detail</h2>
@@ -116,11 +133,63 @@ function OpportunityQueuedWorkDetailSummary({
         <Metadata label="Worker handoff" value={handoff.handoffId ? `${handoff.handoffId} ${handoff.handoffStatus ?? ''}` : 'not prepared'} />
         {handoff.handoffCreatedAt ? <Metadata label="Handoff created" value={new Date(handoff.handoffCreatedAt).toLocaleString()} /> : null}
       </dl>
+      {detail.handoff?.failure ? <p className="missing-reasons">Failed: {detail.handoff.failure.message}</p> : null}
+      {detail.handoff?.retry ? (
+        <p>
+          Retry {detail.handoff.retry.status}: {detail.handoff.retry.reason} {detail.handoff.retry.policy.boundary}
+        </p>
+      ) : null}
+      {detail.handoff?.retryHistory && detail.handoff.retryHistory.length > 0 ? (
+        <section aria-label="Opportunity worker handoff retry history">
+          <h3>Retry history</h3>
+          <ul>
+            {detail.handoff.retryHistory.map((retry) => (
+              <li key={retry.id}>
+                {retry.status}: {retry.reason}
+              </li>
+            ))}
+          </ul>
+          <p className="notice">Opportunity worker handoff retry history is read-only. This view does not dispatch, claim, execute, or call external services.</p>
+        </section>
+      ) : null}
       <p className="notice">{handoff.boundary}</p>
       {!detail.handoff && onPrepare ? (
         <button type="button" onClick={onPrepare} disabled={preparing}>
           {preparing ? 'Preparing...' : 'Prepare worker handoff'}
         </button>
+      ) : null}
+      {detail.handoff?.status === 'failed' ? (
+        <button type="button" onClick={onScheduleRetry} disabled={!canScheduleRetry || preparing}>
+          {preparing ? 'Scheduling...' : 'Schedule handoff retry'}
+        </button>
+      ) : null}
+      {detail.handoff?.retry ? (
+        <button type="button" onClick={onCancelRetry} disabled={!canCancelRetry || preparing}>
+          {preparing ? 'Canceling...' : 'Cancel handoff retry'}
+        </button>
+      ) : null}
+      {detail.handoff?.retry ? (
+        <button type="button" onClick={() => onRescheduleRetry?.()} disabled={!canRescheduleRetry || preparing}>
+          {preparing ? 'Rescheduling...' : 'Reschedule handoff retry'}
+        </button>
+      ) : null}
+      {detail.handoff?.retry?.policy.canReschedule ? (
+        <section aria-label="Opportunity worker handoff retry policy controls">
+          <h3>Retry policy controls</h3>
+          <div className="form-actions">
+            {detail.handoff.retry.policy.delayOptions.map((option) => (
+              <button
+                type="button"
+                key={option.key}
+                disabled={!canRescheduleRetry || preparing}
+                onClick={() => onRescheduleRetry?.(option)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="notice">Retry policy controls update scheduled Opportunity handoff retry timing only. They do not dispatch, claim, or execute work.</p>
+        </section>
       ) : null}
     </section>
   );
@@ -186,9 +255,12 @@ function OpportunityProvenanceSummary({ provenance }: { provenance: OpportunityI
 export function OpportunityPanel({
   error,
   loading,
+  onCancelHandoffRetry,
   onCreateDecision,
   onCreateQueue,
   onPrepareWorkerHandoff,
+  onRescheduleHandoffRetry,
+  onScheduleHandoffRetry,
   onUpdateDecisionStatus,
   opportunity,
   sourceBrief
@@ -277,6 +349,67 @@ export function OpportunityPanel({
     }
   }
 
+  async function handleScheduleHandoffRetry() {
+    if (!queuedWorkDetail?.handoff || !onScheduleHandoffRetry) {
+      return;
+    }
+
+    setBusyAction('schedule-retry');
+    try {
+      const response = await onScheduleHandoffRetry(
+        queuedWorkDetail.handoff.id,
+        'Commander approved retry scheduling for failed Opportunity worker handoff.'
+      );
+      setQueuedWorkDetail((current) => current ? updateQueuedWorkHandoffRetry(current, response.retry) : current);
+      setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Duplicate: ${response.duplicate ? 'yes' : 'no'}.`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to schedule Opportunity handoff retry.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleCancelHandoffRetry() {
+    if (!queuedWorkDetail?.handoff || !onCancelHandoffRetry) {
+      return;
+    }
+
+    setBusyAction('cancel-retry');
+    try {
+      const response = await onCancelHandoffRetry(
+        queuedWorkDetail.handoff.id,
+        'Commander canceled Opportunity handoff retry after policy review.'
+      );
+      setQueuedWorkDetail((current) => current ? updateQueuedWorkHandoffRetry(current, response.retry) : current);
+      setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}.`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to cancel Opportunity handoff retry.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleRescheduleHandoffRetry(option: RetryPolicyDelayOption = defaultRetryDelayOption) {
+    if (!queuedWorkDetail?.handoff || !onRescheduleHandoffRetry) {
+      return;
+    }
+
+    setBusyAction('reschedule-retry');
+    try {
+      const response = await onRescheduleHandoffRetry(
+        queuedWorkDetail.handoff.id,
+        `Commander applied retry policy control "${option.label}" for scheduled Opportunity worker handoff retry.`,
+        retryDelayNotBefore(option)
+      );
+      setQueuedWorkDetail((current) => current ? updateQueuedWorkHandoffRetry(current, response.retry) : current);
+      setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Not before: ${response.retry.notBefore ?? 'unset'}.`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to reschedule Opportunity handoff retry.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   if (loading) {
     return <main className="command-brief">Loading opportunity...</main>;
   }
@@ -354,8 +487,11 @@ export function OpportunityPanel({
         <OpportunityQueuedWorkDetailSummary
           detail={queuedWorkDetail}
           handoff={deriveOpportunityQueuedWorkHandoff(queuedWorkDetail.queueItem, queuedWorkDetail.handoff)}
+          onCancelRetry={onCancelHandoffRetry ? () => void handleCancelHandoffRetry() : undefined}
           onPrepare={onPrepareWorkerHandoff ? () => void handlePrepareWorkerHandoff() : undefined}
-          preparing={busyAction === 'worker-handoff'}
+          onRescheduleRetry={onRescheduleHandoffRetry ? (option) => void handleRescheduleHandoffRetry(option) : undefined}
+          onScheduleRetry={onScheduleHandoffRetry ? () => void handleScheduleHandoffRetry() : undefined}
+          preparing={busyAction === 'worker-handoff' || busyAction === 'schedule-retry' || busyAction === 'cancel-retry' || busyAction === 'reschedule-retry'}
         />
       ) : null}
       {createdDecision && createdDecision.status === 'proposed' && onUpdateDecisionStatus ? (
@@ -395,4 +531,36 @@ export function OpportunityPanel({
       <p className="notice">{opportunity.boundary}</p>
     </main>
   );
+}
+
+const defaultRetryDelayOption: RetryPolicyDelayOption = {
+  key: 'one_hour',
+  label: 'Defer 1 hour',
+  delayHours: 1
+};
+
+function retryDelayNotBefore(option: RetryPolicyDelayOption): string | undefined {
+  if (option.delayHours === 0) {
+    return undefined;
+  }
+
+  return new Date(Date.now() + option.delayHours * 60 * 60 * 1000).toISOString();
+}
+
+function updateQueuedWorkHandoffRetry(
+  detail: OpportunityQueuedWorkDetail,
+  retry: WorkerHandoffSummary['retry']
+): OpportunityQueuedWorkDetail {
+  if (!detail.handoff || !retry) {
+    return detail;
+  }
+
+  return {
+    ...detail,
+    handoff: {
+      ...detail.handoff,
+      retry,
+      retryHistory: [retry, ...(detail.handoff.retryHistory ?? []).filter((item) => item.id !== retry.id)]
+    }
+  };
 }

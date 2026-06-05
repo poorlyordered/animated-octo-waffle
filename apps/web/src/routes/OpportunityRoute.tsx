@@ -11,9 +11,12 @@ export function OpportunityRoute() {
   return (
     <OpportunityPanel
       {...opportunity}
+      onCancelHandoffRetry={automationQueue.cancelHandoffRetry}
       onCreateDecision={decisionRecords.createDecision}
       onCreateQueue={automationQueue.createQueueItem}
       onPrepareWorkerHandoff={automationQueue.prepareHandoff}
+      onRescheduleHandoffRetry={automationQueue.rescheduleHandoffRetry}
+      onScheduleHandoffRetry={automationQueue.scheduleHandoffRetry}
       onUpdateDecisionStatus={decisionRecords.updateStatus}
     />
   );

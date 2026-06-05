@@ -66,8 +66,18 @@ test('records an Opportunity decision handoff without queueing or execution', as
   await expectVisibleText(page, 'Opportunity queued work queue-browser-opportunity is ready for explicit worker handoff preparation.');
   await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Prepare worker handoff' }).click();
   await expectVisibleText(page, 'Worker handoff prepared.');
-  await expectVisibleText(page, 'Worker handoff handoff-browser-ready is ready for Opportunity queued work queue-browser-opportunity.');
+  await expectVisibleText(page, 'Worker handoff handoff-browser-opportunity-failed is failed for Opportunity queued work queue-browser-opportunity.');
   await expectVisibleText(page, 'Opportunity worker handoff preparation creates a durable record only.');
+  await expectVisibleText(page, 'Failed: Source data unavailable.');
+  await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Schedule handoff retry' }).click();
+  await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
+  await expectVisibleText(page, 'Retry scheduled: Commander approved retry scheduling for failed worker handoff.');
+  await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Reschedule handoff retry' }).click();
+  await expectVisibleText(page, 'Retry status: scheduled. Not before:');
+  await page.getByLabel('Opportunity worker handoff retry policy controls').getByRole('button', { name: 'Defer 6 hours' }).click();
+  await expectVisibleText(page, 'Commander applied retry policy control "Defer 6 hours"');
+  await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Cancel handoff retry' }).click();
+  await expectVisibleText(page, 'Retry canceled by commander. No worker was dispatched and no execution occurred.');
   await assertNoBrowserDiagnostics();
 });
 

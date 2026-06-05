@@ -180,6 +180,13 @@ export const commandSurfaceFixtures = {
         ...failedHandoffWithCompletedRetry,
         id: 'handoff-browser-failed',
         queueItemId: 'queue-browser-callback-failed'
+      },
+      {
+        ...failedHandoffWithCompletedRetry,
+        id: 'handoff-browser-opportunity-failed',
+        queueItemId: 'queue-browser-opportunity',
+        retry: undefined,
+        retryHistory: []
       }
     ]
   },
