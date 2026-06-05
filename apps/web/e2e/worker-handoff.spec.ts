@@ -61,6 +61,9 @@ test('shows claimed completed and failed worker callback metadata', async ({ pag
   await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
   await page.getByLabel('Worker handoff').getByRole('button', { name: 'Reschedule retry' }).click();
   await expectVisibleText(page, 'Retry status: scheduled. Not before:');
+  await expectVisibleText(page, 'Retry policy controls update scheduled retry timing only. They do not dispatch, claim, or execute work.');
+  await page.getByLabel('Worker handoff retry policy controls').getByRole('button', { name: 'Defer 6 hours' }).click();
+  await expectVisibleText(page, 'Commander applied retry policy control "Defer 6 hours"');
   await page.getByLabel('Worker handoff').getByRole('button', { name: 'Cancel retry' }).click();
   await expectVisibleText(page, 'Retry canceled by commander. No worker was dispatched and no execution occurred.');
 

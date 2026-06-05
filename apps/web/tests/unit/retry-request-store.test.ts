@@ -133,7 +133,13 @@ describe('retry request store', () => {
       policy: {
         canCancel: true,
         canReschedule: true,
-        activeScheduledLimit: 1
+        activeScheduledLimit: 1,
+        delayOptions: [
+          { key: 'immediate', label: 'Run when due', delayHours: 0 },
+          { key: 'one_hour', label: 'Defer 1 hour', delayHours: 1 },
+          { key: 'six_hours', label: 'Defer 6 hours', delayHours: 6 },
+          { key: 'next_day', label: 'Defer 24 hours', delayHours: 24 }
+        ]
       }
     });
   });

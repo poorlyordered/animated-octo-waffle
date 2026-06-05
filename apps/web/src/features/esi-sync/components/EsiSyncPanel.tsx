@@ -4,6 +4,7 @@ import type {
   EsiSyncStatusResponse,
   CancelRetryResponse,
   PrepareEsiSyncResponse,
+  RetryPolicyDelayOption,
   RetryRequestSummary,
   RescheduleRetryResponse,
   RevokeEsiVaultResponse,
@@ -109,17 +110,17 @@ export function EsiSyncPanel({
     }
   }
 
-  async function handleRescheduleRetry(syncRequestId: string) {
+  async function handleRescheduleRetry(syncRequestId: string, option: RetryPolicyDelayOption = defaultRetryDelayOption) {
     if (!onRescheduleRetry) {
       return;
     }
 
     setBusyAction(`reschedule-retry-${syncRequestId}`);
     try {
-      const notBefore = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const notBefore = retryDelayNotBefore(option);
       const response = await onRescheduleRetry(
         syncRequestId,
-        'Commander deferred scheduled ESI sync retry for later review.',
+        `Commander applied retry policy control "${option.label}" for scheduled ESI sync retry.`,
         notBefore
       );
       setActionStatus(`${response.retry.boundary} Retry status: ${response.retry.status}. Not before: ${response.retry.notBefore ?? 'unset'}.`);
@@ -285,6 +286,24 @@ export function EsiSyncPanel({
                     {busyAction === `reschedule-retry-${item.id}` ? 'Rescheduling...' : 'Reschedule retry'}
                   </button>
                 ) : null}
+                {item.retry?.policy.canReschedule ? (
+                  <section aria-label={`${item.id} retry policy controls`}>
+                    <h3>Retry policy controls</h3>
+                    <div className="form-actions">
+                      {item.retry.policy.delayOptions.map((option) => (
+                        <button
+                          type="button"
+                          key={option.key}
+                          disabled={!onRescheduleRetry || busyAction === `reschedule-retry-${item.id}`}
+                          onClick={() => void handleRescheduleRetry(item.id, option)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="notice">Retry policy controls update scheduled retry timing only. They do not dispatch, claim, execute, or fetch ESI data.</p>
+                  </section>
+                ) : null}
                 <p className="notice">{item.boundary}</p>
               </li>
             ))}
@@ -309,4 +328,18 @@ function retryAttemptSummary(retry: RetryRequestSummary): string {
   parts.push(retry.policy.boundary);
 
   return parts.join(' ');
+}
+
+const defaultRetryDelayOption: RetryPolicyDelayOption = {
+  key: 'one_hour',
+  label: 'Defer 1 hour',
+  delayHours: 1
+};
+
+function retryDelayNotBefore(option: RetryPolicyDelayOption): string | undefined {
+  if (option.delayHours === 0) {
+    return undefined;
+  }
+
+  return new Date(Date.now() + option.delayHours * 60 * 60 * 1000).toISOString();
 }

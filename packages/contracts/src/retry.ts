@@ -4,12 +4,22 @@ export type RetryTargetType = (typeof retryTargetTypes)[number];
 export const retryRequestStatuses = ['scheduled', 'claimed', 'completed', 'blocked', 'canceled'] as const;
 export type RetryRequestStatus = (typeof retryRequestStatuses)[number];
 
+export const retryPolicyDelayKeys = ['immediate', 'one_hour', 'six_hours', 'next_day'] as const;
+export type RetryPolicyDelayKey = (typeof retryPolicyDelayKeys)[number];
+
+export interface RetryPolicyDelayOption {
+  key: RetryPolicyDelayKey;
+  label: string;
+  delayHours: number;
+}
+
 export interface RetryPolicySummary {
   canSchedule: boolean;
   canCancel: boolean;
   canReschedule: boolean;
   activeScheduledLimit: number;
   cancelableStatuses: Array<'scheduled' | 'blocked'>;
+  delayOptions: RetryPolicyDelayOption[];
   boundary: string;
 }
 

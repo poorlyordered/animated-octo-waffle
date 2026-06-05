@@ -602,12 +602,33 @@ Validation:
 - Spec: `specs/028-decision-list-pagination-persistence`
 - Local validation covered lint, typecheck, targeted Jest tests, full Jest tests, Playwright browser smoke tests, targeted post-fix browser smoke tests, and production build
 
+### M29: Retry Policy Controls - Complete
+
+Goal: add bounded commander-visible retry timing controls beyond the current fixed one-hour reschedule path.
+
+Delivered capabilities:
+
+- Retry policy summaries now expose server-owned delay options
+- Bounded retry delay choices for run when due, defer 1 hour, defer 6 hours, and defer 24 hours
+- Worker handoff retry policy controls rendered only for scheduled reschedulable retries
+- Numbers ESI sync retry policy controls rendered only for scheduled reschedulable retries
+- Existing scheduled-only reschedule APIs reused to apply selected timing policy
+- Immediate policy clears not-before; deferred policies set a future not-before timestamp
+- Browser fixtures echo selected policy reasons for smoke validation
+- Contract, unit, and browser smoke coverage for delay policy metadata and no-execution language
+- No worker dispatch, retry claim, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/029-retry-policy-controls`
+- Local validation covered lint, typecheck, full Jest tests, targeted Playwright browser smoke tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M29 selection after M28 review.
+Proceed to M30 selection after M29 review.
 
 Recommended next-slice candidates:
 
-- Retry policy controls beyond the current one-active-scheduled-retry boundary if commander workflows require more nuance.
 - Opportunity queued-work detail handoff or worker preparation once Opportunity queue creation has been reviewed.
 - Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
+- Opportunity or People retry policy extension only after the new worker handoff and Numbers controls have been reviewed in browser.

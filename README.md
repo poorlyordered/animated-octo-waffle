@@ -119,6 +119,8 @@ M25 adds bounded retry history visibility for failed worker handoffs and Numbers
 
 M26 adds commander-side rescheduling for already scheduled retry records. Rescheduling updates the retry reason and optional not-before time while preserving the retry id, target, and scheduled status. Blocked, claimed, completed, and canceled retries cannot be rescheduled. Rescheduling does not dispatch workers, claim retry work, execute retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
 
+M29 adds server-owned retry delay policy controls for scheduled worker handoff and Numbers ESI sync retries. Retry policy summaries now expose bounded timing options, and browser controls apply them through the existing scheduled-only reschedule path. Policy controls update retry timing only; they do not dispatch workers, claim retry work, execute retries, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
 ## Decision Record Loop
 
 The Decision Record Loop stores normalized decision records in the existing MongoDB `strategic_decisions` collection. Existing strategic decision fields such as `researchBriefId`, `decisionContext`, `finalDecision`, `gryykSynthesis`, and `timestamp` are treated as legacy-compatible inputs and normalized at the app boundary.
