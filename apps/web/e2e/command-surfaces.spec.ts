@@ -63,6 +63,11 @@ test('records an Opportunity decision handoff without queueing or execution', as
   await expectVisibleText(page, 'Queued work created.');
   await expectVisibleText(page, 'Queued work queue-browser-opportunity is linked to approved Opportunity decision');
   await expectVisibleText(page, 'Opportunity queued work handoff only. No worker was dispatched');
+  await expectVisibleText(page, 'Opportunity queued work queue-browser-opportunity is ready for explicit worker handoff preparation.');
+  await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Prepare worker handoff' }).click();
+  await expectVisibleText(page, 'Worker handoff prepared.');
+  await expectVisibleText(page, 'Worker handoff handoff-browser-ready is ready for Opportunity queued work queue-browser-opportunity.');
+  await expectVisibleText(page, 'Opportunity worker handoff preparation creates a durable record only.');
   await assertNoBrowserDiagnostics();
 });
 

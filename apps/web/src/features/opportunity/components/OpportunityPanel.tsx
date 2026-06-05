@@ -5,13 +5,16 @@ import type {
   CreateAutomationQueueItemRequest,
   CreateDecisionRecordRequest,
   DecisionRecord,
-  UpdateDecisionStatusRequest
+  UpdateDecisionStatusRequest,
+  WorkerHandoffSummary
 } from '@gryyk/contracts';
 import type { OpportunityIngestionProvenance, SourceReference } from '@gryyk/contracts';
 import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
 import {
   deriveOpportunityDecisionHandoff,
+  deriveOpportunityQueuedWorkHandoff,
   type OpportunityDecisionHandoff,
+  type OpportunityQueuedWorkHandoff,
   type OpportunitySurfaceViewModel
 } from '../services/opportunitySurface';
 
@@ -22,7 +25,13 @@ interface OpportunityPanelProps {
   sourceBrief?: CommandBrief | null;
   onCreateQueue?: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem>;
   onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
+  onPrepareWorkerHandoff?: (queueItemId: string) => Promise<WorkerHandoffSummary>;
   onUpdateDecisionStatus?: (decisionId: string, request: UpdateDecisionStatusRequest) => Promise<DecisionRecord>;
+}
+
+interface OpportunityQueuedWorkDetail {
+  queueItem: AutomationQueueItem;
+  handoff?: WorkerHandoffSummary;
 }
 
 function Metadata({ label, value }: { label: string; value: string | number }) {
@@ -79,6 +88,40 @@ function OpportunityDecisionHandoffSummary({ handoff }: { handoff: OpportunityDe
         <Metadata label="Provenance" value={handoff.provenanceMode.replace('_', ' ')} />
       </dl>
       <p className="notice">{handoff.boundary}</p>
+    </section>
+  );
+}
+
+function OpportunityQueuedWorkDetailSummary({
+  detail,
+  handoff,
+  onPrepare,
+  preparing
+}: {
+  detail: OpportunityQueuedWorkDetail;
+  handoff: OpportunityQueuedWorkHandoff;
+  onPrepare?: () => void;
+  preparing: boolean;
+}) {
+  return (
+    <section className="decision-summary" aria-label="Opportunity queued work detail">
+      <h2>Opportunity queued work detail</h2>
+      <p>{handoff.message}</p>
+      <dl className="metadata-grid">
+        <Metadata label="Queue item" value={handoff.queueItemId} />
+        <Metadata label="Queue status" value={handoff.queueStatus} />
+        <Metadata label="Task intent" value={handoff.taskIntent} />
+        <Metadata label="Expected output" value={handoff.expectedOutput} />
+        <Metadata label="Attempts" value={handoff.attempts} />
+        <Metadata label="Worker handoff" value={handoff.handoffId ? `${handoff.handoffId} ${handoff.handoffStatus ?? ''}` : 'not prepared'} />
+        {handoff.handoffCreatedAt ? <Metadata label="Handoff created" value={new Date(handoff.handoffCreatedAt).toLocaleString()} /> : null}
+      </dl>
+      <p className="notice">{handoff.boundary}</p>
+      {!detail.handoff && onPrepare ? (
+        <button type="button" onClick={onPrepare} disabled={preparing}>
+          {preparing ? 'Preparing...' : 'Prepare worker handoff'}
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -145,6 +188,7 @@ export function OpportunityPanel({
   loading,
   onCreateDecision,
   onCreateQueue,
+  onPrepareWorkerHandoff,
   onUpdateDecisionStatus,
   opportunity,
   sourceBrief
@@ -152,6 +196,7 @@ export function OpportunityPanel({
   const [selectedRecommendation, setSelectedRecommendation] = useState<string | null>(null);
   const [createdDecision, setCreatedDecision] = useState<DecisionRecord | null>(null);
   const [createdHandoff, setCreatedHandoff] = useState<OpportunityDecisionHandoff | null>(null);
+  const [queuedWorkDetail, setQueuedWorkDetail] = useState<OpportunityQueuedWorkDetail | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
@@ -176,6 +221,7 @@ export function OpportunityPanel({
       setCreatedDecision(decision);
       const handoff = deriveOpportunityDecisionHandoff(decision, opportunity);
       setCreatedHandoff(handoff);
+      setQueuedWorkDetail(null);
       setActionStatus(
         status === 'approved'
           ? `Decision approved. Queue creation remains a separate commander action. ${handoff.message}`
@@ -203,9 +249,29 @@ export function OpportunityPanel({
       });
       const handoff = deriveOpportunityDecisionHandoff(createdDecision, opportunity, queueItem);
       setCreatedHandoff(handoff);
+      setQueuedWorkDetail({ queueItem });
       setActionStatus(`Queued work created. ${handoff.message}`);
     } catch (actionError) {
       setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to create Opportunity queued work.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handlePrepareWorkerHandoff() {
+    if (!queuedWorkDetail || !onPrepareWorkerHandoff) {
+      return;
+    }
+
+    setBusyAction('worker-handoff');
+    try {
+      const handoff = await onPrepareWorkerHandoff(queuedWorkDetail.queueItem.id);
+      const detail = { ...queuedWorkDetail, handoff };
+      const handoffSummary = deriveOpportunityQueuedWorkHandoff(detail.queueItem, handoff);
+      setQueuedWorkDetail(detail);
+      setActionStatus(`Worker handoff prepared. ${handoffSummary.message}`);
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to prepare Opportunity worker handoff.');
     } finally {
       setBusyAction(null);
     }
@@ -284,6 +350,14 @@ export function OpportunityPanel({
       ) : null}
 
       {createdHandoff ? <OpportunityDecisionHandoffSummary handoff={createdHandoff} /> : null}
+      {queuedWorkDetail ? (
+        <OpportunityQueuedWorkDetailSummary
+          detail={queuedWorkDetail}
+          handoff={deriveOpportunityQueuedWorkHandoff(queuedWorkDetail.queueItem, queuedWorkDetail.handoff)}
+          onPrepare={onPrepareWorkerHandoff ? () => void handlePrepareWorkerHandoff() : undefined}
+          preparing={busyAction === 'worker-handoff'}
+        />
+      ) : null}
       {createdDecision && createdDecision.status === 'proposed' && onUpdateDecisionStatus ? (
         <section className="form-actions" aria-label="Opportunity decision approval controls">
           <button type="button" onClick={() => void handleDecisionStatus('approved')} disabled={busyAction === 'approved'}>

@@ -1,13 +1,14 @@
 import type {
+  AutomationQueueItem,
   CommandBriefViewModel,
   CoverageState,
   DecisionRecord,
   DisplayState,
   OperatingLegCoverage,
   OpportunityIngestionProvenance,
-  SourceReference
+  SourceReference,
+  WorkerHandoffSummary
 } from '@gryyk/contracts';
-import type { AutomationQueueItem } from '@gryyk/contracts';
 
 export interface OpportunitySurfaceViewModel {
   displayState: DisplayState;
@@ -43,6 +44,19 @@ export interface OpportunityDecisionHandoff {
   boundary: string;
 }
 
+export interface OpportunityQueuedWorkHandoff {
+  queueItemId: string;
+  queueStatus: AutomationQueueItem['status'];
+  taskIntent: string;
+  expectedOutput: string;
+  attempts: number;
+  handoffId?: string;
+  handoffStatus?: WorkerHandoffSummary['status'];
+  handoffCreatedAt?: string;
+  message: string;
+  boundary: string;
+}
+
 const readOnlyBoundary =
   'Opportunity surface is read-only. This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, move wallets or assets, change contracts or roles, or execute external services.';
 
@@ -54,6 +68,9 @@ const approvalHandoffBoundary =
 
 const queueHandoffBoundary =
   'Opportunity queued work handoff only. No worker was dispatched, no handoff was prepared, and no EVE or external-service action was performed.';
+
+const workerHandoffBoundary =
+  'Opportunity worker handoff preparation creates a durable record only. It does not dispatch, claim, retry, execute, fetch ESI, write to EVE, mutate wallets, assets, contracts, roles, or call external services.';
 
 const unavailableCoverage: OperatingLegCoverage = {
   numbers: 'missing',
@@ -119,4 +136,29 @@ export function deriveOpportunityDecisionHandoff(
     message: `Decision ${decision.id} was recorded from Opportunity recommendation "${decision.sourceRecommendation}" as ${decision.status}. ${queueDescription}`,
     boundary: queueItem ? queueHandoffBoundary : queueReady || decision.status === 'rejected' ? approvalHandoffBoundary : decisionHandoffBoundary
   };
+}
+
+export function deriveOpportunityQueuedWorkHandoff(
+  queueItem: AutomationQueueItem,
+  handoff?: WorkerHandoffSummary
+): OpportunityQueuedWorkHandoff {
+  const summary: OpportunityQueuedWorkHandoff = {
+    queueItemId: queueItem.id,
+    queueStatus: queueItem.status,
+    taskIntent: queueItem.taskIntent,
+    expectedOutput: queueItem.expectedOutput,
+    attempts: queueItem.attempts,
+    message: handoff
+      ? `Worker handoff ${handoff.id} is ${handoff.status} for Opportunity queued work ${queueItem.id}.`
+      : `Opportunity queued work ${queueItem.id} is ready for explicit worker handoff preparation.`,
+    boundary: workerHandoffBoundary
+  };
+
+  if (handoff) {
+    summary.handoffId = handoff.id;
+    summary.handoffStatus = handoff.status;
+    summary.handoffCreatedAt = handoff.createdAt;
+  }
+
+  return summary;
 }
