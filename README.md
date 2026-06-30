@@ -6,9 +6,10 @@ Start here:
 
 - Constitution: `.specify/memory/constitution.md`
 - Roadmap: `docs/roadmap.md`
+- Production readiness: `docs/production-readiness.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Roadmap Backlog Refresh ready for review on `039-roadmap-backlog-refresh`.
+Current phase: Production Readiness Audit ready for review on `040-production-readiness-audit`.
 
 ## Local Development
 
