@@ -8,6 +8,7 @@ import {
   openFollowUp,
   approvedPeopleFollowUpDecision,
   peopleIngestionProvenance,
+  preparedPeopleIngestionResponse,
   peopleFollowUpDecision,
   peopleFollowUpQueueItem,
   playerImpactingFollowUp,
@@ -207,6 +208,7 @@ export const commandSurfaceFixtures = {
       ...peopleIngestionProvenance,
       message: 'Latest People profiles are linked to completed browser ingestion history.'
     },
+    preparedIngestion: preparedPeopleIngestionResponse,
     followUps: [
       {
         ...openFollowUp,

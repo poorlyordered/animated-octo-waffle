@@ -39,6 +39,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   let workerHandoffRetryOverride: RetryRequestSummary | null = null;
   let peopleDecisionStatus: 'none' | 'proposed' | 'approved' | 'rejected' = 'none';
   let peopleQueueLinked = false;
+  let peopleIngestionProvenance = commandSurfaceFixtures.people.ingestionProvenance;
 
   await page.route('**/api/eve-session**', (route) => {
     if (route.request().method() === 'POST') {
@@ -291,6 +292,17 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     });
   });
 
+  await page.route('**/api/people/ingestion/prepare', (route) => {
+    peopleIngestionProvenance = {
+      ...commandSurfaceFixtures.people.preparedIngestion.provenance,
+      message: 'People profiles are available from historical browser profile records.'
+    };
+    return json(route, {
+      ...commandSurfaceFixtures.people.preparedIngestion,
+      provenance: peopleIngestionProvenance
+    });
+  });
+
   await page.route('**/api/people/members/*', (route) => {
     const member = commandSurfaceFixtures.people.members[0];
     return json(route, {
@@ -300,7 +312,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   });
   await page.route('**/api/people/members**', (route) =>
     json(route, {
-      ingestionProvenance: commandSurfaceFixtures.people.ingestionProvenance,
+      ingestionProvenance: peopleIngestionProvenance,
       members: commandSurfaceFixtures.people.members
     })
   );

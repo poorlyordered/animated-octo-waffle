@@ -10,6 +10,7 @@ import type {
   PeopleFollowUpHandoff,
   PeopleFollowUpQueueResponse,
   PeopleIngestionProvenance,
+  PreparePeopleIngestionResponse,
   UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
 import {
@@ -18,6 +19,7 @@ import {
   getMember,
   listFollowUps,
   listMembers,
+  preparePeopleIngestion,
   recordPeopleFollowUpDecision,
   updatePeopleFollowUpDecisionStatus as updatePeopleFollowUpDecisionStatusRequest
 } from '../services/peopleClient';
@@ -39,6 +41,7 @@ interface UsePeopleState extends PeopleState {
   createMemberFollowUp: (request: CreateLeadershipFollowUpRequest) => Promise<LeadershipFollowUp>;
   createFollowUpQueue: (followUpId: string, request: CreatePeopleFollowUpQueueRequest) => Promise<PeopleFollowUpQueueResponse>;
   loadMember: (id: string) => Promise<MemberProfile>;
+  prepareIngestion: () => Promise<PreparePeopleIngestionResponse>;
   recordFollowUpDecision: (followUpId: string, request: CreatePeopleFollowUpDecisionRequest) => Promise<PeopleFollowUpDecisionResponse>;
   selectMember: (member: MemberProfile | null) => void;
   setActivityFilter: (filter: PeopleState['activityFilter']) => void;
@@ -182,11 +185,24 @@ export function usePeople(): UsePeopleState {
     return response;
   }
 
+  async function prepareIngestion(): Promise<PreparePeopleIngestionResponse> {
+    const response = await preparePeopleIngestion({
+      reason: 'Refresh member identity, roles, activity, and delegation context.'
+    });
+    setState((current) => ({
+      ...current,
+      ingestionProvenance: response.provenance,
+      error: null
+    }));
+    return response;
+  }
+
   return {
     ...state,
     createMemberFollowUp,
     createFollowUpQueue,
     loadMember,
+    prepareIngestion,
     recordFollowUpDecision,
     selectMember: (member) => {
       setState((current) => ({

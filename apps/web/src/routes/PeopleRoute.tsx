@@ -40,7 +40,7 @@ export function PeopleRoute() {
         }}
         onActivityFilterChange={people.setActivityFilter}
       />
-      <PeopleIngestionProvenancePanel provenance={people.ingestionProvenance} />
+      <PeopleIngestionProvenancePanel provenance={people.ingestionProvenance} onPrepareIngestion={people.prepareIngestion} />
       <PeopleMemberDetail member={people.selectedMember} followUps={people.selectedMemberFollowUps} />
       <PeopleFollowUpCreate member={people.selectedMember} onCreate={people.createMemberFollowUp} />
       <PeopleFollowUpList

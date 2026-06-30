@@ -876,15 +876,35 @@ Validation:
 - Spec: `specs/041-commander-authorization-policy`
 - Local validation covered targeted auth/session/API tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
 
+### M42: People Ingestion Expansion - Complete
+
+Goal: design worker-backed People ingestion beyond historical profile records so member activity, roles, and delegation context can refresh through auditable long-running jobs.
+
+Delivered capabilities:
+
+- Commander-facing People ingestion prepare endpoint
+- Browser control to prepare People ingestion from the People provenance panel
+- Duplicate-safe active request handling per corporation scope
+- Worker-only People ingestion endpoint for list, claim, complete, and fail callbacks
+- Atomic claim transition and worker-owned completion/failure transitions
+- Browser-safe provenance for queued, claimed, completed, and failed People ingestion requests
+- Source count and identity/roles/activity/delegation section coverage in completed worker summaries
+- Contract/unit/browser coverage for prepare payloads, worker payloads, duplicate active requests, state transitions, and no-execution boundary language
+- No browser/request-path worker dispatch, retry scheduling, ESI fetch, EVE write, role/access/standing mutation, wallet/asset/contract mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/042-people-ingestion-expansion`
+- Local validation covered targeted People contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
 ## Near-Term Recommendation
 
-Proceed to M42 selection after M41 review.
+Proceed to M43 selection after M42 review.
 
 Recommended next slice:
 
-- M42: People Ingestion Expansion. Design worker-backed People ingestion beyond historical profile records so member activity, roles, and delegation context can refresh through auditable long-running jobs. It must keep role/access changes out of request paths.
+- M43: Opportunity Ingestion Expansion. Add a worker-backed Opportunity refresh path beyond latest processed briefs, with source provenance and safe failure states. It must not schedule research from browser display paths or write to EVE/external services.
 
 Recommended next-slice candidates:
 
-- M43: Opportunity Ingestion Expansion. Add a worker-backed Opportunity refresh path beyond latest processed briefs, with source provenance and safe failure states. It must not schedule research from browser display paths or write to EVE/external services.
 - M44: Worker Policy Hardening. Review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes. It must preserve commander approval boundaries and avoid implicit dispatch or execution from browser actions.

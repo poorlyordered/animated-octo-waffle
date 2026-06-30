@@ -4,7 +4,8 @@ import type {
   MemberProfile,
   PeopleFollowUpDecisionResponse,
   PeopleFollowUpQueueResponse,
-  PeopleIngestionProvenance
+  PeopleIngestionProvenance,
+  PreparePeopleIngestionResponse
 } from '@gryyk/contracts';
 import { approvedDecision, proposedDecision, rejectedDecision } from './decisionRecords';
 import { queuedItem } from './automationQueue';
@@ -132,6 +133,39 @@ export const peopleIngestionProvenance: PeopleIngestionProvenance = {
   message: 'Latest People profiles are linked to completed ingestion history.',
   boundary:
     'People ingestion history is read-only. This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.'
+};
+
+export const preparedPeopleIngestionResponse: PreparePeopleIngestionResponse = {
+  request: {
+    id: 'people-sync-queued',
+    status: 'queued',
+    requestedAt: '2026-06-30T12:00:00.000Z',
+    sectionStatuses: [
+      { key: 'identity', status: 'present' },
+      { key: 'roles', status: 'missing' },
+      { key: 'activity', status: 'stale' },
+      { key: 'delegation', status: 'missing' }
+    ],
+    boundary:
+      'Prepared for future People ingestion. No worker was dispatched, no ESI data was fetched, and no EVE role/access or external-service change occurred.'
+  },
+  provenance: {
+    ...peopleIngestionProvenance,
+    history: [
+      {
+        id: 'people-sync-queued',
+        status: 'queued',
+        requestedAt: '2026-06-30T12:00:00.000Z',
+        sectionStatuses: peopleIngestionProvenance.sectionStatuses,
+        boundary:
+          'Prepared for future People ingestion. No worker was dispatched, no ESI data was fetched, and no EVE role/access or external-service change occurred.'
+      },
+      ...peopleIngestionProvenance.history
+    ],
+    message: 'People profiles are available from historical member profile records.'
+  },
+  message:
+    'People ingestion prepared for worker pickup. No worker was dispatched, no ESI data was fetched, and no EVE role/access or external-service change occurred.'
 };
 
 export const openFollowUp: LeadershipFollowUp = {
