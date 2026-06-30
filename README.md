@@ -10,7 +10,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Worker Policy Hardening ready for review on `044-worker-policy-hardening`.
+Current phase: Roadmap Backlog Refresh ready for review on `045-roadmap-backlog-refresh`.
 
 ## Local Development
 
