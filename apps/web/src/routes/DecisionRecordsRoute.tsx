@@ -34,6 +34,7 @@ export function DecisionRecordsRoute() {
       </header>
       <DecisionRecordList
         decisions={decisionRecords.decisions}
+        pagination={decisionRecords.pagination}
         selectedDecisionId={decisionRecords.selectedDecision?.id}
         onFiltersChange={loadFilteredDecisions}
         onSelect={decisionRecords.selectDecision}

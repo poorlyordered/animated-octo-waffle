@@ -3,6 +3,7 @@ import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-bri
 
 export const decisionStatusSchema = z.enum(['proposed', 'approved', 'delegated', 'done', 'rejected']);
 export const decisionRecordSourceFilterSchema = z.enum(['opportunity', 'numbers', 'people']);
+export const decisionRecordPageSizeSchema = z.union([z.literal(3), z.literal(5), z.literal(10)]);
 
 export const sourceProvenanceSnapshotSchema = z.object({
   briefId: z.string().min(1),
@@ -72,7 +73,15 @@ export const updateDecisionStatusRequestSchema = z.object({
 });
 
 export const decisionRecordListResponseSchema = z.object({
-  decisions: z.array(decisionRecordSchema)
+  decisions: z.array(decisionRecordSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: decisionRecordPageSizeSchema,
+    totalItems: z.number().int().nonnegative(),
+    totalPages: z.number().int().positive(),
+    startIndex: z.number().int().nonnegative(),
+    endIndex: z.number().int().nonnegative()
+  })
 });
 
 export const decisionRecordResponseSchema = z.object({

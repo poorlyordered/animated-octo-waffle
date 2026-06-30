@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { CreateDecisionRecordRequest, DecisionRecord, UpdateDecisionStatusRequest } from '@gryyk/contracts';
+import type { CreateDecisionRecordRequest, DecisionRecord, DecisionRecordListResponse, UpdateDecisionStatusRequest } from '@gryyk/contracts';
 import {
   createDecisionRecord,
   listDecisionRecords,
@@ -11,6 +11,7 @@ interface DecisionRecordsState {
   decisions: DecisionRecord[];
   loading: boolean;
   error: string | null;
+  pagination: DecisionRecordListResponse['pagination'];
   selectedDecision: DecisionRecord | null;
 }
 
@@ -26,12 +27,20 @@ export function useDecisionRecords(): UseDecisionRecordsState {
     decisions: [],
     loading: true,
     error: null,
+    pagination: {
+      endIndex: 0,
+      page: 1,
+      pageSize: 5,
+      startIndex: 0,
+      totalItems: 0,
+      totalPages: 1
+    },
     selectedDecision: null
   });
 
   const loadDecisions = useCallback(async (filters: ListDecisionRecordFilters = {}): Promise<void> => {
     try {
-      const { decisions } = await listDecisionRecords(filters);
+      const { decisions, pagination } = await listDecisionRecords(filters);
 
       setState((current) => {
         const refreshedSelection = current.selectedDecision
@@ -41,6 +50,7 @@ export function useDecisionRecords(): UseDecisionRecordsState {
         return {
           ...current,
           decisions,
+          pagination,
           selectedDecision: refreshedSelection ?? decisions[0] ?? null,
           loading: false,
           error: null
@@ -56,38 +66,8 @@ export function useDecisionRecords(): UseDecisionRecordsState {
   }, []);
 
   useEffect(() => {
-    let active = true;
-
-    listDecisionRecords()
-      .then(({ decisions }) => {
-        if (!active) {
-          return;
-        }
-
-        setState((current) => ({
-          ...current,
-          decisions,
-          selectedDecision: current.selectedDecision ?? decisions[0] ?? null,
-          loading: false,
-          error: null
-        }));
-      })
-      .catch((error: unknown) => {
-        if (!active) {
-          return;
-        }
-
-        setState((current) => ({
-          ...current,
-          loading: false,
-          error: error instanceof Error ? error.message : 'Unable to load decision records.'
-        }));
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    void loadDecisions();
+  }, [loadDecisions]);
 
   async function createDecision(request: CreateDecisionRecordRequest): Promise<DecisionRecord> {
     const { decision } = await createDecisionRecord(request);
@@ -95,6 +75,12 @@ export function useDecisionRecords(): UseDecisionRecordsState {
     setState((current) => ({
       ...current,
       decisions: [decision, ...current.decisions.filter((item) => item.id !== decision.id)],
+      pagination: {
+        ...current.pagination,
+        endIndex: Math.min(current.pagination.endIndex + 1, current.pagination.pageSize),
+        totalItems: current.pagination.totalItems + 1,
+        totalPages: Math.max(1, Math.ceil((current.pagination.totalItems + 1) / current.pagination.pageSize))
+      },
       selectedDecision: decision,
       error: null
     }));

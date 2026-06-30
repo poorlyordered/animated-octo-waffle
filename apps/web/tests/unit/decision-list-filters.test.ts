@@ -44,6 +44,10 @@ describe('decision list filters', () => {
 
   it('maps browser all-filters to bounded server query filters', () => {
     expect(decisionServerFilters({ status: 'all', source: 'all' })).toEqual({});
+    expect(decisionServerFilters({ status: 'all', source: 'all' }, 2, 3)).toEqual({
+      page: 2,
+      pageSize: 3
+    });
     expect(decisionServerFilters({ status: 'approved', source: 'people' })).toEqual({
       status: 'approved',
       source: 'people'

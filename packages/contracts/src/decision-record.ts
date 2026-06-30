@@ -6,6 +6,9 @@ export type DecisionStatus = (typeof decisionStatuses)[number];
 export const decisionRecordSourceFilters = ['opportunity', 'numbers', 'people'] as const;
 export type DecisionRecordSourceFilter = (typeof decisionRecordSourceFilters)[number];
 
+export const decisionRecordPageSizes = [3, 5, 10] as const;
+export type DecisionRecordPageSize = (typeof decisionRecordPageSizes)[number];
+
 export interface SourceProvenanceSnapshot {
   briefId: string;
   briefCreatedAt: string;
@@ -75,6 +78,14 @@ export interface UpdateDecisionStatusRequest {
 
 export interface DecisionRecordListResponse {
   decisions: DecisionRecord[];
+  pagination: {
+    page: number;
+    pageSize: DecisionRecordPageSize;
+    totalItems: number;
+    totalPages: number;
+    startIndex: number;
+    endIndex: number;
+  };
 }
 
 export interface DecisionRecordResponse {

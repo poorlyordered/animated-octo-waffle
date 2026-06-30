@@ -1,4 +1,4 @@
-import type { DecisionRecord, DecisionRecordSourceFilter, DecisionStatus } from '@gryyk/contracts';
+import type { DecisionRecord, DecisionRecordPageSize, DecisionRecordSourceFilter, DecisionStatus } from '@gryyk/contracts';
 
 export type DecisionSourceFilter = 'all' | 'opportunity' | 'numbers' | 'people';
 export type DecisionStatusFilter = 'all' | DecisionStatus;
@@ -9,6 +9,8 @@ export interface DecisionListFilters {
 }
 
 export interface DecisionServerFilters {
+  page?: number;
+  pageSize?: DecisionRecordPageSize;
   source?: DecisionRecordSourceFilter;
   status?: DecisionStatus;
 }
@@ -129,11 +131,26 @@ export function filterDecisionRecords(decisions: DecisionRecord[], filters: Deci
   });
 }
 
-export function decisionServerFilters(filters: DecisionListFilters): DecisionServerFilters {
-  return {
-    source: filters.source === 'all' ? undefined : filters.source,
-    status: filters.status === 'all' ? undefined : filters.status
-  };
+export function decisionServerFilters(filters: DecisionListFilters, page?: number, pageSize?: DecisionRecordPageSize): DecisionServerFilters {
+  const serverFilters: DecisionServerFilters = {};
+
+  if (page) {
+    serverFilters.page = page;
+  }
+
+  if (pageSize) {
+    serverFilters.pageSize = pageSize;
+  }
+
+  if (filters.source !== 'all') {
+    serverFilters.source = filters.source;
+  }
+
+  if (filters.status !== 'all') {
+    serverFilters.status = filters.status;
+  }
+
+  return serverFilters;
 }
 
 export function paginateDecisionRecords<T>(

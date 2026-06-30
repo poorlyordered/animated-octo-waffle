@@ -14,6 +14,19 @@ function browserDecisionSource(decision: (typeof commandSurfaceFixtures.decision
   return 'opportunity';
 }
 
+function decisionPagination(totalItems: number, requestedPage: number, pageSize: 3 | 5 | 10) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const page = Math.min(Math.max(Math.trunc(requestedPage) || 1, 1), totalPages);
+  const startIndex = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, totalItems);
+
+  return { endIndex, page, pageSize, startIndex, totalItems, totalPages };
+}
+
+function browserDecisionPageSize(value: string | null): 3 | 5 | 10 {
+  return value === '3' || value === '10' ? Number(value) as 3 | 10 : 5;
+}
+
 async function json(route: Route, body: unknown) {
   await route.fulfill({
     body: JSON.stringify(body),
@@ -166,13 +179,19 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     const url = new URL(route.request().url());
     const source = url.searchParams.get('source');
     const status = url.searchParams.get('status');
-    return json(route, {
-      decisions: commandSurfaceFixtures.decisionRecords.decisions.filter((decision) => {
-        const sourceMatches = !source || browserDecisionSource(decision) === source;
-        const statusMatches = !status || decision.status === status;
+    const pageSize = browserDecisionPageSize(url.searchParams.get('pageSize'));
+    const requestedPage = Number(url.searchParams.get('page') ?? '1');
+    const decisions = commandSurfaceFixtures.decisionRecords.decisions.filter((decision) => {
+      const sourceMatches = !source || browserDecisionSource(decision) === source;
+      const statusMatches = !status || decision.status === status;
 
-        return sourceMatches && statusMatches;
-      })
+      return sourceMatches && statusMatches;
+    });
+    const pagination = decisionPagination(decisions.length, requestedPage, pageSize);
+
+    return json(route, {
+      decisions: decisions.slice(pagination.startIndex === 0 ? 0 : pagination.startIndex - 1, pagination.endIndex),
+      pagination
     });
   });
 

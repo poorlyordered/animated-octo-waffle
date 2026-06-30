@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { DecisionRecord } from '@gryyk/contracts';
+import type { DecisionRecord, DecisionRecordListResponse } from '@gryyk/contracts';
 import {
   defaultDecisionListSettings,
   decisionListCounts,
   decisionListPageSizes,
   decisionSourceLabel,
   decisionServerFilters,
-  filterDecisionRecords,
-  paginateDecisionRecords,
   readDecisionListSettings,
   writeDecisionListSettings,
   type DecisionListPageSize,
@@ -17,6 +15,7 @@ import {
 
 interface DecisionRecordListProps {
   decisions: DecisionRecord[];
+  pagination: DecisionRecordListResponse['pagination'];
   selectedDecisionId?: string;
   onFiltersChange?: (filters: ReturnType<typeof decisionServerFilters>) => void;
   onSelect: (decision: DecisionRecord) => void;
@@ -32,20 +31,10 @@ function initialDecisionListSettings() {
   return readDecisionListSettings(window.localStorage, decisionListSettingsStorageKey);
 }
 
-export function DecisionRecordList({ decisions, selectedDecisionId, onFiltersChange, onSelect }: DecisionRecordListProps) {
+export function DecisionRecordList({ decisions, pagination, selectedDecisionId, onFiltersChange, onSelect }: DecisionRecordListProps) {
   const [settings, setSettings] = useState(initialDecisionListSettings);
   const [page, setPage] = useState(1);
-  const filteredDecisions = useMemo(
-    () => filterDecisionRecords(decisions, { source: settings.source, status: settings.status }),
-    [decisions, settings.source, settings.status]
-  );
-  const counts = useMemo(() => decisionListCounts(decisions, filteredDecisions), [decisions, filteredDecisions]);
-  const totalPages = Math.max(1, Math.ceil(filteredDecisions.length / settings.pageSize));
-  const activePage = Math.min(page, totalPages);
-  const pagedDecisions = useMemo(
-    () => paginateDecisionRecords(filteredDecisions, activePage, settings.pageSize),
-    [activePage, filteredDecisions, settings.pageSize]
-  );
+  const counts = useMemo(() => decisionListCounts(decisions, decisions), [decisions]);
   const hasActiveFilters = settings.status !== 'all' || settings.source !== 'all';
 
   useEffect(() => {
@@ -55,8 +44,8 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onFiltersCha
   }, [settings]);
 
   useEffect(() => {
-    onFiltersChange?.(decisionServerFilters({ source: settings.source, status: settings.status }));
-  }, [onFiltersChange, settings.source, settings.status]);
+    onFiltersChange?.(decisionServerFilters({ source: settings.source, status: settings.status }, page, settings.pageSize));
+  }, [onFiltersChange, page, settings.pageSize, settings.source, settings.status]);
 
   function updateStatusFilter(status: DecisionStatusFilter) {
     setSettings((current) => ({ ...current, status }));
@@ -83,7 +72,7 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onFiltersCha
         </div>
         <div className="metadata-item">
           <span>Total</span>
-          <strong>{counts.total}</strong>
+          <strong>{pagination.totalItems}</strong>
         </div>
         <div className="metadata-item">
           <span>Proposed</span>
@@ -134,11 +123,11 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onFiltersCha
           </select>
         </label>
       </div>
-      {filteredDecisions.length === 0 ? (
+      {decisions.length === 0 ? (
         <p className="empty-state">{hasActiveFilters ? 'No decisions match the selected filters.' : 'No decisions have been recorded yet.'}</p>
       ) : null}
       <div className="decision-list">
-        {pagedDecisions.items.map((decision) => (
+        {decisions.map((decision) => (
           <button
             className={decision.id === selectedDecisionId ? 'decision-list-item selected' : 'decision-list-item'}
             key={decision.id}
@@ -154,17 +143,16 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onFiltersCha
         ))}
       </div>
       <div className="form-actions" aria-label="Decision pagination">
-        <button type="button" disabled={pagedDecisions.page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+        <button type="button" disabled={pagination.page === 1} onClick={() => setPage(Math.max(1, pagination.page - 1))}>
           Previous
         </button>
         <span>
-          Page {pagedDecisions.page} of {pagedDecisions.totalPages}. Showing {pagedDecisions.startIndex}-{pagedDecisions.endIndex} of{' '}
-          {pagedDecisions.totalItems}.
+          Page {pagination.page} of {pagination.totalPages}. Showing {pagination.startIndex}-{pagination.endIndex} of {pagination.totalItems}.
         </span>
         <button
           type="button"
-          disabled={pagedDecisions.page === pagedDecisions.totalPages}
-          onClick={() => setPage((current) => Math.min(pagedDecisions.totalPages, current + 1))}
+          disabled={pagination.page === pagination.totalPages}
+          onClick={() => setPage(Math.min(pagination.totalPages, pagination.page + 1))}
         >
           Next
         </button>
