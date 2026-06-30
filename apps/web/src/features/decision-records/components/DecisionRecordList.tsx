@@ -6,8 +6,12 @@ import {
   decisionListPageSizes,
   decisionSourceLabel,
   decisionServerFilters,
+  readDecisionSavedViews,
   readDecisionListSettings,
+  saveDecisionView,
+  writeDecisionSavedViews,
   writeDecisionListSettings,
+  type DecisionSavedView,
   type DecisionListPageSize,
   type DecisionSourceFilter,
   type DecisionStatusFilter
@@ -22,6 +26,7 @@ interface DecisionRecordListProps {
 }
 
 const decisionListSettingsStorageKey = 'gryyk47.decisionListSettings';
+const decisionSavedViewsStorageKey = 'gryyk47.decisionSavedViews';
 
 function initialDecisionListSettings() {
   if (typeof window === 'undefined') {
@@ -31,8 +36,18 @@ function initialDecisionListSettings() {
   return readDecisionListSettings(window.localStorage, decisionListSettingsStorageKey);
 }
 
+function initialDecisionSavedViews() {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  return readDecisionSavedViews(window.localStorage, decisionSavedViewsStorageKey);
+}
+
 export function DecisionRecordList({ decisions, pagination, selectedDecisionId, onFiltersChange, onSelect }: DecisionRecordListProps) {
   const [settings, setSettings] = useState(initialDecisionListSettings);
+  const [savedViews, setSavedViews] = useState<DecisionSavedView[]>(initialDecisionSavedViews);
+  const [selectedSavedViewId, setSelectedSavedViewId] = useState('');
   const [page, setPage] = useState(1);
   const counts = useMemo(() => decisionListCounts(decisions, decisions), [decisions]);
   const hasActiveFilters = settings.status !== 'all' || settings.source !== 'all';
@@ -44,22 +59,59 @@ export function DecisionRecordList({ decisions, pagination, selectedDecisionId, 
   }, [settings]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      writeDecisionSavedViews(window.localStorage, decisionSavedViewsStorageKey, savedViews);
+    }
+  }, [savedViews]);
+
+  useEffect(() => {
     onFiltersChange?.(decisionServerFilters({ source: settings.source, status: settings.status }, page, settings.pageSize));
   }, [onFiltersChange, page, settings.pageSize, settings.source, settings.status]);
 
   function updateStatusFilter(status: DecisionStatusFilter) {
     setSettings((current) => ({ ...current, status }));
+    setSelectedSavedViewId('');
     setPage(1);
   }
 
   function updateSourceFilter(source: DecisionSourceFilter) {
     setSettings((current) => ({ ...current, source }));
+    setSelectedSavedViewId('');
     setPage(1);
   }
 
   function updatePageSize(pageSize: DecisionListPageSize) {
     setSettings((current) => ({ ...current, pageSize }));
+    setSelectedSavedViewId('');
     setPage(1);
+  }
+
+  function saveCurrentView() {
+    const next = saveDecisionView(savedViews, settings);
+    setSavedViews(next);
+    setSelectedSavedViewId(next[0]?.id ?? '');
+  }
+
+  function applySavedView(savedViewId: string) {
+    const savedView = savedViews.find((view) => view.id === savedViewId);
+
+    if (!savedView) {
+      setSelectedSavedViewId('');
+      return;
+    }
+
+    setSelectedSavedViewId(savedViewId);
+    setSettings(savedView.settings);
+    setPage(1);
+  }
+
+  function deleteSavedView() {
+    if (!selectedSavedViewId) {
+      return;
+    }
+
+    setSavedViews((current) => current.filter((view) => view.id !== selectedSavedViewId));
+    setSelectedSavedViewId('');
   }
 
   return (
@@ -92,9 +144,13 @@ export function DecisionRecordList({ decisions, pagination, selectedDecisionId, 
         </div>
       </div>
       <div className="form-actions" aria-label="Decision filters">
-        <label>
+        <label htmlFor="decision-status-filter">
           Status
-          <select value={settings.status} onChange={(event) => updateStatusFilter(event.target.value as DecisionStatusFilter)}>
+          <select
+            id="decision-status-filter"
+            value={settings.status}
+            onChange={(event) => updateStatusFilter(event.target.value as DecisionStatusFilter)}
+          >
             <option value="all">All statuses</option>
             <option value="proposed">Proposed</option>
             <option value="approved">Approved</option>
@@ -103,18 +159,26 @@ export function DecisionRecordList({ decisions, pagination, selectedDecisionId, 
             <option value="rejected">Rejected</option>
           </select>
         </label>
-        <label>
+        <label htmlFor="decision-source-filter">
           Source
-          <select value={settings.source} onChange={(event) => updateSourceFilter(event.target.value as DecisionSourceFilter)}>
+          <select
+            id="decision-source-filter"
+            value={settings.source}
+            onChange={(event) => updateSourceFilter(event.target.value as DecisionSourceFilter)}
+          >
             <option value="all">All sources</option>
             <option value="opportunity">Opportunity / brief</option>
             <option value="numbers">Numbers follow-up</option>
             <option value="people">People follow-up</option>
           </select>
         </label>
-        <label>
+        <label htmlFor="decision-page-size-filter">
           Page size
-          <select value={settings.pageSize} onChange={(event) => updatePageSize(Number(event.target.value) as DecisionListPageSize)}>
+          <select
+            id="decision-page-size-filter"
+            value={settings.pageSize}
+            onChange={(event) => updatePageSize(Number(event.target.value) as DecisionListPageSize)}
+          >
             {decisionListPageSizes.map((pageSize) => (
               <option value={pageSize} key={pageSize}>
                 {pageSize}
@@ -122,6 +186,23 @@ export function DecisionRecordList({ decisions, pagination, selectedDecisionId, 
             ))}
           </select>
         </label>
+        <label htmlFor="decision-saved-view-filter">
+          Saved view
+          <select id="decision-saved-view-filter" value={selectedSavedViewId} onChange={(event) => applySavedView(event.target.value)}>
+            <option value="">Select saved view</option>
+            {savedViews.map((view) => (
+              <option value={view.id} key={view.id}>
+                {view.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" onClick={saveCurrentView}>
+          Save view
+        </button>
+        <button type="button" onClick={deleteSavedView} disabled={!selectedSavedViewId}>
+          Delete view
+        </button>
       </div>
       {decisions.length === 0 ? (
         <p className="empty-state">{hasActiveFilters ? 'No decisions match the selected filters.' : 'No decisions have been recorded yet.'}</p>

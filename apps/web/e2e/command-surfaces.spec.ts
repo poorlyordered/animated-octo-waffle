@@ -119,11 +119,15 @@ test('filters decision records by status and source', async ({ page }, testInfo)
   const decisionRecords = page.getByLabel('Decision records');
   const filters = page.getByLabel('Decision filters');
   const pagination = page.getByLabel('Decision pagination');
+  const statusFilter = filters.locator('#decision-status-filter');
+  const sourceFilter = filters.locator('#decision-source-filter');
+  const pageSizeFilter = filters.locator('#decision-page-size-filter');
+  const savedViewFilter = filters.locator('#decision-saved-view-filter');
 
   await expectVisibleText(page, 'Browser smoke decision record recommendation.');
   await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
   await expectVisibleText(page, 'Decision filters organize records only.');
-  await filters.getByLabel('Page size').selectOption('3');
+  await pageSizeFilter.selectOption('3');
   await expectVisibleText(page, 'Page 1 of 3. Showing 1-3 of 8.');
   await expect(decisionRecords.getByText('Browser smoke rejected decision.')).toHaveCount(0);
   await pagination.getByRole('button', { name: 'Next' }).click();
@@ -132,26 +136,38 @@ test('filters decision records by status and source', async ({ page }, testInfo)
   await pagination.getByRole('button', { name: 'Previous' }).click();
   await expectVisibleText(page, 'Page 1 of 3. Showing 1-3 of 8.');
 
-  await filters.getByLabel('Status').selectOption('rejected');
+  await statusFilter.selectOption('rejected');
   await expectVisibleText(page, 'Page 1 of 1. Showing 1-1 of 1.');
   await expectVisibleText(page, 'Browser smoke rejected decision.');
   await expect(decisionRecords.getByText('Browser smoke decision record recommendation.')).toHaveCount(0);
+  await filters.getByRole('button', { name: 'Save view' }).click();
+  await expect(savedViewFilter).toHaveValue('rejected:all:3');
 
-  await filters.getByLabel('Status').selectOption('all');
-  await filters.getByLabel('Source').selectOption('numbers');
+  await statusFilter.selectOption('all');
+  await sourceFilter.selectOption('numbers');
   await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
   await expectVisibleText(page, 'Source: Numbers follow-up');
   await expect(decisionRecords.getByText('Browser smoke approved decision for queue links.')).toHaveCount(0);
+  await savedViewFilter.selectOption('rejected:all:3');
+  await expect(statusFilter).toHaveValue('rejected');
+  await expect(sourceFilter).toHaveValue('all');
+  await expectVisibleText(page, 'Browser smoke rejected decision.');
+  await filters.getByRole('button', { name: 'Delete view' }).click();
+  await expect(savedViewFilter).toHaveValue('');
 
+  await statusFilter.selectOption('all');
+  await sourceFilter.selectOption('numbers');
   await page.reload();
   const reloadedFilters = page.getByLabel('Decision filters');
-  await expect(reloadedFilters.getByLabel('Source')).toHaveValue('numbers');
-  await expect(reloadedFilters.getByLabel('Page size')).toHaveValue('3');
+  const reloadedSourceFilter = reloadedFilters.locator('#decision-source-filter');
+  const reloadedPageSizeFilter = reloadedFilters.locator('#decision-page-size-filter');
+  await expect(reloadedSourceFilter).toHaveValue('numbers');
+  await expect(reloadedPageSizeFilter).toHaveValue('3');
   await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
 
-  await reloadedFilters.getByLabel('Source').selectOption('people');
+  await reloadedSourceFilter.selectOption('people');
   await expectVisibleText(page, 'No decisions match the selected filters.');
-  await expect(reloadedFilters.getByLabel('Source')).toHaveValue('people');
+  await expect(reloadedSourceFilter).toHaveValue('people');
 
   await assertNoBrowserDiagnostics();
 });

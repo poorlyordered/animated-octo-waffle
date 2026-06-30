@@ -19,6 +19,12 @@ export interface DecisionListSettings extends DecisionListFilters {
   pageSize: DecisionListPageSize;
 }
 
+export interface DecisionSavedView {
+  id: string;
+  label: string;
+  settings: DecisionListSettings;
+}
+
 export interface DecisionListCounts {
   approved: number;
   playerImpacting: number;
@@ -94,6 +100,79 @@ export function writeDecisionListSettings(
   settings: DecisionListSettings
 ): void {
   storage.setItem(key, JSON.stringify(settings));
+}
+
+function savedViewId(settings: DecisionListSettings): string {
+  return `${settings.status}:${settings.source}:${settings.pageSize}`;
+}
+
+export function decisionSavedViewLabel(settings: DecisionListSettings): string {
+  const status = settings.status === 'all' ? 'All statuses' : settings.status;
+  const source = settings.source === 'all' ? 'All sources' : settings.source;
+  return `${status} / ${source} / ${settings.pageSize} per page`;
+}
+
+export function decisionSavedViewFromSettings(settings: DecisionListSettings): DecisionSavedView {
+  return {
+    id: savedViewId(settings),
+    label: decisionSavedViewLabel(settings),
+    settings: { ...settings }
+  };
+}
+
+export function parseDecisionSavedViews(value: unknown): DecisionSavedView[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const views = value.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const candidate = item as Record<string, unknown>;
+    if (!candidate.settings || typeof candidate.settings !== 'object') {
+      return [];
+    }
+
+    const settingsCandidate = candidate.settings as Record<string, unknown>;
+    if (
+      !isDecisionStatusFilter(settingsCandidate.status) ||
+      !isDecisionSourceFilter(settingsCandidate.source) ||
+      !isDecisionListPageSize(settingsCandidate.pageSize)
+    ) {
+      return [];
+    }
+
+    const settings = parseDecisionListSettings(settingsCandidate);
+    const view = decisionSavedViewFromSettings(settings);
+    const label = typeof candidate.label === 'string' ? candidate.label.trim() : '';
+    return [{ ...view, label: label || view.label }];
+  });
+
+  return Array.from(new Map(views.map((view) => [view.id, view])).values());
+}
+
+export function readDecisionSavedViews(storage: Pick<Storage, 'getItem'>, key: string): DecisionSavedView[] {
+  const stored = storage.getItem(key);
+  if (!stored) {
+    return [];
+  }
+
+  try {
+    return parseDecisionSavedViews(JSON.parse(stored));
+  } catch {
+    return [];
+  }
+}
+
+export function writeDecisionSavedViews(storage: Pick<Storage, 'setItem'>, key: string, views: DecisionSavedView[]): void {
+  storage.setItem(key, JSON.stringify(views));
+}
+
+export function saveDecisionView(views: DecisionSavedView[], settings: DecisionListSettings): DecisionSavedView[] {
+  const view = decisionSavedViewFromSettings(settings);
+  return [view, ...views.filter((item) => item.id !== view.id)];
 }
 
 export function decisionSourceDomain(decision: DecisionRecord): Exclude<DecisionSourceFilter, 'all'> {
