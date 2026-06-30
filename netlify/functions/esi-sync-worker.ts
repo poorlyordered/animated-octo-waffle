@@ -18,6 +18,12 @@ import {
 } from './_shared/esi-sync-request-store';
 import { ingestNumbersFromEsiSyncRequest } from './_shared/esi-numbers-ingestion';
 
+const runnableWorkerDomain = 'numbers';
+
+export function isRunnableEsiSyncWorkerDomain(domain: string): domain is typeof runnableWorkerDomain {
+  return domain === runnableWorkerDomain;
+}
+
 function parseJsonBody(event: FunctionEvent): unknown {
   if (!event.body) {
     return {};
@@ -40,8 +46,8 @@ export async function handler(event: FunctionEvent) {
     if (method === 'GET') {
       const domain = event.queryStringParameters?.domain
         ? esiSyncDomainSchema.parse(event.queryStringParameters.domain)
-        : undefined;
-      const syncRequests = await listQueuedSyncRequests(db, domain);
+        : runnableWorkerDomain;
+      const syncRequests = isRunnableEsiSyncWorkerDomain(domain) ? await listQueuedSyncRequests(db, domain) : [];
       return jsonResponse(200, { syncRequests: syncRequests.map(workerSyncRequestSummary) });
     }
 
@@ -58,6 +64,10 @@ export async function handler(event: FunctionEvent) {
 
     if (actionPath.action === 'claim') {
       const request = esiSyncWorkerClaimRequestSchema.parse(body);
+      const existing = await findSyncRequest(db, actionPath.id);
+      if (existing && !isRunnableEsiSyncWorkerDomain(existing.domain)) {
+        return safeErrorResponse('Only Numbers ESI sync requests are claimable in this worker slice', 409);
+      }
       const syncRequest = await claimQueuedSyncRequest(db, actionPath.id, request.workerId);
       return syncRequest
         ? jsonResponse(200, { syncRequest: workerSyncRequestSummary(syncRequest) })
@@ -71,6 +81,10 @@ export async function handler(event: FunctionEvent) {
         (await findClaimedByWorker(db, actionPath.id, request.workerId));
       if (!claimed) {
         return missingOrConflictResponse(db, actionPath.id, 'ESI sync request is not runnable');
+      }
+
+      if (!isRunnableEsiSyncWorkerDomain(claimed.domain)) {
+        return safeErrorResponse('Only Numbers ESI sync requests are runnable in this worker slice', 409);
       }
 
       try {

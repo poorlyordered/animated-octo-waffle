@@ -1,6 +1,6 @@
 import type { RetryRequestSummary } from './retry.js';
 
-export const esiSyncDomains = ['numbers'] as const;
+export const esiSyncDomains = ['numbers', 'people', 'opportunity'] as const;
 export type EsiSyncDomain = (typeof esiSyncDomains)[number];
 
 export const esiVaultStatuses = ['missing', 'active', 'revoked', 'unavailable'] as const;

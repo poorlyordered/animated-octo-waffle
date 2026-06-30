@@ -8,7 +8,7 @@ import {
   vaultSummary,
   type EsiTokenVaultDocument
 } from '../../../../netlify/functions/_shared/esi-token-vault';
-import { activeEsiSyncStatus, esiRequiredScopes } from '../fixtures/esiSync';
+import { activeEsiSyncStatus, allEsiRequiredScopes, esiRequiredScopes, opportunityEsiRequiredScopes, peopleEsiRequiredScopes } from '../fixtures/esiSync';
 
 const activeVault: EsiTokenVaultDocument = {
   id: 'vault-1',
@@ -16,8 +16,8 @@ const activeVault: EsiTokenVaultDocument = {
   characterId: '2110000001',
   characterName: 'Ari Voss',
   corporationName: 'Session Corp',
-  grantedScopes: esiRequiredScopes,
-  requestedScopes: esiRequiredScopes,
+  grantedScopes: allEsiRequiredScopes,
+  requestedScopes: allEsiRequiredScopes,
   sealedAccessToken: 'sealed-access',
   sealedRefreshToken: 'sealed-refresh',
   accessTokenExpiresAt: '2026-06-02T12:20:00.000Z',
@@ -49,7 +49,7 @@ describe('ESI token vault helpers', () => {
 
   it('reports missing consent and missing read-only scopes', () => {
     expect(vaultSummary(null).status).toBe('missing');
-    expect(allRequiredReadOnlyScopes()).toEqual(esiRequiredScopes);
+    expect(allRequiredReadOnlyScopes()).toEqual(allEsiRequiredScopes);
     expect(missingScopes(['esi-wallet.read_corporation_wallets.v1'], esiRequiredScopes)).toEqual(
       esiRequiredScopes.slice(1)
     );
@@ -58,6 +58,20 @@ describe('ESI token vault helpers', () => {
         domain: 'numbers',
         available: false,
         missingScopes: esiRequiredScopes
+      })
+    );
+    expect(domainSummaries(null)[1]).toEqual(
+      expect.objectContaining({
+        domain: 'people',
+        available: false,
+        missingScopes: peopleEsiRequiredScopes
+      })
+    );
+    expect(domainSummaries(null)[2]).toEqual(
+      expect.objectContaining({
+        domain: 'opportunity',
+        available: false,
+        missingScopes: opportunityEsiRequiredScopes
       })
     );
   });

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { retryRequestSummarySchema } from './retry.schema.js';
 
-export const esiSyncDomainSchema = z.enum(['numbers']);
+export const esiSyncDomainSchema = z.enum(['numbers', 'people', 'opportunity']);
 export const esiVaultStatusSchema = z.enum(['missing', 'active', 'revoked', 'unavailable']);
 export const esiSyncRequestStatusSchema = z.enum(['queued', 'claimed', 'completed', 'failed', 'cancelled']);
 

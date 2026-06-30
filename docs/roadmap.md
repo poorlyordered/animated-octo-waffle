@@ -939,7 +939,7 @@ Validation:
 
 ## Near-Term Recommendation
 
-Proceed to M48 selection after M47 review.
+Proceed to M49 selection after M48 review.
 
 ### M45: Roadmap Backlog Refresh - Complete
 
@@ -1009,10 +1009,33 @@ Validation:
 
 Recommended next slice:
 
-- M48: Live Read Consent Expansion. Extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented. It must keep token material server-side, require commander consent, and avoid EVE writes or player-impacting mutation.
+### M48: Live Read Consent Expansion - Complete
+
+Goal: extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented.
+
+Delivered capabilities:
+
+- Shared ESI sync domain contract expanded from Numbers-only to Numbers, People, and Opportunity
+- ESI vault domain summaries now list Numbers, People, and Opportunity labels, required read-only scope names, availability, and missing scopes
+- Existing prepare sync API accepts People and Opportunity domains and creates duplicate-safe queued planning records when required scopes are available
+- Browser ESI token vault renders all three read-sync domains
+- Browser smoke coverage prepares Numbers, People, and Opportunity read-sync records and verifies planning-only no-dispatch/no-fetch boundary text
+- ESI sync worker list/run boundary remains restricted to Numbers for this slice
+- Unit coverage verifies the ESI sync worker does not run People or Opportunity sync domains
+- Contract/unit coverage verifies expanded domain schemas and read-only scope summaries
+- No token exposure, People/Opportunity ESI fetch, EVE write, worker dispatch, retry execution, wallet/asset/contract/role/access/standing mutation, or external-service mutation
+
+Validation:
+
+- Spec: `specs/048-live-read-consent-expansion`
+- Local validation covered targeted ESI sync contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- M49: Production Evidence Recorder. Add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists. It must store no secrets, tokens, connection strings, cookies, JWTs, or production record exports.
 
 Recommended next-slice candidates:
 
-- M48: Live Read Consent Expansion. Extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented. It must keep token material server-side, require commander consent, and avoid EVE writes or player-impacting mutation.
 - M49: Production Evidence Recorder. Add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists. It must store no secrets, tokens, connection strings, cookies, JWTs, or production record exports.
 - M50: Operations Health Filtering. Add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.
+- M51: People ESI Worker Planning. Define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists. It must keep browser paths read-only and require worker-only callbacks.

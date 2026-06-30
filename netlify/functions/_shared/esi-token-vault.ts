@@ -17,6 +17,14 @@ export const readOnlyEsiScopesByDomain: Record<EsiSyncDomain, { label: string; r
       'esi-industry.read_corporation_jobs.v1',
       'esi-markets.read_corporation_orders.v1'
     ]
+  },
+  people: {
+    label: 'People',
+    requiredScopes: ['esi-corporations.read_corporation_membership.v1']
+  },
+  opportunity: {
+    label: 'Opportunity',
+    requiredScopes: ['esi-corporations.read_structures.v1']
   }
 };
 

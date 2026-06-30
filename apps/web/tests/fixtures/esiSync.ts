@@ -7,6 +7,9 @@ export const esiRequiredScopes = [
   'esi-industry.read_corporation_jobs.v1',
   'esi-markets.read_corporation_orders.v1'
 ];
+export const peopleEsiRequiredScopes = ['esi-corporations.read_corporation_membership.v1'];
+export const opportunityEsiRequiredScopes = ['esi-corporations.read_structures.v1'];
+export const allEsiRequiredScopes = [...esiRequiredScopes, ...peopleEsiRequiredScopes, ...opportunityEsiRequiredScopes];
 
 export const missingEsiSyncStatus: EsiSyncStatusResponse = {
   vault: {
@@ -14,7 +17,7 @@ export const missingEsiSyncStatus: EsiSyncStatusResponse = {
     character: null,
     corporation: null,
     grantedScopes: [],
-    requiredScopes: esiRequiredScopes,
+    requiredScopes: allEsiRequiredScopes,
     consentedAt: null,
     revokedAt: null,
     lastSync: null,
@@ -27,6 +30,20 @@ export const missingEsiSyncStatus: EsiSyncStatusResponse = {
       requiredScopes: esiRequiredScopes,
       available: false,
       missingScopes: esiRequiredScopes
+    },
+    {
+      domain: 'people',
+      label: 'People',
+      requiredScopes: peopleEsiRequiredScopes,
+      available: false,
+      missingScopes: peopleEsiRequiredScopes
+    },
+    {
+      domain: 'opportunity',
+      label: 'Opportunity',
+      requiredScopes: opportunityEsiRequiredScopes,
+      available: false,
+      missingScopes: opportunityEsiRequiredScopes
     }
   ]
 };
@@ -36,8 +53,8 @@ export const activeEsiSyncStatus: EsiSyncStatusResponse = {
     status: 'active',
     character: { id: '2110000001', name: 'Ari Voss' },
     corporation: { id: '123456789', name: 'Session Corp' },
-    grantedScopes: esiRequiredScopes,
-    requiredScopes: esiRequiredScopes,
+    grantedScopes: allEsiRequiredScopes,
+    requiredScopes: allEsiRequiredScopes,
     consentedAt: '2026-06-02T12:00:00.000Z',
     revokedAt: null,
     lastSync: null,
@@ -48,6 +65,20 @@ export const activeEsiSyncStatus: EsiSyncStatusResponse = {
       domain: 'numbers',
       label: 'Numbers',
       requiredScopes: esiRequiredScopes,
+      available: true,
+      missingScopes: []
+    },
+    {
+      domain: 'people',
+      label: 'People',
+      requiredScopes: peopleEsiRequiredScopes,
+      available: true,
+      missingScopes: []
+    },
+    {
+      domain: 'opportunity',
+      label: 'Opportunity',
+      requiredScopes: opportunityEsiRequiredScopes,
       available: true,
       missingScopes: []
     }
@@ -118,6 +149,16 @@ export const revokedEsiSyncStatus: EsiSyncStatusResponse = {
       ...activeEsiSyncStatus.domains[0],
       available: false,
       missingScopes: esiRequiredScopes
+    },
+    {
+      ...activeEsiSyncStatus.domains[1],
+      available: false,
+      missingScopes: peopleEsiRequiredScopes
+    },
+    {
+      ...activeEsiSyncStatus.domains[2],
+      available: false,
+      missingScopes: opportunityEsiRequiredScopes
     }
   ]
 };
@@ -141,6 +182,30 @@ export const prepareEsiSyncResponse: PrepareEsiSyncResponse = {
     requiredScopes: esiRequiredScopes,
     requestedAt: '2026-06-02T12:45:00.000Z',
     boundary: 'Queued for future read-only worker sync. No ESI data was fetched and no worker was dispatched.'
+  },
+  duplicate: false
+};
+
+export const preparePeopleEsiSyncResponse: PrepareEsiSyncResponse = {
+  syncRequest: {
+    id: 'sync-request-people',
+    domain: 'people',
+    status: 'queued',
+    requiredScopes: peopleEsiRequiredScopes,
+    requestedAt: '2026-06-02T12:46:00.000Z',
+    boundary: 'Queued for future read-only People sync. No ESI data was fetched and no worker was dispatched.'
+  },
+  duplicate: false
+};
+
+export const prepareOpportunityEsiSyncResponse: PrepareEsiSyncResponse = {
+  syncRequest: {
+    id: 'sync-request-opportunity',
+    domain: 'opportunity',
+    status: 'queued',
+    requiredScopes: opportunityEsiRequiredScopes,
+    requestedAt: '2026-06-02T12:47:00.000Z',
+    boundary: 'Queued for future read-only Opportunity sync. No ESI data was fetched and no worker was dispatched.'
   },
   duplicate: false
 };
