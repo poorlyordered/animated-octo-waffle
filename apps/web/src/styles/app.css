@@ -201,9 +201,14 @@ li button {
 form,
 label,
 dl,
-.decision-list {
+.decision-list,
+fieldset {
   display: grid;
   gap: 12px;
+}
+
+fieldset {
+  margin: 0;
 }
 
 textarea,

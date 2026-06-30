@@ -1032,10 +1032,32 @@ Validation:
 
 Recommended next slice:
 
-- M49: Production Evidence Recorder. Add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists. It must store no secrets, tokens, connection strings, cookies, JWTs, or production record exports.
+### M49: Production Evidence Recorder - Complete
+
+Goal: add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists, without storing secrets, tokens, connection strings, cookies, JWTs, or production record exports.
+
+Delivered capabilities:
+
+- Shared production evidence contract and schema for environments, go/no-go posture, fixed check keys, check statuses, operator attribution, and boundary text
+- Browser-safe `GET /api/production-evidence` endpoint for recent scoped production evidence records
+- Server-side `POST /api/production-evidence` record creation using the existing command auth scope and safe signed-session attribution when present
+- MongoDB `production_evidence_records` persistence scoped by server-resolved corporation id
+- Unsafe evidence guard that rejects secret/token/cookie/JWT/connection string/private key/raw production record/export keys and obvious unsafe string values before storage
+- Browser Production Evidence surface with a bounded create form and recent evidence list
+- Contract/unit coverage for value-free responses, create request validation, scoped persistence, and unsafe material rejection
+- No deploy, rollback, live provider calls, ESI fetch, EVE write, worker dispatch, retry execution, wallet/asset/contract/role/access/standing mutation, raw log storage, or production record export storage
+
+Validation:
+
+- Spec: `specs/049-production-evidence-recorder`
+- Local validation covered targeted production evidence contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- M50: Operations Health Filtering. Add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.
 
 Recommended next-slice candidates:
 
-- M49: Production Evidence Recorder. Add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists. It must store no secrets, tokens, connection strings, cookies, JWTs, or production record exports.
 - M50: Operations Health Filtering. Add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.
 - M51: People ESI Worker Planning. Define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists. It must keep browser paths read-only and require worker-only callbacks.
+- M52: Production Evidence Filtering. Add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
