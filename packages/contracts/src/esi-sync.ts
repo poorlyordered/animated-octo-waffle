@@ -147,6 +147,11 @@ export interface EsiSyncWorkerRunRequest {
   workerId: string;
 }
 
+export interface EsiSyncWorkerCompleteRequest {
+  workerId: string;
+  result: EsiSyncWorkerResultSummary;
+}
+
 export interface EsiSyncWorkerFailRequest {
   workerId: string;
   reason: string;

@@ -1075,10 +1075,32 @@ Validation:
 
 Recommended next slice:
 
-- M51: People ESI Worker Planning. Define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists. It must keep browser paths read-only and require worker-only callbacks.
+### M51: People ESI Worker Planning - Complete
+
+Goal: define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists, keeping browser paths read-only and requiring worker-only callbacks.
+
+Delivered capabilities:
+
+- Shared ESI worker completion request contract and schema using safe result summaries
+- ESI sync worker domain boundaries for claimable, runnable, and externally completable domains
+- Worker list/claim support for queued People ESI sync requests
+- Worker-only external completion support for claimed People ESI sync requests
+- Existing in-process `run` action remains Numbers-only
+- Opportunity ESI sync remains planning-only in this slice
+- Contract/unit coverage for People worker summaries, completion payloads, domain boundaries, and claimed-request completion
+- No browser ESI fetch, worker dispatch from browser paths, EVE write, role/access/standing mutation, wallet/asset/contract mutation, token exposure, raw ESI payload exposure, or external-service mutation
+
+Validation:
+
+- Spec: `specs/051-people-esi-worker-planning`
+- Local validation covered targeted ESI sync worker contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- M52: Production Evidence Filtering. Add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
 
 Recommended next-slice candidates:
 
-- M51: People ESI Worker Planning. Define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists. It must keep browser paths read-only and require worker-only callbacks.
 - M52: Production Evidence Filtering. Add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
 - M53: Operations Health Saved Views. Add browser-local saved filter presets for operations health without server preference storage or provider calls.
+- M54: Opportunity ESI Worker Planning. Define worker-owned Opportunity ESI sync handling after People ESI worker planning is stable.

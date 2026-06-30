@@ -103,7 +103,10 @@ describe('ESI sync request store worker transitions', () => {
   });
 
   it('completes and fails only requests claimed by the worker', async () => {
-    const { db } = createDb([{ ...queuedSync, status: 'claimed', claimedBy: 'numbers-worker-1' }]);
+    const { db } = createDb([
+      { ...queuedSync, status: 'claimed', claimedBy: 'numbers-worker-1' },
+      { ...queuedPeopleSync, status: 'claimed', claimedBy: 'people-esi-worker-1' }
+    ]);
     const result = {
       snapshotId: 'snapshot-1',
       sourceCount: 4,
@@ -111,11 +114,19 @@ describe('ESI sync request store worker transitions', () => {
       sectionStatuses: [{ key: 'wallet', status: 'healthy' }],
       failures: []
     };
+    const peopleResult = {
+      sourceCount: 25,
+      summary: 'People ESI membership read completed.',
+      sectionStatuses: [{ key: 'membership', status: 'processed' }],
+      failures: []
+    };
 
     const completed = await completeSyncRequest(db, 'sync-1', 'numbers-worker-1', result);
+    const completedPeople = await completeSyncRequest(db, 'sync-people', 'people-esi-worker-1', peopleResult);
     const failed = await failSyncRequest(db, 'sync-1', 'numbers-worker-1', 'Should not apply after completion');
 
     expect(completed).toMatchObject({ status: 'completed', result });
+    expect(completedPeople).toMatchObject({ status: 'completed', domain: 'people', result: peopleResult });
     expect(failed).toBeNull();
   });
 });
