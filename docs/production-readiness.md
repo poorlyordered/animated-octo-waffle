@@ -25,7 +25,18 @@ Required for command API reads and writes:
 - `MONGODB_URI`: server-side MongoDB connection string. Must start with `mongodb://` or `mongodb+srv://`.
 - `MONGODB_DB`: runtime database name.
 - `EVEONLINE_CORPORATION_ID`: local/test fallback corporation scope when no signed EVE session exists.
-- `WORKER_CALLBACK_SECRET`: server-side secret required by trusted worker callback and retry endpoints.
+
+Required for trusted worker callbacks:
+
+- `WORKER_CALLBACK_SECRET`: server-side fallback secret for trusted worker callback and retry endpoints when class-specific secrets are not configured.
+
+Optional class-specific worker callback secrets:
+
+- `WORKER_HANDOFF_CALLBACK_SECRET`: optional server-side secret for worker handoff callbacks.
+- `RETRY_WORKER_CALLBACK_SECRET`: optional server-side secret for retry worker callbacks.
+- `ESI_SYNC_WORKER_CALLBACK_SECRET`: optional server-side secret for ESI sync worker callbacks.
+- `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`: optional server-side secret for People ingestion worker callbacks.
+- `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`: optional server-side secret for Opportunity ingestion worker callbacks.
 
 Production-required for secure sessions and token vaulting:
 
@@ -90,8 +101,8 @@ The system must not implicitly dispatch external workers, claim replacement work
 - EVE SSO production redirect URI and app configuration have not been verified from live provider state.
 - MongoDB backup, index, retention, and least-privilege user policy are not documented in this repo.
 - External uptime/error monitoring is not configured or documented here.
-- Commander authorization currently depends on session scope and fallback corporation configuration; explicit corporation membership and commander authorization policy is the recommended next roadmap slice.
-- Worker secret separation for multiple worker classes remains a follow-up hardening candidate.
+- Repo-side commander authorization policy is implemented for signed-session corporation matching, but live EVE SSO provider configuration has not been verified.
+- Repo-side worker secret separation is implemented with class-specific worker secrets and shared fallback compatibility, but production secret values and rotation posture have not been verified.
 
 ## Go/No-Go
 

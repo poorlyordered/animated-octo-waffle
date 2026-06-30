@@ -939,12 +939,33 @@ Validation:
 
 ## Near-Term Recommendation
 
-Proceed to M45 selection after M44 review.
+Proceed to M46 selection after M45 review.
+
+### M45: Roadmap Backlog Refresh - Complete
+
+Goal: re-assess the command-OS backlog after worker-backed Numbers, People, and Opportunity ingestion lifecycle coverage plus worker policy hardening.
+
+Delivered capabilities:
+
+- Current roadmap tail audited after M44 completion
+- Production-readiness gaps refreshed after M41 commander authorization and M44 worker policy hardening
+- Class-specific worker secret requirements reflected in production-readiness documentation
+- Completed repo-side commander authorization and worker secret separation no longer listed as open roadmap gaps
+- M46 selected as the next bounded production-operations follow-up
+- Follow-on candidates scoped for live provider verification, operational runbooks, and future command-loop expansion
+- No product behavior, backend route, server preference storage, approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/045-roadmap-backlog-refresh`
+- Local validation covered roadmap consistency review, production-readiness gap review, code-review-and-quality gate, and diff hygiene
 
 Recommended next slice:
 
-- M45: Roadmap Backlog Refresh. Re-assess the next command-OS slices after worker-backed Numbers, People, and Opportunity ingestion lifecycle coverage.
+- M46: Production Operations Follow-up. Convert the remaining production-readiness gaps into concrete repo-side runbooks, environment verification checklists, and deployment/rollback evidence requirements without touching live provider state from the app request path.
 
 Recommended next-slice candidates:
 
-- M46: Production Operations Follow-up. Revisit production readiness gaps after worker policy hardening and ingestion lifecycle expansion.
+- M46: Production Operations Follow-up. Document Netlify environment verification, live EVE SSO callback checks, MongoDB backup/index/access policy expectations, monitoring requirements, production worker secret rotation posture, and rollback evidence. This remains documentation and operational verification only: no browser/request-path deployment, ESI fetch, EVE write, worker dispatch, or external-service mutation.
+- M47: Operations Health Surface. Add a read-only commander-facing health summary for configured command APIs, ingestion histories, retry posture, and worker readiness using server-safe status data. It must not expose secrets, dispatch workers, call live providers from the browser, or mutate EVE/external services.
+- M48: Live Read Consent Expansion. Extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented. It must keep token material server-side, require commander consent, and avoid EVE writes or player-impacting mutation.
