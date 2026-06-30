@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Production Operations Follow-up ready for review on `046-production-operations-followup`.
+Current phase: Operations Health Surface ready for review on `047-operations-health-surface`.
 
 ## Local Development
 
@@ -181,6 +181,8 @@ Worker handoff records are stored separately in MongoDB `worker_handoffs`. Hando
 Worker callbacks can list ready handoffs, atomically claim a handoff, append safe progress events, and mark claimed work completed or failed. Callback requests require a worker callback secret through the worker callback header. Callback handlers store safe audit metadata only; they do not dispatch workers, retry failed work, perform EVE actions, change permissions, move assets, touch wallets/contracts/standings, or call external services. Player-impacting queue work requires approval metadata already present on the source decision.
 
 M44 adds class-specific worker callback secrets for worker handoffs, retry workers, ESI sync workers, People ingestion workers, and Opportunity ingestion workers while preserving `WORKER_CALLBACK_SECRET` as a compatibility fallback. Once a class-specific secret is configured, the shared fallback no longer authorizes that worker class. The worker policy runbook documents retry/backoff boundaries and browser no-dispatch guarantees.
+
+M47 adds a read-only Operations Health surface backed by `/api/operations-health`. It summarizes command API evidence, Numbers/People/Opportunity ingestion posture, retry posture, worker callback secret state, and operations warnings with browser-safe statuses only. It does not expose secret values, token material, connection strings, raw production data, dispatch targets, or execution controls, and it does not fetch ESI, write to EVE, dispatch workers, execute retries, or mutate external services.
 
 For write-flow validation, keep using the isolated MongoDB database `gryyk47_greenfield_test` and seed or reuse approved `strategic_decisions` records for the configured corporation scope before writing `automation_queue` or `worker_handoffs` records.
 

@@ -52,6 +52,7 @@ import {
   revokeEsiVaultResponse,
   startEsiSyncConsentResponse
 } from '../../tests/fixtures/esiSync';
+import { operationsHealthResponse } from '../../tests/fixtures/operationsHealth';
 
 export const commandSurfaceFixtures = {
   commandBrief: {
@@ -270,5 +271,6 @@ export const commandSurfaceFixtures = {
     esiSync: esiSyncRetryResponse,
     esiSyncCancel: esiSyncRetryCancelResponse,
     esiSyncReschedule: esiSyncRetryRescheduleResponse
-  }
+  },
+  operationsHealth: operationsHealthResponse
 };
