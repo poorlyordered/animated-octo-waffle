@@ -1,12 +1,17 @@
 import {
   decisionListCounts,
+  decisionSavedViewFromSettings,
   decisionServerFilters,
   decisionSourceDomain,
   decisionSourceLabel,
   filterDecisionRecords,
   paginateDecisionRecords,
+  parseDecisionSavedViews,
   parseDecisionListSettings,
+  readDecisionSavedViews,
   readDecisionListSettings,
+  saveDecisionView,
+  writeDecisionSavedViews,
   writeDecisionListSettings
 } from '../../src/features/decision-records/services/decisionListFilters';
 import { approvedDecision, proposedDecision, rejectedDecision } from '../fixtures/decisionRecords';
@@ -103,6 +108,35 @@ describe('decision list filters', () => {
       source: 'all',
       pageSize: 5
     });
+  });
+
+  it('saves and parses browser-local decision views safely', () => {
+    const settings = { status: 'approved' as const, source: 'people' as const, pageSize: 3 as const };
+    const view = decisionSavedViewFromSettings(settings);
+
+    expect(view.label).toBe('approved / people / 3 per page');
+    expect(saveDecisionView([view], settings)).toHaveLength(1);
+    expect(parseDecisionSavedViews([{ settings }, { settings: { status: 'unsafe', source: 'bad', pageSize: 999 } }])).toEqual([view]);
+  });
+
+  it('reads and writes browser-local saved decision views', () => {
+    const storage = new Map<string, string>();
+    const adapter = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value)
+    };
+    const views = [
+      decisionSavedViewFromSettings({
+        status: 'rejected',
+        source: 'opportunity',
+        pageSize: 10
+      })
+    ];
+
+    writeDecisionSavedViews(adapter, 'decision-views', views);
+    expect(readDecisionSavedViews(adapter, 'decision-views')).toEqual(views);
+    storage.set('decision-views', '{bad json');
+    expect(readDecisionSavedViews(adapter, 'decision-views')).toEqual([]);
   });
 
   it('paginates visible decisions with clamped page bounds', () => {

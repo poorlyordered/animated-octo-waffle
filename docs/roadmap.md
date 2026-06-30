@@ -796,10 +796,32 @@ Validation:
 - Spec: `specs/037-decision-backend-pagination`
 - Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M38: Decision Saved Views - Complete
+
+Goal: let commanders save reusable Decision Records filter presets for repeated operational review contexts.
+
+Delivered capabilities:
+
+- Browser-local saved views for status, source, and page-size settings
+- Saved-view selection, save, and delete controls in the Decision Records filter bar
+- Duplicate-safe saves keyed by the saved filter tuple
+- Applying a saved view restores status/source/page-size settings and resets pagination to page 1
+- Malformed saved-view localStorage entries are ignored safely
+- Decision filter accessibility improved with stable select ids and explicit labels
+- Unit coverage for saved-view parsing, persistence, duplicate-safe saves, and malformed storage recovery
+- Browser smoke coverage for saving, applying, deleting, and preserving existing filter reload behavior
+- No backend route, server preference storage, approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/038-decision-saved-views`
+- Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M38 selection after M37 review.
+M38 completes the current near-term recommendation.
 
 Recommended next-slice candidates:
 
-- Decision saved views if commanders need reusable operational filter presets.
+- Refresh the roadmap backlog and select the next command-operating slice.
+- Consider a production-readiness audit if the current Decision/Numbers/Opportunity/People command loop should stabilize before adding new capabilities.
