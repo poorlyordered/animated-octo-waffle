@@ -145,6 +145,11 @@ export const esiSyncWorkerRunRequestSchema = z.object({
   workerId: z.string().min(1)
 });
 
+export const esiSyncWorkerCompleteRequestSchema = z.object({
+  workerId: z.string().min(1),
+  result: esiSyncWorkerResultSummarySchema
+});
+
 export const esiSyncWorkerFailRequestSchema = z.object({
   workerId: z.string().min(1),
   reason: z.string().min(1)

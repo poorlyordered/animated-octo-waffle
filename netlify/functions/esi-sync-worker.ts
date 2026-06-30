@@ -1,6 +1,8 @@
 import {
   esiSyncDomainSchema,
+  type EsiSyncWorkerResultSummary,
   esiSyncWorkerClaimRequestSchema,
+  esiSyncWorkerCompleteRequestSchema,
   esiSyncWorkerFailRequestSchema,
   esiSyncWorkerRunRequestSchema
 } from '../../packages/contracts/src/index';
@@ -19,9 +21,27 @@ import {
 import { ingestNumbersFromEsiSyncRequest } from './_shared/esi-numbers-ingestion';
 
 const runnableWorkerDomain = 'numbers';
+const externallyCompletableWorkerDomain = 'people';
+const unsafeWorkerResultPattern =
+  /(accessToken|refreshToken|sealed|client[-_ ]?secret|bearer\s+[A-Za-z0-9._-]+|dispatchTarget|retrySchedule|walletAction|roleMutation|accessMutation|rawEsi|rawPayload|eyJ[A-Za-z0-9_-]{10,})/i;
 
 export function isRunnableEsiSyncWorkerDomain(domain: string): domain is typeof runnableWorkerDomain {
   return domain === runnableWorkerDomain;
+}
+
+export function isClaimableEsiSyncWorkerDomain(domain: string): domain is typeof runnableWorkerDomain | typeof externallyCompletableWorkerDomain {
+  return domain === runnableWorkerDomain || domain === externallyCompletableWorkerDomain;
+}
+
+export function isExternallyCompletableEsiSyncWorkerDomain(domain: string): domain is typeof externallyCompletableWorkerDomain {
+  return domain === externallyCompletableWorkerDomain;
+}
+
+export function assertSafeEsiSyncWorkerResult(result: EsiSyncWorkerResultSummary): void {
+  const serialized = JSON.stringify(result);
+  if (unsafeWorkerResultPattern.test(serialized)) {
+    throw new Error('ESI sync worker result contains unsafe material');
+  }
 }
 
 function parseJsonBody(event: FunctionEvent): unknown {
@@ -32,9 +52,9 @@ function parseJsonBody(event: FunctionEvent): unknown {
   return JSON.parse(event.body);
 }
 
-function workerActionPath(event: FunctionEvent): { id: string; action: 'claim' | 'run' | 'fail' } | null {
-  const match = event.path?.match(/\/esi-sync-worker\/([^/]+)\/(claim|run|fail)$/);
-  return match ? { id: decodeURIComponent(match[1]), action: match[2] as 'claim' | 'run' | 'fail' } : null;
+function workerActionPath(event: FunctionEvent): { id: string; action: 'claim' | 'run' | 'complete' | 'fail' } | null {
+  const match = event.path?.match(/\/esi-sync-worker\/([^/]+)\/(claim|run|complete|fail)$/);
+  return match ? { id: decodeURIComponent(match[1]), action: match[2] as 'claim' | 'run' | 'complete' | 'fail' } : null;
 }
 
 export async function handler(event: FunctionEvent) {
@@ -47,7 +67,7 @@ export async function handler(event: FunctionEvent) {
       const domain = event.queryStringParameters?.domain
         ? esiSyncDomainSchema.parse(event.queryStringParameters.domain)
         : runnableWorkerDomain;
-      const syncRequests = isRunnableEsiSyncWorkerDomain(domain) ? await listQueuedSyncRequests(db, domain) : [];
+      const syncRequests = isClaimableEsiSyncWorkerDomain(domain) ? await listQueuedSyncRequests(db, domain) : [];
       return jsonResponse(200, { syncRequests: syncRequests.map(workerSyncRequestSummary) });
     }
 
@@ -65,8 +85,8 @@ export async function handler(event: FunctionEvent) {
     if (actionPath.action === 'claim') {
       const request = esiSyncWorkerClaimRequestSchema.parse(body);
       const existing = await findSyncRequest(db, actionPath.id);
-      if (existing && !isRunnableEsiSyncWorkerDomain(existing.domain)) {
-        return safeErrorResponse('Only Numbers ESI sync requests are claimable in this worker slice', 409);
+      if (existing && !isClaimableEsiSyncWorkerDomain(existing.domain)) {
+        return safeErrorResponse('Only Numbers and People ESI sync requests are claimable in this worker slice', 409);
       }
       const syncRequest = await claimQueuedSyncRequest(db, actionPath.id, request.workerId);
       return syncRequest
@@ -106,7 +126,24 @@ export async function handler(event: FunctionEvent) {
       }
     }
 
+    if (actionPath.action === 'complete') {
+      const request = esiSyncWorkerCompleteRequestSchema.parse(body);
+      assertSafeEsiSyncWorkerResult(request.result);
+      const existing = await findClaimedByWorker(db, actionPath.id, request.workerId);
+      if (existing && !isExternallyCompletableEsiSyncWorkerDomain(existing.domain)) {
+        return safeErrorResponse('Only People ESI sync requests are externally completable in this worker slice', 409);
+      }
+      const completed = existing ? await completeSyncRequest(db, actionPath.id, request.workerId, request.result) : null;
+      return completed
+        ? jsonResponse(200, { syncRequest: workerSyncRequestSummary(completed) })
+        : missingOrConflictResponse(db, actionPath.id, 'ESI sync request is not completable');
+    }
+
     const request = esiSyncWorkerFailRequestSchema.parse(body);
+    const existing = await findClaimedByWorker(db, actionPath.id, request.workerId);
+    if (existing && !isClaimableEsiSyncWorkerDomain(existing.domain)) {
+      return safeErrorResponse('Only Numbers and People ESI sync requests are failable in this worker slice', 409);
+    }
     const failed = await failSyncRequest(db, actionPath.id, request.workerId, request.reason);
     return failed
       ? jsonResponse(200, { syncRequest: workerSyncRequestSummary(failed) })
@@ -118,6 +155,10 @@ export async function handler(event: FunctionEvent) {
 
     if (error instanceof Error && error.message === 'Worker callback is not authorized') {
       return safeErrorResponse('Worker callback is not authorized', 401);
+    }
+
+    if (error instanceof Error && error.message === 'ESI sync worker result contains unsafe material') {
+      return safeErrorResponse(error.message, 400);
     }
 
     if (error instanceof Error && error.message === 'MONGODB_URI must start with mongodb:// or mongodb+srv://') {

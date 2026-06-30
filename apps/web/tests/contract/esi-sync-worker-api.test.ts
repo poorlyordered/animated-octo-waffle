@@ -1,5 +1,6 @@
 import {
   esiSyncWorkerClaimRequestSchema,
+  esiSyncWorkerCompleteRequestSchema,
   esiSyncWorkerFailRequestSchema,
   esiSyncWorkerListResponseSchema,
   esiSyncWorkerRequestResponseSchema,
@@ -25,6 +26,29 @@ const workerSummary = {
   }
 };
 
+const peopleWorkerSummary = {
+  id: 'sync-people-1',
+  corporationId: '123456789',
+  domain: 'people',
+  status: 'completed',
+  requiredScopes: ['esi-corporations.read_corporation_membership.v1'],
+  requestedAt: '2026-06-02T12:46:00.000Z',
+  claimedBy: 'people-esi-worker-1',
+  claimedAt: '2026-06-02T13:02:00.000Z',
+  completedAt: '2026-06-02T13:05:00.000Z',
+  result: {
+    sourceCount: 25,
+    summary: 'People ESI worker completed membership read and stored safe member context externally.',
+    sectionStatuses: [
+      { key: 'membership', status: 'processed' },
+      { key: 'roles', status: 'not_applicable' },
+      { key: 'activity', status: 'not_applicable' },
+      { key: 'delegation', status: 'not_applicable' }
+    ],
+    failures: []
+  }
+};
+
 describe('ESI sync worker API contract', () => {
   it('accepts worker request schemas', () => {
     expect(esiSyncWorkerClaimRequestSchema.parse({ workerId: 'numbers-worker-1' })).toEqual({
@@ -33,6 +57,12 @@ describe('ESI sync worker API contract', () => {
     expect(esiSyncWorkerRunRequestSchema.parse({ workerId: 'numbers-worker-1' })).toEqual({
       workerId: 'numbers-worker-1'
     });
+    expect(
+      esiSyncWorkerCompleteRequestSchema.parse({
+        workerId: 'people-esi-worker-1',
+        result: peopleWorkerSummary.result
+      }).result.sourceCount
+    ).toBe(25);
     expect(esiSyncWorkerFailRequestSchema.parse({ workerId: 'numbers-worker-1', reason: 'ESI returned 403' })).toEqual({
       workerId: 'numbers-worker-1',
       reason: 'ESI returned 403'
@@ -40,14 +70,15 @@ describe('ESI sync worker API contract', () => {
   });
 
   it('accepts worker-safe list and completion responses', () => {
-    expect(esiSyncWorkerListResponseSchema.parse({ syncRequests: [workerSummary] }).syncRequests).toHaveLength(1);
+    expect(esiSyncWorkerListResponseSchema.parse({ syncRequests: [workerSummary, peopleWorkerSummary] }).syncRequests).toHaveLength(2);
     expect(esiSyncWorkerRequestResponseSchema.parse({ syncRequest: workerSummary }).syncRequest.result?.snapshotId).toBe(
       'numbers-snapshot-1'
     );
+    expect(esiSyncWorkerRequestResponseSchema.parse({ syncRequest: peopleWorkerSummary }).syncRequest.domain).toBe('people');
   });
 
   it('keeps token and execution handles out of worker-safe responses', () => {
-    const body = JSON.stringify({ syncRequest: workerSummary });
+    const body = JSON.stringify({ syncRequests: [workerSummary, peopleWorkerSummary] });
 
     expect(body).not.toContain('accessToken');
     expect(body).not.toContain('refreshToken');
@@ -56,5 +87,6 @@ describe('ESI sync worker API contract', () => {
     expect(body).not.toContain('dispatchTarget');
     expect(body).not.toContain('retrySchedule');
     expect(body).not.toContain('walletAction');
+    expect(body).not.toContain('roleMutation');
   });
 });
