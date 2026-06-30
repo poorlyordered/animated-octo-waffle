@@ -22,6 +22,14 @@ test('shows active ESI vault status and prepares queued read sync', async ({ pag
   await expectVisibleText(page, 'Blocked: Active ESI consent is required before this sync retry can be queued.');
   await expectVisibleText(page, 'Retry history');
   await expectVisibleText(page, 'canceled: Commander approved retry scheduling for failed ESI sync.');
+  const esiRetryHistory = page.getByLabel('sync-request-failed-blocked retry history');
+  await expectVisibleText(page, 'Showing 3 of 3 retry attempts.');
+  await esiRetryHistory.getByLabel('Retry status').selectOption('blocked');
+  await expectVisibleText(page, 'Showing 1 of 3 retry attempts.');
+  await expectVisibleText(page, 'Blocked: Active ESI consent is required before this sync retry can be queued.');
+  await esiRetryHistory.getByLabel('Retry status').selectOption('completed');
+  await expectVisibleText(page, 'No retry attempts match the selected status.');
+  await esiRetryHistory.getByLabel('Retry status').selectOption('all');
   await expectVisibleText(page, 'Retry history is read-only. This view does not dispatch, execute, fetch ESI, or reschedule work.');
   await expectVisibleText(page, 'Retry policy: one active scheduled retry is allowed per target.');
   await page.getByLabel('ESI sync history').getByRole('button', { name: 'Reschedule retry' }).first().click();

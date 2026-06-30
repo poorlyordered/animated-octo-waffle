@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Decision Backend Filtering ready for review on `035-decision-backend-filtering`.
+Current phase: Cross-Surface Retry Audit Filtering ready for review on `036-cross-surface-retry-audit-filtering`.
 
 ## Local Development
 
@@ -106,6 +106,8 @@ M33 lets commanders prepare durable worker handoffs from approved People queued 
 M34 lets commanders schedule, reschedule, apply retry delay policy, and cancel retries for failed People worker handoffs without leaving the People surface. The browser shows retry status, retry history, and no-execution boundary language while reusing the existing worker handoff retry APIs. This flow does not dispatch workers, claim handoffs, execute retries, fetch ESI, write to EVE, change roles/access/standings, move assets/wallets/contracts, or call external services.
 
 M35 lets commanders apply Decision Records status and source filters through the API while keeping page size and pagination browser-local. Source filtering preserves Opportunity, Numbers, and People decision domains, including legacy Opportunity/brief decisions without source context. This flow does not approve decisions, create queued work, dispatch workers, schedule retries, fetch ESI, write to EVE, mutate wallets/assets/contracts/roles, or call external services.
+
+M36 lets commanders filter retry history audits by retry status across Automation Queue, ESI sync, Opportunity, and People retry surfaces. Retry summaries preserve claim, completion, cancellation, replacement, blocked reason, and policy boundary details while keeping the audit controls browser-local and read-only. This flow does not schedule, cancel, reschedule, claim, dispatch, execute, fetch ESI, write to EVE, mutate wallets/assets/contracts/roles, or call external services.
 
 ## ESI Token Vault Sync
 

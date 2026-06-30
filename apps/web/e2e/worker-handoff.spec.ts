@@ -55,6 +55,17 @@ test('shows claimed completed and failed worker callback metadata', async ({ pag
   await expectVisibleText(page, 'Retry history');
   await expectVisibleText(page, 'canceled: Commander approved retry scheduling for failed worker handoff.');
   await expectVisibleText(page, 'Reason: Commander canceled retry after policy review.');
+  const workerRetryHistory = page.getByLabel('Worker handoff retry history');
+  await expectVisibleText(page, 'Showing 3 of 3 retry attempts.');
+  await workerRetryHistory.getByLabel('Retry status').selectOption('completed');
+  await expectVisibleText(page, 'Showing 1 of 3 retry attempts.');
+  await expect(workerRetryHistory.getByText('Replacement handoff-browser-retry-ready is ready.')).toBeVisible();
+  await expect(workerRetryHistory.getByText('Reason: Commander canceled retry after policy review.')).toHaveCount(0);
+  await workerRetryHistory.getByLabel('Retry status').selectOption('canceled');
+  await expect(workerRetryHistory.getByText('Reason: Commander canceled retry after policy review.')).toBeVisible();
+  await workerRetryHistory.getByLabel('Retry status').selectOption('blocked');
+  await expectVisibleText(page, 'No retry attempts match the selected status.');
+  await workerRetryHistory.getByLabel('Retry status').selectOption('all');
   await expectVisibleText(page, 'Retry history is read-only. This view does not dispatch, execute, or reschedule work.');
   await expectVisibleText(page, 'Retry policy: one active scheduled retry is allowed per target.');
   await page.getByLabel('Worker handoff').getByRole('button', { name: 'Schedule retry', exact: true }).click();

@@ -11,6 +11,7 @@ import type {
   WorkerHandoff,
   UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
+import { RetryAuditHistory } from '../../retry-audit/components/RetryAuditHistory';
 
 interface PeopleFollowUpListProps {
   followUps: LeadershipFollowUp[];
@@ -366,17 +367,11 @@ export function PeopleFollowUpList({
                       </p>
                     ) : null}
                     {workerHandoff?.retryHistory && workerHandoff.retryHistory.length > 0 ? (
-                      <section aria-label={`People worker handoff retry history for ${followUp.memberDisplayName}`}>
-                        <h4>Retry history</h4>
-                        <ul>
-                          {workerHandoff.retryHistory.map((retry) => (
-                            <li key={retry.id}>
-                              {retry.status}: {retry.reason}
-                            </li>
-                          ))}
-                        </ul>
-                        <p className="notice">People worker handoff retry history is read-only. This view does not dispatch, claim, execute, or call external services.</p>
-                      </section>
+                      <RetryAuditHistory
+                        ariaLabel={`People worker handoff retry history for ${followUp.memberDisplayName}`}
+                        boundary="People worker handoff retry history is read-only. This view does not dispatch, claim, execute, or call external services."
+                        retries={workerHandoff.retryHistory}
+                      />
                     ) : null}
                     {workerHandoff?.status === 'failed' ? (
                       <button type="button" onClick={() => void scheduleHandoffRetry(followUp, workerHandoff)} disabled={!canScheduleRetry || busy}>
