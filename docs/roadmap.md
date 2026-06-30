@@ -665,12 +665,34 @@ Validation:
 - Spec: `specs/031-opportunity-handoff-retry-controls`
 - Local validation covered lint, typecheck, full Jest tests, targeted Playwright browser smoke tests, and production build
 
+### M32: People Follow-Up Handoff - Complete
+
+Goal: let commanders move People leadership follow-ups through the same auditable decision, approval, and queued-work handoff loop as Numbers and Opportunity.
+
+Delivered capabilities:
+
+- People follow-up decision handoff contracts and browser-safe response schemas
+- Server-derived handoff metadata for decision, approval, queue readiness, queue linkage, and no-execution boundaries
+- Record-decision control for leadership follow-ups without creating queued work
+- Approve and reject controls for People-origin proposed decisions
+- Queue creation control only after approved People-origin decisions
+- Duplicate decision and queued-work attempts surface existing linkage instead of creating duplicate artifacts
+- Unsafe browser-controlled approval, queue, provenance, dispatch, retry, role/access, EVE write, and external execution fields rejected
+- Contract/unit coverage for People handoff schemas, state derivation, unsafe-field rejection, and no-execution boundaries
+- Browser smoke coverage for People decision recording, approval, queued work, and boundary language
+- No worker dispatch, handoff preparation, retry scheduling, retry execution, ESI fetch, EVE write, role/access/standings mutation, wallet/asset/contract movement, or external-service execution
+
+Validation:
+
+- Spec: `specs/032-people-followup-handoff`
+- Local validation covered targeted People Jest tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M32 selection after M31 review.
+Proceed to M33 selection after M32 review.
 
 Recommended next-slice candidates:
 
 - Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
-- Opportunity or People retry policy extension only after the new worker handoff and Numbers controls have been reviewed in browser.
-- People follow-up approval or queued-work handoff parity if the People operating layer should match the Numbers and Opportunity command loops.
+- People worker handoff preparation from approved queued work if the People operating layer should continue matching the Opportunity command loop.
+- Opportunity or People retry policy extension only after the new People handoff and queued-work controls have been reviewed in browser.

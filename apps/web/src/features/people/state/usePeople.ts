@@ -1,12 +1,26 @@
 import { useEffect, useState } from 'react';
 import type {
   CreateLeadershipFollowUpRequest,
+  CreatePeopleFollowUpDecisionRequest,
+  CreatePeopleFollowUpQueueRequest,
   FollowUpStatus,
   LeadershipFollowUp,
   MemberProfile,
-  PeopleIngestionProvenance
+  PeopleFollowUpDecisionResponse,
+  PeopleFollowUpHandoff,
+  PeopleFollowUpQueueResponse,
+  PeopleIngestionProvenance,
+  UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
-import { createFollowUp, getMember, listFollowUps, listMembers } from '../services/peopleClient';
+import {
+  createFollowUp,
+  createPeopleFollowUpQueue,
+  getMember,
+  listFollowUps,
+  listMembers,
+  recordPeopleFollowUpDecision,
+  updatePeopleFollowUpDecisionStatus as updatePeopleFollowUpDecisionStatusRequest
+} from '../services/peopleClient';
 
 interface PeopleState {
   members: MemberProfile[];
@@ -14,6 +28,7 @@ interface PeopleState {
   followUps: LeadershipFollowUp[];
   selectedMember: MemberProfile | null;
   selectedMemberFollowUps: LeadershipFollowUp[];
+  handoffByFollowUpId: Record<string, PeopleFollowUpHandoff>;
   loading: boolean;
   error: string | null;
   activityFilter: 'all' | 'active' | 'stale' | 'missing';
@@ -22,10 +37,16 @@ interface PeopleState {
 
 interface UsePeopleState extends PeopleState {
   createMemberFollowUp: (request: CreateLeadershipFollowUpRequest) => Promise<LeadershipFollowUp>;
+  createFollowUpQueue: (followUpId: string, request: CreatePeopleFollowUpQueueRequest) => Promise<PeopleFollowUpQueueResponse>;
   loadMember: (id: string) => Promise<MemberProfile>;
+  recordFollowUpDecision: (followUpId: string, request: CreatePeopleFollowUpDecisionRequest) => Promise<PeopleFollowUpDecisionResponse>;
   selectMember: (member: MemberProfile | null) => void;
   setActivityFilter: (filter: PeopleState['activityFilter']) => void;
   setFollowUpStatusFilter: (filter: PeopleState['followUpStatusFilter']) => void;
+  updateFollowUpDecisionStatus: (
+    followUpId: string,
+    request: UpdatePeopleFollowUpDecisionStatusRequest
+  ) => Promise<PeopleFollowUpDecisionResponse>;
 }
 
 export function usePeople(): UsePeopleState {
@@ -35,6 +56,7 @@ export function usePeople(): UsePeopleState {
     followUps: [],
     selectedMember: null,
     selectedMemberFollowUps: [],
+    handoffByFollowUpId: {},
     loading: true,
     error: null,
     activityFilter: 'all',
@@ -113,10 +135,59 @@ export function usePeople(): UsePeopleState {
     return followUp;
   }
 
+  function applyFollowUpUpdate(
+    followUp: LeadershipFollowUp,
+    handoff: PeopleFollowUpHandoff,
+    current: PeopleState
+  ): PeopleState {
+    return {
+      ...current,
+      followUps: [followUp, ...current.followUps.filter((item) => item.id !== followUp.id)],
+      selectedMemberFollowUps:
+        current.selectedMember?.id === followUp.memberProfileId
+          ? [followUp, ...current.selectedMemberFollowUps.filter((item) => item.id !== followUp.id)]
+          : current.selectedMemberFollowUps,
+      handoffByFollowUpId: {
+        ...current.handoffByFollowUpId,
+        [followUp.id]: handoff
+      },
+      error: null
+    };
+  }
+
+  async function recordFollowUpDecision(
+    followUpId: string,
+    request: CreatePeopleFollowUpDecisionRequest
+  ): Promise<PeopleFollowUpDecisionResponse> {
+    const response = await recordPeopleFollowUpDecision(followUpId, request);
+    setState((current) => applyFollowUpUpdate(response.followUp, response.handoff, current));
+    return response;
+  }
+
+  async function updateFollowUpDecisionStatus(
+    followUpId: string,
+    request: UpdatePeopleFollowUpDecisionStatusRequest
+  ): Promise<PeopleFollowUpDecisionResponse> {
+    const response = await updatePeopleFollowUpDecisionStatusRequest(followUpId, request);
+    setState((current) => applyFollowUpUpdate(response.followUp, response.handoff, current));
+    return response;
+  }
+
+  async function createFollowUpQueue(
+    followUpId: string,
+    request: CreatePeopleFollowUpQueueRequest
+  ): Promise<PeopleFollowUpQueueResponse> {
+    const response = await createPeopleFollowUpQueue(followUpId, request);
+    setState((current) => applyFollowUpUpdate(response.followUp, response.handoff, current));
+    return response;
+  }
+
   return {
     ...state,
     createMemberFollowUp,
+    createFollowUpQueue,
     loadMember,
+    recordFollowUpDecision,
     selectMember: (member) => {
       setState((current) => ({
         ...current,
@@ -125,6 +196,7 @@ export function usePeople(): UsePeopleState {
       }));
     },
     setActivityFilter: (activityFilter) => setState((current) => ({ ...current, activityFilter })),
-    setFollowUpStatusFilter: (followUpStatusFilter) => setState((current) => ({ ...current, followUpStatusFilter }))
+    setFollowUpStatusFilter: (followUpStatusFilter) => setState((current) => ({ ...current, followUpStatusFilter })),
+    updateFollowUpDecisionStatus
   };
 }

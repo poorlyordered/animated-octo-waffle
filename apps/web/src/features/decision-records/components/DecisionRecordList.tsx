@@ -117,6 +117,7 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onSelect }: 
             <option value="all">All sources</option>
             <option value="opportunity">Opportunity / brief</option>
             <option value="numbers">Numbers follow-up</option>
+            <option value="people">People follow-up</option>
           </select>
         </label>
         <label>

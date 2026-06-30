@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { automationQueueItemSchema } from './automation-queue.schema.js';
 import { approvalSnapshotSchema } from './automation-queue.schema.js';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
+import { decisionRecordSchema } from './decision-record.schema.js';
 
 export const peopleCoverageStateSchema = z.enum(['present', 'missing', 'stale']);
 export const peopleIngestionStatusSchema = z.enum(['queued', 'claimed', 'completed', 'failed', 'cancelled']);
@@ -125,6 +127,22 @@ export const leadershipFollowUpSchema = z.object({
   updatedAt: z.string().datetime()
 });
 
+export const peopleFollowUpHandoffSchema = z.object({
+  followUpId: z.string().min(1),
+  memberProfileId: z.string().min(1),
+  memberDisplayName: z.string().min(1),
+  decisionId: z.string().min(1).optional(),
+  decisionStatus: z.string().optional(),
+  approvalRequired: z.boolean(),
+  queueReady: z.boolean(),
+  queueItemId: z.string().min(1).optional(),
+  queueStatus: z.string().optional(),
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1),
+  boundary: z.string().min(1),
+  missingLinkReasons: z.array(z.string())
+});
+
 export const createLeadershipFollowUpRequestSchema = z.object({
   memberProfileId: z.string().min(1),
   reason: z.string().min(1),
@@ -135,6 +153,24 @@ export const createLeadershipFollowUpRequestSchema = z.object({
   sourceQueueItemId: z.string().min(1).optional(),
   isPlayerImpacting: z.boolean(),
   approvalText: z.string().optional()
+});
+
+export const createPeopleFollowUpDecisionRequestSchema = z.object({
+  rationale: z.string().min(1).optional(),
+  expectedResult: z.string().min(1).optional()
+});
+
+export const updatePeopleFollowUpDecisionStatusRequestSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  approvalText: z.string().optional(),
+  rejectionReason: z.string().optional()
+});
+
+export const createPeopleFollowUpQueueRequestSchema = z.object({
+  title: z.string().min(1),
+  inputSummary: z.string().min(1),
+  expectedOutput: z.string().min(1),
+  owner: z.string().optional()
 });
 
 export const memberProfileListResponseSchema = z.object({
@@ -153,4 +189,20 @@ export const leadershipFollowUpListResponseSchema = z.object({
 
 export const leadershipFollowUpResponseSchema = z.object({
   followUp: leadershipFollowUpSchema
+});
+
+export const peopleFollowUpDecisionResponseSchema = z.object({
+  followUp: leadershipFollowUpSchema,
+  decision: decisionRecordSchema,
+  handoff: peopleFollowUpHandoffSchema,
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1)
+});
+
+export const peopleFollowUpQueueResponseSchema = z.object({
+  followUp: leadershipFollowUpSchema,
+  queueItem: automationQueueItemSchema,
+  handoff: peopleFollowUpHandoffSchema,
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1)
 });

@@ -6,8 +6,12 @@ import {
   completeMember,
   missingLinkFollowUp,
   openFollowUp,
+  approvedPeopleFollowUpDecision,
   peopleIngestionProvenance,
+  peopleFollowUpDecision,
+  peopleFollowUpQueueItem,
   playerImpactingFollowUp,
+  rejectedPeopleFollowUpDecision,
   staleMember
 } from '../../tests/fixtures/people';
 import {
@@ -229,7 +233,11 @@ export const commandSurfaceFixtures = {
         displayName: 'Browser Smoke Stale Pilot',
         id: 'member-browser-stale'
       }
-    ]
+    ],
+    decision: peopleFollowUpDecision,
+    approvedDecision: approvedPeopleFollowUpDecision,
+    rejectedDecision: rejectedPeopleFollowUpDecision,
+    queueItem: peopleFollowUpQueueItem
   },
   esiSync: {
     missing: missingEsiSyncStatus,

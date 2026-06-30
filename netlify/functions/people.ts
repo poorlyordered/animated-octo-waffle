@@ -1,18 +1,29 @@
 import {
   createLeadershipFollowUpRequestSchema,
+  createPeopleFollowUpDecisionRequestSchema,
+  createPeopleFollowUpQueueRequestSchema,
   followUpPrioritySchema,
-  followUpStatusSchema
+  followUpStatusSchema,
+  updatePeopleFollowUpDecisionStatusRequestSchema
 } from '../../packages/contracts/src/index';
 import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import { getMongoDb } from './_shared/mongo';
 import {
+  createDecisionRecordFromPeopleFollowUp,
   createLeadershipFollowUp,
+  createQueueItemFromPeopleFollowUp,
   findMemberProfile,
   getPeopleIngestionProvenance,
   listLeadershipFollowUps,
-  listMemberProfiles
+  listMemberProfiles,
+  updatePeopleFollowUpDecisionStatus
 } from './_shared/people-store';
+import {
+  assertNoUnsafePeopleFollowUpFields,
+  assertNoUnsafePeopleFollowUpStatusFields,
+  peopleFollowUpHandoff
+} from './_shared/people-rules';
 
 function parseJsonBody(event: FunctionEvent): unknown {
   if (!event.body) {
@@ -25,6 +36,19 @@ function parseJsonBody(event: FunctionEvent): unknown {
 function peoplePathId(event: FunctionEvent, segment: 'members'): string | null {
   const match = event.path?.match(new RegExp(`/people/${segment}/([^/]+)$`));
   return match?.[1] ?? null;
+}
+
+function followUpActionPath(event: FunctionEvent): { followUpId: string; action: 'decision' | 'decision-status' | 'queue' } | null {
+  const match = event.path?.match(/\/people\/follow-ups\/([^/]+)\/(decision\/status|decision|queue)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    followUpId: decodeURIComponent(match[1]),
+    action: match[2] === 'decision/status' ? 'decision-status' : (match[2] as 'decision' | 'queue')
+  };
 }
 
 function booleanFilter(value: string | undefined): boolean | undefined {
@@ -84,6 +108,46 @@ export async function handler(event: FunctionEvent) {
     }
 
     if (method === 'POST' && path.includes('/people/follow-ups')) {
+      const actionPath = followUpActionPath(event);
+
+      if (actionPath?.action === 'decision') {
+        const body = parseJsonBody(event);
+        assertNoUnsafePeopleFollowUpFields(body);
+        const request = createPeopleFollowUpDecisionRequestSchema.parse(body);
+        const result = await createDecisionRecordFromPeopleFollowUp(db, corporationId, actionPath.followUpId, request);
+
+        return jsonResponse(result.duplicate ? 200 : 201, {
+          followUp: result.followUp,
+          decision: result.decision,
+          handoff: peopleFollowUpHandoff(result.followUp, { decision: result.decision, duplicate: result.duplicate }),
+          duplicate: result.duplicate || undefined,
+          message: result.duplicate
+            ? 'Existing People follow-up decision surfaced. No duplicate was created.'
+            : 'People follow-up decision recorded. No queued work, worker dispatch, EVE role/access change, retry, or external execution was performed.'
+        });
+      }
+
+      if (actionPath?.action === 'queue') {
+        const body = parseJsonBody(event);
+        assertNoUnsafePeopleFollowUpFields(body);
+        const request = createPeopleFollowUpQueueRequestSchema.parse(body);
+        const result = await createQueueItemFromPeopleFollowUp(db, corporationId, actionPath.followUpId, request);
+
+        return jsonResponse(result.duplicate ? 200 : 201, {
+          followUp: result.followUp,
+          queueItem: result.queueItem,
+          handoff: peopleFollowUpHandoff(result.followUp, {
+            decision: result.decision,
+            queueItem: result.queueItem,
+            duplicate: result.duplicate
+          }),
+          duplicate: result.duplicate || undefined,
+          message: result.duplicate
+            ? 'Existing People queued work surfaced. No duplicate was created.'
+            : 'People queued work created. No worker dispatch, handoff preparation, retry scheduling, EVE role/access change, or external execution was performed.'
+        });
+      }
+
       const request = createLeadershipFollowUpRequestSchema.parse(parseJsonBody(event));
       const followUp = await createLeadershipFollowUp(db, corporationId, request);
 
@@ -92,6 +156,29 @@ export async function handler(event: FunctionEvent) {
       }
 
       return jsonResponse(201, { followUp });
+    }
+
+    if (method === 'PATCH' && path.includes('/people/follow-ups')) {
+      const actionPath = followUpActionPath(event);
+
+      if (actionPath?.action !== 'decision-status') {
+        return safeErrorResponse('People follow-up action path is invalid', 404);
+      }
+
+      const body = parseJsonBody(event);
+      assertNoUnsafePeopleFollowUpStatusFields(body);
+      const request = updatePeopleFollowUpDecisionStatusRequestSchema.parse(body);
+      const result = await updatePeopleFollowUpDecisionStatus(db, corporationId, actionPath.followUpId, request);
+
+      return jsonResponse(200, {
+        followUp: result.followUp,
+        decision: result.decision,
+        handoff: peopleFollowUpHandoff(result.followUp, { decision: result.decision }),
+        message:
+          request.status === 'approved'
+            ? 'People follow-up decision approved. Queue creation remains a separate commander action; no queued work, worker dispatch, EVE role/access change, retry, or external execution was performed.'
+            : 'People follow-up decision rejected. No queued work, worker dispatch, EVE role/access change, retry, or external execution was performed.'
+      });
     }
 
     return safeErrorResponse('Method not allowed', 405);
@@ -110,6 +197,41 @@ export async function handler(event: FunctionEvent) {
         error.message === 'Leadership follow-up already exists for this member and reason')
     ) {
       return safeErrorResponse(error.message, 400);
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message.startsWith('Unsafe People follow-up action field rejected') ||
+        error.message.startsWith('Unsafe People follow-up status field rejected'))
+    ) {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message === 'Leadership follow-up not found' || error.message === 'People follow-up decision not found')
+    ) {
+      return safeErrorResponse(error.message, 404);
+    }
+
+    if (error instanceof Error && error.message === 'Decision does not match this People follow-up') {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (error instanceof Error && error.message.startsWith('Invalid decision status transition')) {
+      return safeErrorResponse(error.message, 400);
+    }
+
+    if (error instanceof Error && error.message === 'Explicit approval is required for player-impacting decisions') {
+      return safeErrorResponse(error.message, 409);
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message === 'Only approved decisions can create automation queue items' ||
+        error.message === 'Explicit approval is required before queuing player-impacting work')
+    ) {
+      return safeErrorResponse('People follow-up queued work requires an approved source decision.', 409);
     }
 
     if (error && typeof error === 'object' && 'issues' in error) {

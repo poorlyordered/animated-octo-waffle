@@ -1,16 +1,26 @@
 import {
   createLeadershipFollowUpRequestSchema,
+  createPeopleFollowUpDecisionRequestSchema,
+  createPeopleFollowUpQueueRequestSchema,
   leadershipFollowUpListResponseSchema,
   leadershipFollowUpResponseSchema,
   memberProfileDetailResponseSchema,
   memberProfileListResponseSchema,
+  peopleFollowUpDecisionResponseSchema,
+  peopleFollowUpQueueResponseSchema,
+  updatePeopleFollowUpDecisionStatusRequestSchema,
   type CreateLeadershipFollowUpRequest,
+  type CreatePeopleFollowUpDecisionRequest,
+  type CreatePeopleFollowUpQueueRequest,
   type FollowUpPriority,
   type FollowUpStatus,
   type LeadershipFollowUpListResponse,
   type LeadershipFollowUpResponse,
   type MemberProfileDetailResponse,
-  type MemberProfileListResponse
+  type MemberProfileListResponse,
+  type PeopleFollowUpDecisionResponse,
+  type PeopleFollowUpQueueResponse,
+  type UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
 
 async function parseJson<T>(response: Response, schema: { parse(value: unknown): T }): Promise<T> {
@@ -72,4 +82,49 @@ export async function createFollowUp(request: CreateLeadershipFollowUpRequest): 
   });
 
   return parseJson(response, leadershipFollowUpResponseSchema);
+}
+
+export async function recordPeopleFollowUpDecision(
+  followUpId: string,
+  request: CreatePeopleFollowUpDecisionRequest
+): Promise<PeopleFollowUpDecisionResponse> {
+  const response = await fetch(`/api/people/follow-ups/${encodeURIComponent(followUpId)}/decision`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(createPeopleFollowUpDecisionRequestSchema.parse(request))
+  });
+
+  return parseJson(response, peopleFollowUpDecisionResponseSchema);
+}
+
+export async function updatePeopleFollowUpDecisionStatus(
+  followUpId: string,
+  request: UpdatePeopleFollowUpDecisionStatusRequest
+): Promise<PeopleFollowUpDecisionResponse> {
+  const response = await fetch(`/api/people/follow-ups/${encodeURIComponent(followUpId)}/decision/status`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(updatePeopleFollowUpDecisionStatusRequestSchema.parse(request))
+  });
+
+  return parseJson(response, peopleFollowUpDecisionResponseSchema);
+}
+
+export async function createPeopleFollowUpQueue(
+  followUpId: string,
+  request: CreatePeopleFollowUpQueueRequest
+): Promise<PeopleFollowUpQueueResponse> {
+  const response = await fetch(`/api/people/follow-ups/${encodeURIComponent(followUpId)}/queue`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(createPeopleFollowUpQueueRequestSchema.parse(request))
+  });
+
+  return parseJson(response, peopleFollowUpQueueResponseSchema);
 }
