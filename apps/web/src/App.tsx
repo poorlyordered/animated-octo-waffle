@@ -5,6 +5,7 @@ import { DecisionRecordsRoute } from './routes/DecisionRecordsRoute';
 import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
 import { PeopleRoute } from './routes/PeopleRoute';
 import { EsiSyncRoute } from './routes/EsiSyncRoute';
+import { OperationsHealthRoute } from './routes/OperationsHealthRoute';
 import { SessionStatus } from './features/session/components/SessionStatus';
 import './styles/app.css';
 
@@ -19,6 +20,7 @@ export function App() {
       <AutomationQueueRoute />
       <PeopleRoute />
       <EsiSyncRoute />
+      <OperationsHealthRoute />
     </>
   );
 }

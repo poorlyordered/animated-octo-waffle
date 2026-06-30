@@ -240,3 +240,21 @@ test('renders people surface with member and leadership follow-up content', asyn
   await expectVisibleText(page, 'Retry canceled');
   await assertNoBrowserDiagnostics();
 });
+
+test('renders operations health surface without execution controls or secrets', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  await expectHeading(page, 'Operations health');
+  await expectVisibleText(page, 'Command brief');
+  await expectVisibleText(page, 'Numbers ESI sync');
+  await expectVisibleText(page, '2 scheduled retries, 1 blocked retries');
+  await expectVisibleText(page, 'Secret state: configured');
+  await expectVisibleText(page, 'Secret state: fallback');
+  await expectVisibleText(page, 'Secret state: missing');
+  await expectVisibleText(page, 'Live Netlify, EVE SSO provider, MongoDB backup/index/access');
+  await expectVisibleText(page, 'Operations health is read-only. It does not dispatch workers, execute retries, fetch ESI, write to EVE');
+  await expect(page.getByLabel('Operations health').getByRole('button')).toHaveCount(0);
+  await assertNoBrowserDiagnostics();
+});

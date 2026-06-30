@@ -16,3 +16,5 @@ export * from './esi-sync.js';
 export * from './esi-sync.schema.js';
 export * from './retry.js';
 export * from './retry.schema.js';
+export * from './operations-health.js';
+export * from './operations-health.schema.js';

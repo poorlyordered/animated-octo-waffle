@@ -939,7 +939,7 @@ Validation:
 
 ## Near-Term Recommendation
 
-Proceed to M47 selection after M46 review.
+Proceed to M48 selection after M47 review.
 
 ### M45: Roadmap Backlog Refresh - Complete
 
@@ -984,10 +984,35 @@ Validation:
 
 Recommended next slice:
 
-- M47: Operations Health Surface. Add a read-only commander-facing health summary for configured command APIs, ingestion histories, retry posture, and worker readiness using server-safe status data. It must not expose secrets, dispatch workers, call live providers from the browser, or mutate EVE/external services.
+### M47: Operations Health Surface - Complete
+
+Goal: add a read-only commander-facing health summary for configured command APIs, ingestion histories, retry posture, and worker readiness using server-safe status data.
+
+Delivered capabilities:
+
+- Browser-safe `GET /api/operations-health` endpoint
+- Shared operations health contract and schema for command API summaries, ingestion summaries, retry posture, worker readiness, warnings, and boundary text
+- Server-side operations health builder that reads only safe collection counts, timestamps, and environment variable presence
+- Command API health summaries for command brief, Numbers, Opportunity, People, Decision Records, Automation Queue, and ESI sync
+- Ingestion posture summaries for Numbers ESI sync, People ingestion, and Opportunity ingestion
+- Retry posture counts by status and target type
+- Worker callback readiness states limited to `configured`, `fallback`, and `missing`
+- Operations warnings for missing production configuration and external M46 evidence requirements without exposing values
+- Browser Operations Health surface with command API, ingestion, retry, worker readiness, warning, and no-execution sections
+- Contract/unit/browser coverage for safe secret-state output and read-only rendering
+- No secret exposure, live provider checks from the browser, worker dispatch, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service mutation
+
+Validation:
+
+- Spec: `specs/047-operations-health-surface`
+- Local validation covered targeted operations health contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- M48: Live Read Consent Expansion. Extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented. It must keep token material server-side, require commander consent, and avoid EVE writes or player-impacting mutation.
 
 Recommended next-slice candidates:
 
-- M47: Operations Health Surface. Add a read-only commander-facing health summary for configured command APIs, ingestion histories, retry posture, and worker readiness using server-safe status data. It must not expose secrets, dispatch workers, call live providers from the browser, or mutate EVE/external services.
 - M48: Live Read Consent Expansion. Extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented. It must keep token material server-side, require commander consent, and avoid EVE writes or player-impacting mutation.
 - M49: Production Evidence Recorder. Add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists. It must store no secrets, tokens, connection strings, cookies, JWTs, or production record exports.
+- M50: Operations Health Filtering. Add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.

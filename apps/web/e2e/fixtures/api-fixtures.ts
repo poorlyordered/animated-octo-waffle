@@ -77,6 +77,7 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     });
   });
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
+  await page.route('**/api/operations-health**', (route) => json(route, commandSurfaceFixtures.operationsHealth));
   await page.route('**/api/numbers**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/decision/status')) {
