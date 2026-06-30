@@ -6,6 +6,7 @@ import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
 import { PeopleRoute } from './routes/PeopleRoute';
 import { EsiSyncRoute } from './routes/EsiSyncRoute';
 import { OperationsHealthRoute } from './routes/OperationsHealthRoute';
+import { ProductionEvidenceRoute } from './routes/ProductionEvidenceRoute';
 import { SessionStatus } from './features/session/components/SessionStatus';
 import './styles/app.css';
 
@@ -21,6 +22,7 @@ export function App() {
       <PeopleRoute />
       <EsiSyncRoute />
       <OperationsHealthRoute />
+      <ProductionEvidenceRoute />
     </>
   );
 }

@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Live Read Consent Expansion ready for review on `048-live-read-consent-expansion`.
+Current phase: Production Evidence Recorder ready for review on `049-production-evidence-recorder`.
 
 ## Local Development
 
@@ -185,6 +185,8 @@ Worker callbacks can list ready handoffs, atomically claim a handoff, append saf
 M44 adds class-specific worker callback secrets for worker handoffs, retry workers, ESI sync workers, People ingestion workers, and Opportunity ingestion workers while preserving `WORKER_CALLBACK_SECRET` as a compatibility fallback. Once a class-specific secret is configured, the shared fallback no longer authorizes that worker class. The worker policy runbook documents retry/backoff boundaries and browser no-dispatch guarantees.
 
 M47 adds a read-only Operations Health surface backed by `/api/operations-health`. It summarizes command API evidence, Numbers/People/Opportunity ingestion posture, retry posture, worker callback secret state, and operations warnings with browser-safe statuses only. It does not expose secret values, token material, connection strings, raw production data, dispatch targets, or execution controls, and it does not fetch ESI, write to EVE, dispatch workers, execute retries, or mutate external services.
+
+M49 adds a value-free Production Evidence recorder backed by `/api/production-evidence`. It stores scoped deployment posture records with fixed validation checks, commit/deploy/rollback identifiers, safe operator attribution, and no-secret boundary text. It rejects obvious secret, token, cookie, JWT, connection string, private key, raw production record, and production export material before storage. It does not deploy, rollback, call live providers, fetch ESI, write to EVE, dispatch workers, execute retries, or mutate external services.
 
 For write-flow validation, keep using the isolated MongoDB database `gryyk47_greenfield_test` and seed or reuse approved `strategic_decisions` records for the configured corporation scope before writing `automation_queue` or `worker_handoffs` records.
 
