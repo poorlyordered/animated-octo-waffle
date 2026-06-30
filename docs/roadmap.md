@@ -835,17 +835,36 @@ Validation:
 - Spec: `specs/039-roadmap-backlog-refresh`
 - Local validation covered roadmap consistency review, code-review-and-quality gate, and diff hygiene
 
+### M40: Production Readiness Audit - Complete
+
+Goal: verify the current Decision/Numbers/Opportunity/People command loop is ready for a controlled deployment pass before adding new capability.
+
+Delivered capabilities:
+
+- Production readiness audit captured in `docs/production-readiness.md`
+- Netlify build, publish, function, API redirect, Node runtime, and local validation shape documented
+- Required, production-required, optional, and test-only environment variables classified without exposing secret values
+- Pre-deploy validation command sequence documented
+- Command-surface smoke coverage summarized for the current command loop
+- Conditional readiness verdict recorded with clear distinction between repo-verified evidence and unverified live provider facts
+- Known gaps documented for live Netlify env, EVE SSO app config, MongoDB backup/index/access policy, monitoring, commander authorization, and worker secret separation
+- No product behavior, live deployment, backend route, server preference storage, approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/040-production-readiness-audit`
+- Local validation covered typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
 ## Near-Term Recommendation
 
-Proceed to M40 selection after M39 review.
+Proceed to M41 selection after M40 review.
 
 Recommended next slice:
 
-- M40: Production Readiness Audit. Verify the current Decision/Numbers/Opportunity/People command loop is ready for a real deployment pass before adding new capability. Scope should cover required server environment, secret boundaries, deterministic smoke paths, command-surface health, and documented deploy/runbook gaps. It must not add player-impacting execution, EVE writes, wallet/asset/contract/role mutation, or external-service mutation.
+- M41: Commander Authorization Policy. Extend live EVE session scope with explicit corporation membership and commander authorization checks for command APIs, preserving local fallback behavior for development and tests. It must keep token material server-side and must not mutate EVE state.
 
 Recommended next-slice candidates:
 
-- M41: Commander Authorization Policy. Extend live EVE session scope with explicit corporation membership and commander authorization checks for command APIs, preserving local fallback behavior for development and tests. It must keep token material server-side and must not mutate EVE state.
 - M42: People Ingestion Expansion. Design worker-backed People ingestion beyond historical profile records so member activity, roles, and delegation context can refresh through auditable long-running jobs. It must keep role/access changes out of request paths.
 - M43: Opportunity Ingestion Expansion. Add a worker-backed Opportunity refresh path beyond latest processed briefs, with source provenance and safe failure states. It must not schedule research from browser display paths or write to EVE/external services.
 - M44: Worker Policy Hardening. Review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes. It must preserve commander approval boundaries and avoid implicit dispatch or execution from browser actions.
