@@ -1054,10 +1054,31 @@ Validation:
 
 Recommended next slice:
 
-- M50: Operations Health Filtering. Add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.
+### M50: Operations Health Filtering - Complete
+
+Goal: add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.
+
+Delivered capabilities:
+
+- Browser-local Operations Health warning severity filter for all/info/warning/critical
+- Browser-local worker readiness filters for readiness status and secret state
+- Visible/total counts for filtered warnings and workers
+- Explicit empty states when no warnings or workers match selected filters
+- Typed operations health filter helpers with unit coverage
+- Browser smoke coverage for warning and worker filters plus the no-execution boundary
+- No operations-health API contract change, server preference storage, live provider calls, worker dispatch, retry execution, ESI fetch, EVE write, wallet/asset/contract/role/access/standing mutation, or external-service mutation
+
+Validation:
+
+- Spec: `specs/050-operations-health-filtering`
+- Local validation covered targeted operations health unit/contract tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- M51: People ESI Worker Planning. Define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists. It must keep browser paths read-only and require worker-only callbacks.
 
 Recommended next-slice candidates:
 
-- M50: Operations Health Filtering. Add browser-local filters for operations health warnings and worker readiness states without server preference storage or live-provider calls.
 - M51: People ESI Worker Planning. Define the worker-owned People ESI ingestion execution contract after the expanded consent domain exists. It must keep browser paths read-only and require worker-only callbacks.
 - M52: Production Evidence Filtering. Add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
+- M53: Operations Health Saved Views. Add browser-local saved filter presets for operations health without server preference storage or provider calls.

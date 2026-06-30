@@ -1,4 +1,15 @@
+import { useState } from 'react';
 import type { OperationsHealthResponse } from '@gryyk/contracts';
+import {
+  defaultOperationsHealthFilters,
+  filterOperationsWarnings,
+  filterWorkerReadiness,
+  operationsHealthFilterCounts,
+  type OperationsHealthFilters,
+  type OperationsWarningSeverityFilter,
+  type OperationsWorkerSecretFilter,
+  type OperationsWorkerStatusFilter
+} from '../services/operationsHealthFilters';
 
 interface OperationsHealthPanelProps {
   error: string | null;
@@ -15,6 +26,8 @@ function statusClass(status: string): string {
 }
 
 export function OperationsHealthPanel({ error, health, loading }: OperationsHealthPanelProps) {
+  const [filters, setFilters] = useState<OperationsHealthFilters>(defaultOperationsHealthFilters);
+
   if (loading) {
     return <main className="command-brief">Loading operations health...</main>;
   }
@@ -26,6 +39,10 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
   if (!health) {
     return null;
   }
+
+  const visibleWarnings = filterOperationsWarnings(health.warnings, filters.warningSeverity);
+  const visibleWorkerReadiness = filterWorkerReadiness(health.workerReadiness, filters);
+  const counts = operationsHealthFilterCounts(health.warnings, visibleWarnings, health.workerReadiness, visibleWorkerReadiness);
 
   return (
     <main className="command-brief" aria-label="Operations health">
@@ -54,6 +71,81 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
           </div>
         </dl>
         <p className="notice">{health.boundary}</p>
+      </section>
+
+      <section className="summary" aria-label="Operations health filters">
+        <h2>Health filters</h2>
+        <div className="form-actions">
+          <label htmlFor="operations-warning-filter">
+            Warning severity
+            <select
+              id="operations-warning-filter"
+              value={filters.warningSeverity}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  warningSeverity: event.target.value as OperationsWarningSeverityFilter
+                }))
+              }
+            >
+              <option value="all">All warnings</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="critical">Critical</option>
+            </select>
+          </label>
+          <label htmlFor="operations-worker-status-filter">
+            Worker status
+            <select
+              id="operations-worker-status-filter"
+              value={filters.workerStatus}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  workerStatus: event.target.value as OperationsWorkerStatusFilter
+                }))
+              }
+            >
+              <option value="all">All worker statuses</option>
+              <option value="ready">Ready</option>
+              <option value="degraded">Degraded</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </label>
+          <label htmlFor="operations-worker-secret-filter">
+            Secret state
+            <select
+              id="operations-worker-secret-filter"
+              value={filters.workerSecret}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  workerSecret: event.target.value as OperationsWorkerSecretFilter
+                }))
+              }
+            >
+              <option value="all">All secret states</option>
+              <option value="configured">Configured</option>
+              <option value="fallback">Fallback</option>
+              <option value="missing">Missing</option>
+            </select>
+          </label>
+        </div>
+        <dl className="metadata-grid">
+          <div className="metadata-item">
+            <dt>Visible warnings</dt>
+            <dd>
+              {counts.visibleWarnings} of {counts.totalWarnings}
+            </dd>
+          </div>
+          <div className="metadata-item">
+            <dt>Visible workers</dt>
+            <dd>
+              {counts.visibleWorkers} of {counts.totalWorkers}
+            </dd>
+          </div>
+        </dl>
+        <p className="notice">Operations health filters organize browser-visible summaries only. They do not store preferences, call providers, dispatch workers, execute retries, fetch ESI, write to EVE, or mutate external services.</p>
       </section>
 
       <section aria-label="Command API health">
@@ -109,30 +201,34 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
 
       <section aria-label="Worker readiness">
         <h2>Worker readiness</h2>
-        <div className="coverage-grid">
-          {health.workerReadiness.map((worker) => (
-            <article className={`coverage-item coverage-item-${worker.status === 'ready' ? 'present' : 'missing'}`} key={worker.workerClass}>
-              <span>{worker.label}</span>
-              <strong>{worker.status}</strong>
-              <p>Secret state: {worker.secretState}</p>
-              <p>{worker.evidence}</p>
-            </article>
-          ))}
-        </div>
+        {visibleWorkerReadiness.length > 0 ? (
+          <div className="coverage-grid">
+            {visibleWorkerReadiness.map((worker) => (
+              <article className={`coverage-item coverage-item-${worker.status === 'ready' ? 'present' : 'missing'}`} key={worker.workerClass}>
+                <span>{worker.label}</span>
+                <strong>{worker.status}</strong>
+                <p>Secret state: {worker.secretState}</p>
+                <p>{worker.evidence}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p>No worker readiness records match the selected filters.</p>
+        )}
       </section>
 
       <section className="summary" aria-label="Operations warnings">
         <h2>Warnings</h2>
-        {health.warnings.length > 0 ? (
+        {visibleWarnings.length > 0 ? (
           <ul>
-            {health.warnings.map((warning) => (
+            {visibleWarnings.map((warning) => (
               <li key={warning.key}>
                 <strong>{warning.severity}</strong>: {warning.message}
               </li>
             ))}
           </ul>
         ) : (
-          <p>No operations warnings reported.</p>
+          <p>No operations warnings match the selected filters.</p>
         )}
       </section>
     </main>
