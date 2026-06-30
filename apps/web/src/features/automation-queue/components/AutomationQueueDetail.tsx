@@ -3,12 +3,12 @@ import type {
   AutomationQueueItem,
   CancelRetryResponse,
   RetryPolicyDelayOption,
-  RetryRequestSummary,
   RescheduleRetryResponse,
   ScheduleRetryResponse,
   WorkerHandoffSummary
 } from '@gryyk/contracts';
 import { OperatingLegCoverage } from '../../command-brief/components/OperatingLegCoverage';
+import { RetryAuditHistory } from '../../retry-audit/components/RetryAuditHistory';
 
 interface AutomationQueueDetailProps {
   queueItem: AutomationQueueItem | null;
@@ -230,15 +230,11 @@ export function AutomationQueueDetail({
         ) : null}
         {retryStatus ? <p className="notice">{retryStatus}</p> : null}
         {handoff?.retryHistory && handoff.retryHistory.length > 0 ? (
-          <section aria-label="Worker handoff retry history">
-            <h4>Retry history</h4>
-            <ul>
-              {handoff.retryHistory.map((retry) => (
-                <li key={retry.id}>{retryAttemptSummary(retry)}</li>
-              ))}
-            </ul>
-            <p className="notice">Retry history is read-only. This view does not dispatch, execute, or reschedule work.</p>
-          </section>
+          <RetryAuditHistory
+            ariaLabel="Worker handoff retry history"
+            boundary="Retry history is read-only. This view does not dispatch, execute, or reschedule work."
+            retries={handoff.retryHistory}
+          />
         ) : null}
         <p className="notice">Preparing handoff creates a durable record only. It does not dispatch, retry, or execute work.</p>
       </section>
@@ -270,20 +266,6 @@ export function AutomationQueueDetail({
       ) : null}
     </section>
   );
-}
-
-function retryAttemptSummary(retry: RetryRequestSummary): string {
-  const parts = [`${retry.status}: ${retry.reason}`];
-
-  if (retry.claimedBy) parts.push(`Claimed by ${retry.claimedBy}.`);
-  if (retry.completedAt) parts.push(`Completed ${new Date(retry.completedAt).toLocaleString()}.`);
-  if (retry.canceledAt) parts.push(`Canceled ${new Date(retry.canceledAt).toLocaleString()}.`);
-  if (retry.cancelReason) parts.push(`Reason: ${retry.cancelReason}`);
-  if (retry.result) parts.push(`Replacement ${retry.result.replacementTargetId} is ${retry.result.replacementTargetStatus}.`);
-  if (retry.blockedReason) parts.push(`Blocked: ${retry.blockedReason}`);
-  parts.push(retry.policy.boundary);
-
-  return parts.join(' ');
 }
 
 const defaultRetryDelayOption: RetryPolicyDelayOption = {

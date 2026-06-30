@@ -750,12 +750,34 @@ Validation:
 - Spec: `specs/035-decision-backend-filtering`
 - Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M36: Cross-Surface Retry Audit Filtering - Complete
+
+Goal: keep retry histories scannable across command surfaces as recovery attempts grow.
+
+Delivered capabilities:
+
+- Shared retry audit status filter helper for all retry request statuses
+- Shared retry audit history component with all-status and per-status filtering
+- Automation Queue worker handoff retry history uses the shared audit filter
+- ESI sync retry history uses the shared audit filter
+- Opportunity worker handoff retry history uses the shared audit filter
+- People worker handoff retry history uses the shared audit filter
+- Retry summaries preserve claim, completion, cancellation, replacement, blocked reason, and policy boundary details
+- Empty filtered retry histories keep controls visible and show an explicit empty state
+- Unit coverage for retry audit filtering and summary preservation
+- Browser smoke coverage for worker handoff and ESI retry history filtered states
+- No retry scheduling, cancellation, rescheduling, worker claim, worker dispatch, retry execution, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution from filtering
+
+Validation:
+
+- Spec: `specs/036-cross-surface-retry-audit-filtering`
+- Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M36 selection after M35 review.
+Proceed to M37 selection after M36 review.
 
 Recommended next-slice candidates:
 
-- Cross-surface retry audit filtering if retry history starts to dominate operator review.
 - Backend decision pagination if filtered decision result sets are still too large for local pagination.
 - Decision saved views if commanders need reusable operational filter presets.

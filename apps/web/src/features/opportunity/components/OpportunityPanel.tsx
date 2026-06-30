@@ -14,6 +14,7 @@ import type {
 } from '@gryyk/contracts';
 import type { OpportunityIngestionProvenance, SourceReference } from '@gryyk/contracts';
 import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
+import { RetryAuditHistory } from '../../retry-audit/components/RetryAuditHistory';
 import {
   deriveOpportunityDecisionHandoff,
   deriveOpportunityQueuedWorkHandoff,
@@ -140,17 +141,11 @@ function OpportunityQueuedWorkDetailSummary({
         </p>
       ) : null}
       {detail.handoff?.retryHistory && detail.handoff.retryHistory.length > 0 ? (
-        <section aria-label="Opportunity worker handoff retry history">
-          <h3>Retry history</h3>
-          <ul>
-            {detail.handoff.retryHistory.map((retry) => (
-              <li key={retry.id}>
-                {retry.status}: {retry.reason}
-              </li>
-            ))}
-          </ul>
-          <p className="notice">Opportunity worker handoff retry history is read-only. This view does not dispatch, claim, execute, or call external services.</p>
-        </section>
+        <RetryAuditHistory
+          ariaLabel="Opportunity worker handoff retry history"
+          boundary="Opportunity worker handoff retry history is read-only. This view does not dispatch, claim, execute, or call external services."
+          retries={detail.handoff.retryHistory}
+        />
       ) : null}
       <p className="notice">{handoff.boundary}</p>
       {!detail.handoff && onPrepare ? (
