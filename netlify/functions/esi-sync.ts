@@ -6,7 +6,7 @@ import {
   scheduleRetryRequestSchema,
   startEsiSyncConsentRequestSchema
 } from '../../packages/contracts/src/index';
-import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { syncHistoryItems } from './_shared/esi-sync-history';
 import { getMongoDb } from './_shared/mongo';
 import {
@@ -227,6 +227,11 @@ export async function handler(event: FunctionEvent) {
 
     return safeErrorResponse('ESI sync path is invalid', 404);
   } catch (error) {
+    const authError = authScopeErrorResponse(error);
+    if (authError) {
+      return authError;
+    }
+
     if (error instanceof SyntaxError) {
       return safeErrorResponse('Request body must be valid JSON', 400);
     }

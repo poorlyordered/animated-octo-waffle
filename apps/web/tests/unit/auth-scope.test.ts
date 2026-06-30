@@ -1,5 +1,5 @@
 import { createSignedCookieValue, sessionCookieName } from '../../../../netlify/functions/_shared/session-cookie';
-import { getAuthScope, getSessionState } from '../../../../netlify/functions/_shared/auth-scope';
+import { AuthScopeError, getAuthScope, getSessionState } from '../../../../netlify/functions/_shared/auth-scope';
 import { readScopeEnv } from '../../../../netlify/functions/_shared/env';
 
 const env = {
@@ -11,7 +11,7 @@ function cookieHeader(value: string) {
   return { cookie: `${sessionCookieName}=${encodeURIComponent(value)}` };
 }
 
-function sessionCookie(corporationId = '123456789') {
+function sessionCookie(corporationId = '917701062') {
   return createSignedCookieValue(
     {
       characterId: '2110000001',
@@ -41,9 +41,13 @@ describe('getAuthScope', () => {
     const scope = getAuthScope({ headers: cookieHeader(sessionCookie()) }, env);
 
     expect(scope).toMatchObject({
-      corporationId: '123456789',
+      corporationId: '917701062',
       source: 'session'
     });
+  });
+
+  it('rejects signed session scope from another corporation without falling back', () => {
+    expect(() => getAuthScope({ headers: cookieHeader(sessionCookie('123456789')) }, env)).toThrow(AuthScopeError);
   });
 
   it('falls back to server-owned environment when no session exists', () => {
@@ -86,6 +90,18 @@ describe('getAuthScope', () => {
     expect(getSessionState({ headers: {} }, { EVE_SESSION_SECRET: 'test-secret' })).toEqual({
       signedIn: false,
       scopeSource: 'missing'
+    });
+  });
+
+  it('reports unauthorized state for a signed session from another corporation', () => {
+    expect(getSessionState({ headers: cookieHeader(sessionCookie('123456789')) }, env)).toEqual({
+      signedIn: false,
+      scopeSource: 'unauthorized',
+      characterId: '2110000001',
+      characterName: 'Ari Voss',
+      corporationId: '123456789',
+      corporationName: 'Session Corp',
+      reason: 'Signed EVE session is not authorized for this corporation'
     });
   });
 });

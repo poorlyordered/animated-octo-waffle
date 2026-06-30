@@ -1,6 +1,7 @@
 import type { EveSessionScope, ScopeResolutionResult, SessionStateResponse } from '../../../packages/contracts/src/index';
 import { eveSessionScopeSchema } from '../../../packages/contracts/src/index';
 import { readScopeEnv } from './env';
+import { safeErrorResponse, type FunctionResponse } from './http';
 import { isExpired, readCookie, readSessionSecret, readSignedCookieValue, sessionCookieName } from './session-cookie';
 
 export interface FunctionEvent {
@@ -17,6 +18,24 @@ export interface AuthScope {
   session?: EveSessionScope;
 }
 
+export class AuthScopeError extends Error {
+  code = 'COMMANDER_CORPORATION_UNAUTHORIZED' as const;
+  statusCode = 403;
+  publicMessage = 'Signed EVE session is not authorized for this corporation';
+
+  constructor() {
+    super('Signed EVE session corporation does not match configured command corporation');
+  }
+}
+
+export function authScopeErrorResponse(error: unknown): FunctionResponse | null {
+  if (error instanceof AuthScopeError) {
+    return safeErrorResponse(error.publicMessage, error.statusCode);
+  }
+
+  return null;
+}
+
 export function getAuthScope(event?: FunctionEvent, env: NodeJS.ProcessEnv = process.env): AuthScope {
   const resolved = resolveAuthScope(event, env);
   return resolved;
@@ -27,8 +46,13 @@ export function resolveAuthScope(
   env: NodeJS.ProcessEnv = process.env
 ): ScopeResolutionResult {
   const session = readSessionScope(event, env);
+  const fallback = readScopeEnv(env);
 
   if (session) {
+    if (session.corporationId !== fallback.corporationId) {
+      throw new AuthScopeError();
+    }
+
     return {
       corporationId: session.corporationId,
       source: 'session',
@@ -37,7 +61,7 @@ export function resolveAuthScope(
   }
 
   return {
-    corporationId: readScopeEnv(env).corporationId,
+    corporationId: fallback.corporationId,
     source: 'fallback'
   };
 }
@@ -46,6 +70,26 @@ export function getSessionState(event?: FunctionEvent, env: NodeJS.ProcessEnv = 
   const session = readSessionScope(event, env);
 
   if (session) {
+    try {
+      const fallback = readScopeEnv(env);
+      if (session.corporationId !== fallback.corporationId) {
+        return {
+          signedIn: false,
+          scopeSource: 'unauthorized',
+          characterId: session.characterId,
+          characterName: session.characterName,
+          corporationId: session.corporationId,
+          corporationName: session.corporationName,
+          reason: 'Signed EVE session is not authorized for this corporation'
+        };
+      }
+    } catch {
+      return {
+        signedIn: false,
+        scopeSource: 'missing'
+      };
+    }
+
     return {
       signedIn: true,
       scopeSource: 'session',

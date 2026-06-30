@@ -1,4 +1,4 @@
-export type SessionScopeSource = 'session' | 'fallback' | 'missing';
+export type SessionScopeSource = 'session' | 'fallback' | 'missing' | 'unauthorized';
 
 export interface EveSessionScope {
   characterId: string;
@@ -36,6 +36,15 @@ export type SessionStateResponse =
   | {
       signedIn: false;
       scopeSource: 'missing';
+    }
+  | {
+      signedIn: false;
+      scopeSource: 'unauthorized';
+      characterId: string;
+      characterName: string;
+      corporationId: string;
+      corporationName: string;
+      reason: string;
     };
 
 export interface ScopeResolutionResult {

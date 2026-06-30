@@ -3,7 +3,7 @@ import {
   createNumbersFollowUpQueueRequestSchema,
   updateNumbersFollowUpDecisionStatusRequestSchema
 } from '../../packages/contracts/src/index';
-import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { getMongoDb } from './_shared/mongo';
 import { createAutomationQueueItem, findAutomationQueueItemByDecisionAndIntent } from './_shared/automation-queue-store';
 import {
@@ -206,6 +206,11 @@ export async function handler(event: FunctionEvent) {
         'Queued work created. No worker dispatch, handoff claim, retry scheduling, EVE action, wallet action, asset action, or external execution was performed.'
     });
   } catch (error) {
+    const authError = authScopeErrorResponse(error);
+    if (authError) {
+      return authError;
+    }
+
     if (error instanceof SyntaxError) {
       return safeErrorResponse('Request body must be valid JSON', 400);
     }
