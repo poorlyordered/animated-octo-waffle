@@ -3,6 +3,9 @@ import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
 export const decisionStatuses = ['proposed', 'approved', 'delegated', 'done', 'rejected'] as const;
 export type DecisionStatus = (typeof decisionStatuses)[number];
 
+export const decisionRecordSourceFilters = ['opportunity', 'numbers', 'people'] as const;
+export type DecisionRecordSourceFilter = (typeof decisionRecordSourceFilters)[number];
+
 export interface SourceProvenanceSnapshot {
   briefId: string;
   briefCreatedAt: string;

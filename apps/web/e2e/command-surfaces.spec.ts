@@ -149,6 +149,10 @@ test('filters decision records by status and source', async ({ page }, testInfo)
   await expect(reloadedFilters.getByLabel('Page size')).toHaveValue('3');
   await expectVisibleText(page, 'Browser smoke Numbers follow-up decision.');
 
+  await reloadedFilters.getByLabel('Source').selectOption('people');
+  await expectVisibleText(page, 'No decisions match the selected filters.');
+  await expect(reloadedFilters.getByLabel('Source')).toHaveValue('people');
+
   await assertNoBrowserDiagnostics();
 });
 

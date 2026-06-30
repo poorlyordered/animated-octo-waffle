@@ -5,6 +5,7 @@ import {
   decisionListCounts,
   decisionListPageSizes,
   decisionSourceLabel,
+  decisionServerFilters,
   filterDecisionRecords,
   paginateDecisionRecords,
   readDecisionListSettings,
@@ -17,6 +18,7 @@ import {
 interface DecisionRecordListProps {
   decisions: DecisionRecord[];
   selectedDecisionId?: string;
+  onFiltersChange?: (filters: ReturnType<typeof decisionServerFilters>) => void;
   onSelect: (decision: DecisionRecord) => void;
 }
 
@@ -30,7 +32,7 @@ function initialDecisionListSettings() {
   return readDecisionListSettings(window.localStorage, decisionListSettingsStorageKey);
 }
 
-export function DecisionRecordList({ decisions, selectedDecisionId, onSelect }: DecisionRecordListProps) {
+export function DecisionRecordList({ decisions, selectedDecisionId, onFiltersChange, onSelect }: DecisionRecordListProps) {
   const [settings, setSettings] = useState(initialDecisionListSettings);
   const [page, setPage] = useState(1);
   const filteredDecisions = useMemo(
@@ -44,12 +46,17 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onSelect }: 
     () => paginateDecisionRecords(filteredDecisions, activePage, settings.pageSize),
     [activePage, filteredDecisions, settings.pageSize]
   );
+  const hasActiveFilters = settings.status !== 'all' || settings.source !== 'all';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       writeDecisionListSettings(window.localStorage, decisionListSettingsStorageKey, settings);
     }
   }, [settings]);
+
+  useEffect(() => {
+    onFiltersChange?.(decisionServerFilters({ source: settings.source, status: settings.status }));
+  }, [onFiltersChange, settings.source, settings.status]);
 
   function updateStatusFilter(status: DecisionStatusFilter) {
     setSettings((current) => ({ ...current, status }));
@@ -64,10 +71,6 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onSelect }: 
   function updatePageSize(pageSize: DecisionListPageSize) {
     setSettings((current) => ({ ...current, pageSize }));
     setPage(1);
-  }
-
-  if (decisions.length === 0) {
-    return <section className="empty-state">No decisions have been recorded yet.</section>;
   }
 
   return (
@@ -131,7 +134,9 @@ export function DecisionRecordList({ decisions, selectedDecisionId, onSelect }: 
           </select>
         </label>
       </div>
-      {filteredDecisions.length === 0 ? <p className="empty-state">No decisions match the selected filters.</p> : null}
+      {filteredDecisions.length === 0 ? (
+        <p className="empty-state">{hasActiveFilters ? 'No decisions match the selected filters.' : 'No decisions have been recorded yet.'}</p>
+      ) : null}
       <div className="decision-list">
         {pagedDecisions.items.map((decision) => (
           <button

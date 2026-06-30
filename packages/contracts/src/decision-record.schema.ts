@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { operatingLegCoverageSchema, sourceReferenceSchema } from './command-brief.schema.js';
 
 export const decisionStatusSchema = z.enum(['proposed', 'approved', 'delegated', 'done', 'rejected']);
+export const decisionRecordSourceFilterSchema = z.enum(['opportunity', 'numbers', 'people']);
 
 export const sourceProvenanceSnapshotSchema = z.object({
   briefId: z.string().min(1),

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { CreateDecisionRecordRequest, DecisionRecord, UpdateDecisionStatusRequest } from '@gryyk/contracts';
 import {
   createDecisionRecord,
   listDecisionRecords,
+  type ListDecisionRecordFilters,
   updateDecisionStatus
 } from '../services/decisionRecordClient';
 
@@ -15,6 +16,7 @@ interface DecisionRecordsState {
 
 interface UseDecisionRecordsState extends DecisionRecordsState {
   createDecision: (request: CreateDecisionRecordRequest) => Promise<DecisionRecord>;
+  loadDecisions: (filters?: ListDecisionRecordFilters) => Promise<void>;
   updateStatus: (decisionId: string, request: UpdateDecisionStatusRequest) => Promise<DecisionRecord>;
   selectDecision: (decision: DecisionRecord | null) => void;
 }
@@ -26,6 +28,32 @@ export function useDecisionRecords(): UseDecisionRecordsState {
     error: null,
     selectedDecision: null
   });
+
+  const loadDecisions = useCallback(async (filters: ListDecisionRecordFilters = {}): Promise<void> => {
+    try {
+      const { decisions } = await listDecisionRecords(filters);
+
+      setState((current) => {
+        const refreshedSelection = current.selectedDecision
+          ? decisions.find((decision) => decision.id === current.selectedDecision?.id)
+          : undefined;
+
+        return {
+          ...current,
+          decisions,
+          selectedDecision: refreshedSelection ?? decisions[0] ?? null,
+          loading: false,
+          error: null
+        };
+      });
+    } catch (error: unknown) {
+      setState((current) => ({
+        ...current,
+        loading: false,
+        error: error instanceof Error ? error.message : 'Unable to load decision records.'
+      }));
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -90,6 +118,7 @@ export function useDecisionRecords(): UseDecisionRecordsState {
   return {
     ...state,
     createDecision,
+    loadDecisions,
     updateStatus,
     selectDecision: (decision) => setState((current) => ({ ...current, selectedDecision: decision }))
   };

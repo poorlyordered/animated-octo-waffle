@@ -1,11 +1,20 @@
+import { useCallback } from 'react';
 import { DecisionRecordDetail } from '../features/decision-records/components/DecisionRecordDetail';
 import { DecisionRecordList } from '../features/decision-records/components/DecisionRecordList';
+import type { DecisionServerFilters } from '../features/decision-records/services/decisionListFilters';
 import { useDecisionRecords } from '../features/decision-records/state/useDecisionRecords';
 import { useAutomationQueue } from '../features/automation-queue/state/useAutomationQueue';
 
 export function DecisionRecordsRoute() {
   const decisionRecords = useDecisionRecords();
   const automationQueue = useAutomationQueue();
+  const { loadDecisions } = decisionRecords;
+  const loadFilteredDecisions = useCallback(
+    (filters: DecisionServerFilters) => {
+      void loadDecisions(filters);
+    },
+    [loadDecisions]
+  );
 
   if (decisionRecords.loading) {
     return <main className="command-brief">Loading decision records...</main>;
@@ -26,6 +35,7 @@ export function DecisionRecordsRoute() {
       <DecisionRecordList
         decisions={decisionRecords.decisions}
         selectedDecisionId={decisionRecords.selectedDecision?.id}
+        onFiltersChange={loadFilteredDecisions}
         onSelect={decisionRecords.selectDecision}
       />
       <DecisionRecordDetail

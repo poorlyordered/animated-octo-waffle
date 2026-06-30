@@ -1,5 +1,6 @@
 import {
   createDecisionRecordRequestSchema,
+  decisionRecordSourceFilterSchema,
   decisionStatusSchema,
   updateDecisionStatusRequestSchema
 } from '../../packages/contracts/src/index';
@@ -31,7 +32,11 @@ export async function handler(event: FunctionEvent) {
       const status = event.queryStringParameters?.status
         ? decisionStatusSchema.parse(event.queryStringParameters.status)
         : undefined;
+      const source = event.queryStringParameters?.source
+        ? decisionRecordSourceFilterSchema.parse(event.queryStringParameters.source)
+        : undefined;
       const decisions = await listDecisionRecords(db, corporationId, {
+        source,
         sourceBriefId: event.queryStringParameters?.sourceBriefId,
         status
       });

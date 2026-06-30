@@ -728,12 +728,34 @@ Validation:
 - Spec: `specs/034-people-handoff-retry-controls`
 - Local validation covered targeted People Jest tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M35: Decision Backend Filtering - Complete
+
+Goal: apply Decision Records status and source filters through the API while preserving browser-local pagination ergonomics.
+
+Delivered capabilities:
+
+- Bounded decision source filter contract for Opportunity, Numbers, and People
+- Decision-record API query parsing for status and source filters
+- Mongo query construction for status, source, and existing source-brief filters
+- Opportunity filtering includes legacy brief decisions without source context
+- Decision-record client query parameter support
+- Decision Records route reloads filtered records when status/source filters change
+- Existing page-size persistence and pagination remain browser-local
+- Browser fixtures honor decision-record query filters for smoke validation
+- Unit coverage for browser-to-server filter mapping and query construction
+- No approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/035-decision-backend-filtering`
+- Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M35 selection after M34 review.
+Proceed to M36 selection after M35 review.
 
 Recommended next-slice candidates:
 
-- Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
 - Cross-surface retry audit filtering if retry history starts to dominate operator review.
-- Backend decision filtering if local pagination is not enough for real decision volume.
+- Backend decision pagination if filtered decision result sets are still too large for local pagination.
+- Decision saved views if commanders need reusable operational filter presets.

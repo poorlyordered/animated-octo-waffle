@@ -6,6 +6,7 @@ import type {
   NumbersFollowUpOrigin,
   NumbersSnapshot,
   NumbersFollowUpCandidate,
+  DecisionRecordSourceFilter,
   DecisionStatus,
   UpdateDecisionStatusRequest
 } from '../../../packages/contracts/src/index';
@@ -26,8 +27,46 @@ function idFilter(id: string, corporationId: string) {
 }
 
 export interface ListDecisionFilters {
+  source?: DecisionRecordSourceFilter;
   sourceBriefId?: string;
   status?: DecisionStatus;
+}
+
+export function buildDecisionRecordListQuery(corporationId: string, filters: ListDecisionFilters): Record<string, unknown> {
+  const query: Record<string, unknown> = { corporationId };
+  const clauses: Record<string, unknown>[] = [];
+
+  if (filters.sourceBriefId) {
+    clauses.push({ $or: [{ sourceBriefId: filters.sourceBriefId }, { researchBriefId: filters.sourceBriefId }] });
+  }
+
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  if (filters.source === 'numbers') {
+    query['sourceContext.sourceType'] = 'numbers_follow_up';
+  }
+
+  if (filters.source === 'people') {
+    query['sourceContext.sourceType'] = 'people_follow_up';
+  }
+
+  if (filters.source === 'opportunity') {
+    clauses.push({
+      $or: [
+        { sourceContext: { $exists: false } },
+        { 'sourceContext.sourceType': { $exists: false } },
+        { 'sourceContext.sourceType': 'research_brief' }
+      ]
+    });
+  }
+
+  if (clauses.length > 0) {
+    query.$and = clauses;
+  }
+
+  return query;
 }
 
 export async function listDecisionRecords(
@@ -35,16 +74,7 @@ export async function listDecisionRecords(
   corporationId: string,
   filters: ListDecisionFilters
 ): Promise<DecisionRecord[]> {
-  const query: Record<string, unknown> = { corporationId };
-
-  if (filters.sourceBriefId) {
-    query.$or = [{ sourceBriefId: filters.sourceBriefId }, { researchBriefId: filters.sourceBriefId }];
-  }
-
-  if (filters.status) {
-    query.status = filters.status;
-  }
-
+  const query = buildDecisionRecordListQuery(corporationId, filters);
   const documents = await db.collection(collectionName).find(query).sort({ updatedAt: -1, timestamp: -1 }).toArray();
   return documents.map((document) => normalizeDecisionRecordDocument(document as DecisionDocument));
 }
