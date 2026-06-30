@@ -193,6 +193,10 @@ test('renders people surface with member and leadership follow-up content', asyn
   await expectVisibleText(page, 'Browser Smoke Pilot');
   await expectVisibleText(page, 'Latest People profiles are linked to completed browser ingestion history.');
   await expectVisibleText(page, 'This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.');
+  await page.getByRole('button', { name: 'Prepare ingestion' }).click();
+  await expectVisibleText(page, 'People ingestion prepared for worker pickup.');
+  await expectVisibleText(page, 'queued');
+  await expectVisibleText(page, 'No worker was dispatched, no ESI data was fetched, and no EVE role/access or external-service change occurred.');
   await expectVisibleText(page, 'Browser smoke member profile renders leadership context.');
   await expectVisibleText(page, 'Browser smoke leadership follow-up.');
   const followUps = page.getByLabel('Leadership follow-ups');

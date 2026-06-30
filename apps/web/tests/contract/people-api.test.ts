@@ -6,8 +6,15 @@ import {
   leadershipFollowUpResponseSchema,
   memberProfileDetailResponseSchema,
   memberProfileListResponseSchema,
+  peopleIngestionWorkerClaimRequestSchema,
+  peopleIngestionWorkerCompleteRequestSchema,
+  peopleIngestionWorkerFailRequestSchema,
+  peopleIngestionWorkerListResponseSchema,
+  peopleIngestionWorkerResponseSchema,
   peopleFollowUpDecisionResponseSchema,
   peopleFollowUpQueueResponseSchema,
+  preparePeopleIngestionRequestSchema,
+  preparePeopleIngestionResponseSchema,
   updatePeopleFollowUpDecisionStatusRequestSchema
 } from '@gryyk/contracts';
 import {
@@ -19,6 +26,7 @@ import {
   peopleIngestionProvenance,
   peopleFollowUpDecisionResponse,
   peopleFollowUpQueueResponse,
+  preparedPeopleIngestionResponse,
   playerImpactingFollowUp
 } from '../fixtures/people';
 
@@ -80,5 +88,30 @@ describe('People API contract', () => {
       }).title
     ).toBe('Prepare People plan');
     expect(() => updatePeopleFollowUpDecisionStatusRequestSchema.parse({ status: 'delegated' })).toThrow();
+  });
+
+  it('accepts People ingestion prepare and worker payloads', () => {
+    expect(preparePeopleIngestionRequestSchema.parse({ reason: 'Refresh People context.' }).reason).toContain('Refresh');
+    expect(preparePeopleIngestionResponseSchema.parse(preparedPeopleIngestionResponse).request.status).toBe('queued');
+    expect(peopleIngestionWorkerClaimRequestSchema.parse({ workerId: 'people-worker-1' }).workerId).toBe('people-worker-1');
+    expect(
+      peopleIngestionWorkerCompleteRequestSchema.parse({
+        workerId: 'people-worker-1',
+        sourceCount: 4,
+        sectionStatuses: preparedPeopleIngestionResponse.request.sectionStatuses
+      }).sourceCount
+    ).toBe(4);
+    expect(peopleIngestionWorkerFailRequestSchema.parse({ workerId: 'people-worker-1', reason: 'ESI unavailable.' }).reason).toContain(
+      'ESI'
+    );
+    const workerResponse = {
+      request: {
+        ...preparedPeopleIngestionResponse.request,
+        corporationId: '917701062',
+        requestedBy: 'Commander'
+      }
+    };
+    expect(peopleIngestionWorkerResponseSchema.parse(workerResponse).request.corporationId).toBe('917701062');
+    expect(peopleIngestionWorkerListResponseSchema.parse({ requests: [workerResponse.request] }).requests[0].status).toBe('queued');
   });
 });

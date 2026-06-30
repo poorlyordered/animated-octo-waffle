@@ -69,6 +69,30 @@ export interface PeopleIngestionHistoryItem {
   boundary: string;
 }
 
+export interface PreparePeopleIngestionRequest {
+  reason?: string;
+}
+
+export interface PeopleIngestionWorkerClaimRequest {
+  workerId: string;
+}
+
+export interface PeopleIngestionWorkerCompleteRequest {
+  workerId: string;
+  sourceCount: number;
+  sectionStatuses: PeopleIngestionSectionStatus[];
+}
+
+export interface PeopleIngestionWorkerFailRequest {
+  workerId: string;
+  reason: string;
+}
+
+export interface PeopleIngestionWorkerRequestSummary extends PeopleIngestionHistoryItem {
+  corporationId: string;
+  requestedBy: string;
+}
+
 export interface PeopleIngestionProvenance {
   mode: PeopleIngestionMode;
   sourceCount: number;
@@ -185,6 +209,21 @@ export interface CreatePeopleFollowUpQueueRequest {
 export interface MemberProfileListResponse {
   members: MemberProfile[];
   ingestionProvenance?: PeopleIngestionProvenance;
+}
+
+export interface PreparePeopleIngestionResponse {
+  request: PeopleIngestionHistoryItem;
+  provenance: PeopleIngestionProvenance;
+  duplicate?: boolean;
+  message: string;
+}
+
+export interface PeopleIngestionWorkerListResponse {
+  requests: PeopleIngestionWorkerRequestSummary[];
+}
+
+export interface PeopleIngestionWorkerResponse {
+  request: PeopleIngestionWorkerRequestSummary;
 }
 
 export interface MemberProfileDetailResponse {

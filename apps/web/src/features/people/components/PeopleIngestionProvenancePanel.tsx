@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import type { PeopleIngestionProvenance, PeopleIngestionSectionStatus } from '@gryyk/contracts';
 
 interface PeopleIngestionProvenancePanelProps {
   provenance: PeopleIngestionProvenance | null;
+  onPrepareIngestion: () => Promise<{ message: string }>;
 }
 
 function statusLabel(status: PeopleIngestionSectionStatus): string {
@@ -20,14 +22,34 @@ function modeLabel(mode: PeopleIngestionProvenance['mode']): string {
   return 'unavailable';
 }
 
-export function PeopleIngestionProvenancePanel({ provenance }: PeopleIngestionProvenancePanelProps) {
+export function PeopleIngestionProvenancePanel({ onPrepareIngestion, provenance }: PeopleIngestionProvenancePanelProps) {
+  const [message, setMessage] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
+
   if (!provenance) {
     return null;
   }
 
+  async function prepare() {
+    setPreparing(true);
+    try {
+      const response = await onPrepareIngestion();
+      setMessage(response.message);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to prepare People ingestion.');
+    } finally {
+      setPreparing(false);
+    }
+  }
+
   return (
     <section aria-label="People ingestion provenance">
-      <h2>Ingestion provenance</h2>
+      <div className="section-heading">
+        <h2>Ingestion provenance</h2>
+        <button type="button" onClick={() => void prepare()} disabled={preparing}>
+          {preparing ? 'Preparing...' : 'Prepare ingestion'}
+        </button>
+      </div>
       <div className="metadata-grid">
         <div className="metadata-item">
           <span>Mode</span>
@@ -46,6 +68,7 @@ export function PeopleIngestionProvenancePanel({ provenance }: PeopleIngestionPr
         <p className="eyebrow">{modeLabel(provenance.mode)}</p>
         <h3>{provenance.message}</h3>
         <p>{provenance.boundary}</p>
+        {message ? <p>{message}</p> : null}
         <div className="coverage-grid">
           {provenance.sectionStatuses.map((status) => (
             <span className="status-pill" key={status.key}>

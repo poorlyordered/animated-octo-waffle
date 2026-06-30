@@ -66,6 +66,30 @@ export const peopleIngestionHistoryItemSchema = z.object({
   boundary: z.string().min(1)
 });
 
+export const preparePeopleIngestionRequestSchema = z.object({
+  reason: z.string().min(1).max(500).optional()
+});
+
+export const peopleIngestionWorkerClaimRequestSchema = z.object({
+  workerId: z.string().min(1).max(200)
+});
+
+export const peopleIngestionWorkerCompleteRequestSchema = z.object({
+  workerId: z.string().min(1).max(200),
+  sourceCount: z.number().int().nonnegative(),
+  sectionStatuses: z.array(peopleIngestionSectionStatusSchema).min(1)
+});
+
+export const peopleIngestionWorkerFailRequestSchema = z.object({
+  workerId: z.string().min(1).max(200),
+  reason: z.string().min(1).max(500)
+});
+
+export const peopleIngestionWorkerRequestSummarySchema = peopleIngestionHistoryItemSchema.extend({
+  corporationId: z.string().min(1),
+  requestedBy: z.string().min(1)
+});
+
 export const peopleIngestionProvenanceSchema = z.object({
   mode: peopleIngestionModeSchema,
   sourceCount: z.number().int().nonnegative(),
@@ -176,6 +200,21 @@ export const createPeopleFollowUpQueueRequestSchema = z.object({
 export const memberProfileListResponseSchema = z.object({
   members: z.array(memberProfileSchema),
   ingestionProvenance: peopleIngestionProvenanceSchema.optional()
+});
+
+export const preparePeopleIngestionResponseSchema = z.object({
+  request: peopleIngestionHistoryItemSchema,
+  provenance: peopleIngestionProvenanceSchema,
+  duplicate: z.boolean().optional(),
+  message: z.string().min(1)
+});
+
+export const peopleIngestionWorkerListResponseSchema = z.object({
+  requests: z.array(peopleIngestionWorkerRequestSummarySchema)
+});
+
+export const peopleIngestionWorkerResponseSchema = z.object({
+  request: peopleIngestionWorkerRequestSummarySchema
 });
 
 export const memberProfileDetailResponseSchema = z.object({

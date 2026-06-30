@@ -8,6 +8,8 @@ import {
   memberProfileListResponseSchema,
   peopleFollowUpDecisionResponseSchema,
   peopleFollowUpQueueResponseSchema,
+  preparePeopleIngestionRequestSchema,
+  preparePeopleIngestionResponseSchema,
   updatePeopleFollowUpDecisionStatusRequestSchema,
   type CreateLeadershipFollowUpRequest,
   type CreatePeopleFollowUpDecisionRequest,
@@ -20,6 +22,8 @@ import {
   type MemberProfileListResponse,
   type PeopleFollowUpDecisionResponse,
   type PeopleFollowUpQueueResponse,
+  type PreparePeopleIngestionRequest,
+  type PreparePeopleIngestionResponse,
   type UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
 
@@ -50,6 +54,20 @@ export async function listMembers(filters: {
 export async function getMember(id: string): Promise<MemberProfileDetailResponse> {
   const response = await fetch(`/api/people/members/${id}`);
   return parseJson(response, memberProfileDetailResponseSchema);
+}
+
+export async function preparePeopleIngestion(
+  request: PreparePeopleIngestionRequest = {}
+): Promise<PreparePeopleIngestionResponse> {
+  const response = await fetch('/api/people/ingestion/prepare', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(preparePeopleIngestionRequestSchema.parse(request))
+  });
+
+  return parseJson(response, preparePeopleIngestionResponseSchema);
 }
 
 export async function listFollowUps(filters: {

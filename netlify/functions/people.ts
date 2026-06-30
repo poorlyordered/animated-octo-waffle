@@ -4,11 +4,18 @@ import {
   createPeopleFollowUpQueueRequestSchema,
   followUpPrioritySchema,
   followUpStatusSchema,
+  preparePeopleIngestionRequestSchema,
   updatePeopleFollowUpDecisionStatusRequestSchema
 } from '../../packages/contracts/src/index';
 import { authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import { getMongoDb } from './_shared/mongo';
+import {
+  aggregatePeopleIngestionSectionStatuses,
+  buildPeopleIngestionProvenance,
+  createOrFindQueuedPeopleIngestionRequest,
+  peopleIngestionPrepareSummary
+} from './_shared/people-ingestion-history';
 import {
   createDecisionRecordFromPeopleFollowUp,
   createLeadershipFollowUp,
@@ -64,9 +71,37 @@ function booleanFilter(value: string | undefined): boolean | undefined {
 export async function handler(event: FunctionEvent) {
   try {
     const method = event.httpMethod ?? 'GET';
-    const { corporationId } = getAuthScope(event);
+    const scope = getAuthScope(event);
+    const { corporationId } = scope;
     const db = await getMongoDb();
     const path = event.path ?? '';
+
+    if (method === 'POST' && path.includes('/people/ingestion/prepare')) {
+      const body = parseJsonBody(event);
+      const request = preparePeopleIngestionRequestSchema.parse(body);
+      const members = await listMemberProfiles(db, corporationId, {});
+      const fallbackSections = aggregatePeopleIngestionSectionStatuses(members);
+      const result = await createOrFindQueuedPeopleIngestionRequest(
+        db,
+        corporationId,
+        scope.session?.characterName ?? `fallback:${corporationId}`,
+        request.reason
+      );
+      const preparedRequest = peopleIngestionPrepareSummary(result.request, fallbackSections);
+      const history = [preparedRequest, ...(await getPeopleIngestionProvenance(db, corporationId, members)).history].filter(
+        (item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index
+      );
+      const provenance = buildPeopleIngestionProvenance(members, history);
+
+      return jsonResponse(result.duplicate ? 200 : 201, {
+        request: preparedRequest,
+        provenance,
+        duplicate: result.duplicate || undefined,
+        message: result.duplicate
+          ? 'Existing active People ingestion request surfaced. No duplicate was created.'
+          : 'People ingestion prepared for worker pickup. No worker was dispatched, no ESI data was fetched, and no EVE role/access or external-service change occurred.'
+      });
+    }
 
     if (method === 'GET' && path.includes('/people/members')) {
       const id = peoplePathId(event, 'members');
