@@ -18,6 +18,7 @@ import {
   blockedHandoff,
   claimedHandoff,
   completedHandoff,
+  failedHandoff,
   failedHandoffWithCompletedRetry,
   readyHandoff
 } from '../../tests/fixtures/workerHandoff';
@@ -189,6 +190,13 @@ export const commandSurfaceFixtures = {
         ...failedHandoffWithCompletedRetry,
         id: 'handoff-browser-opportunity-failed',
         queueItemId: 'queue-browser-opportunity',
+        retry: undefined,
+        retryHistory: []
+      },
+      {
+        ...failedHandoff,
+        id: 'handoff-browser-people-failed',
+        queueItemId: 'queue-people-follow-up',
         retry: undefined,
         retryHistory: []
       }

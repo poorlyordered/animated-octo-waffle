@@ -3,7 +3,12 @@ import { PeopleFollowUpList } from '../features/people/components/PeopleFollowUp
 import { PeopleIngestionProvenancePanel } from '../features/people/components/PeopleIngestionProvenancePanel';
 import { PeopleMemberDetail } from '../features/people/components/PeopleMemberDetail';
 import { PeopleMemberList } from '../features/people/components/PeopleMemberList';
-import { prepareWorkerHandoff } from '../features/automation-queue/services/workerHandoffClient';
+import {
+  cancelWorkerHandoffRetry,
+  prepareWorkerHandoff,
+  rescheduleWorkerHandoffRetry,
+  scheduleWorkerHandoffRetry
+} from '../features/automation-queue/services/workerHandoffClient';
 import { usePeople } from '../features/people/state/usePeople';
 
 export function PeopleRoute() {
@@ -42,12 +47,15 @@ export function PeopleRoute() {
         followUps={people.followUps}
         handoffByFollowUpId={people.handoffByFollowUpId}
         statusFilter={people.followUpStatusFilter}
+        onCancelHandoffRetry={async (handoffId, reason) => cancelWorkerHandoffRetry(handoffId, { reason })}
         onCreateQueue={people.createFollowUpQueue}
         onPrepareWorkerHandoff={async (queueItemId) => {
           const { handoff } = await prepareWorkerHandoff(queueItemId);
           return handoff;
         }}
         onRecordDecision={people.recordFollowUpDecision}
+        onRescheduleHandoffRetry={async (handoffId, reason, notBefore) => rescheduleWorkerHandoffRetry(handoffId, { reason, notBefore })}
+        onScheduleHandoffRetry={async (handoffId, reason) => scheduleWorkerHandoffRetry(handoffId, { reason })}
         onStatusFilterChange={people.setFollowUpStatusFilter}
         onUpdateDecisionStatus={people.updateFollowUpDecisionStatus}
       />

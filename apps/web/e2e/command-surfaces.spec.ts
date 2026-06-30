@@ -71,7 +71,7 @@ test('records an Opportunity decision handoff without queueing or execution', as
   await expectVisibleText(page, 'Failed: Source data unavailable.');
   await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Schedule handoff retry' }).click();
   await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
-  await expectVisibleText(page, 'Retry scheduled: Commander approved retry scheduling for failed worker handoff.');
+  await expectVisibleText(page, 'Retry scheduled: Commander approved retry scheduling for failed Opportunity worker handoff.');
   await page.getByLabel('Opportunity queued work detail').getByRole('button', { name: 'Reschedule handoff retry' }).click();
   await expectVisibleText(page, 'Retry status: scheduled. Not before:');
   await page.getByLabel('Opportunity worker handoff retry policy controls').getByRole('button', { name: 'Defer 6 hours' }).click();
@@ -193,7 +193,22 @@ test('renders people surface with member and leadership follow-up content', asyn
     .getByRole('button', { name: 'Prepare worker handoff' })
     .click();
   await expectVisibleText(page, 'People worker handoff prepared.');
-  await expectVisibleText(page, 'Worker handoff handoff-browser-ready is ready for People queued work queue-people-follow-up.');
+  await expectVisibleText(page, 'Worker handoff handoff-browser-people-failed is failed for People queued work queue-people-follow-up.');
   await expectVisibleText(page, 'People worker handoff preparation creates a durable record only.');
+  await expectVisibleText(page, 'Failed: Source data unavailable.');
+  await followUps.getByLabel('People queued work detail for Browser Smoke Pilot').first().getByRole('button', { name: 'Schedule handoff retry' }).click();
+  await expectVisibleText(page, 'People handoff retry scheduled.');
+  await expectVisibleText(page, 'Retry scheduled: Commander approved retry scheduling for failed People worker handoff.');
+  await followUps.getByLabel('People queued work detail for Browser Smoke Pilot').first().getByRole('button', { name: 'Reschedule handoff retry' }).click();
+  await expectVisibleText(page, 'People handoff retry rescheduled.');
+  await followUps
+    .getByLabel('People worker handoff retry policy controls for Browser Smoke Pilot')
+    .first()
+    .getByRole('button', { name: 'Defer 6 hours' })
+    .click();
+  await expectVisibleText(page, 'Commander applied retry policy control "Defer 6 hours" for scheduled People worker handoff retry.');
+  await followUps.getByLabel('People queued work detail for Browser Smoke Pilot').first().getByRole('button', { name: 'Cancel handoff retry' }).click();
+  await expectVisibleText(page, 'People handoff retry canceled.');
+  await expectVisibleText(page, 'Retry canceled');
   await assertNoBrowserDiagnostics();
 });

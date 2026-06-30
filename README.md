@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: People Worker Handoff in progress on `033-people-worker-handoff`.
+Current phase: People Handoff Retry Controls ready for review on `034-people-handoff-retry-controls`.
 
 ## Local Development
 
@@ -102,6 +102,8 @@ M18 adds browser-safe People ingestion provenance to the member list surface. Th
 M32 lets commanders record proposed decisions from People leadership follow-ups, approve or reject those People-origin decisions, and create queued planning work only after approval. Decision approval and queue creation remain separate commander actions. These flows do not dispatch workers, prepare handoffs, schedule retries, fetch ESI, write to EVE, change roles/access/standings, move assets/wallets/contracts, or execute external services.
 
 M33 lets commanders prepare durable worker handoffs from approved People queued work without leaving the People surface. The browser shows queue item state, handoff id/status after preparation, and no-execution boundary language. This flow does not dispatch workers, claim work, schedule retries, execute work, fetch ESI, write to EVE, change roles/access/standings, move assets/wallets/contracts, or call external services.
+
+M34 lets commanders schedule, reschedule, apply retry delay policy, and cancel retries for failed People worker handoffs without leaving the People surface. The browser shows retry status, retry history, and no-execution boundary language while reusing the existing worker handoff retry APIs. This flow does not dispatch workers, claim handoffs, execute retries, fetch ESI, write to EVE, change roles/access/standings, move assets/wallets/contracts, or call external services.
 
 ## ESI Token Vault Sync
 

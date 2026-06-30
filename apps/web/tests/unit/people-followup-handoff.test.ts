@@ -6,7 +6,7 @@ import {
   peopleFollowUpDecision,
   peopleFollowUpQueueItem
 } from '../fixtures/people';
-import { readyHandoff } from '../fixtures/workerHandoff';
+import { failedHandoffWithCompletedRetry, readyHandoff } from '../fixtures/workerHandoff';
 
 describe('People follow-up handoff rules', () => {
   it('marks proposed People decisions as approval required and queue blocked', () => {
@@ -40,6 +40,12 @@ describe('People follow-up handoff rules', () => {
     expect(readyHandoff.status).toBe('ready');
     expect(readyHandoff.queueItemId).toBeTruthy();
     expect(JSON.stringify(readyHandoff)).not.toContain('executeNow');
+  });
+
+  it('uses existing retry metadata for failed People handoffs', () => {
+    expect(failedHandoffWithCompletedRetry.status).toBe('failed');
+    expect(failedHandoffWithCompletedRetry.retryHistory?.[0].status).toBe('completed');
+    expect(failedHandoffWithCompletedRetry.retry?.policy.delayOptions.map((option) => option.label)).toContain('Defer 6 hours');
   });
 
   it('rejects browser-controlled execution and handoff fields', () => {
