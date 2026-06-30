@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Operations Health Surface ready for review on `047-operations-health-surface`.
+Current phase: Live Read Consent Expansion ready for review on `048-live-read-consent-expansion`.
 
 ## Local Development
 
@@ -135,6 +135,8 @@ M37 lets commanders page Decision Records through the API after applying server-
 M12 adds explicit-consent ESI token vaulting for future live read ingestion. The commander can inspect vault status, start read-sync consent, revoke consent, and prepare a Numbers sync request from an active vault.
 
 Vault token material is sealed server-side before persistence in `esi_token_vaults`. Prepared read-sync records are stored in `esi_sync_requests` with queued status. This slice does not fetch ESI data, refresh tokens in workers, dispatch workers, schedule retries, write to EVE, move wallets/assets/contracts, change roles, or execute external-service actions in request paths.
+
+M48 expands explicit read-consent planning to Numbers, People, and Opportunity read-sync domains. The vault surface can prepare duplicate-safe queued sync requests for each domain when scopes are available. People and Opportunity sync records are planning-only in this slice: the existing ESI sync worker remains restricted to Numbers execution, and no People/Opportunity ESI fetch, worker dispatch, EVE write, role/access/standing mutation, wallet/asset/contract mutation, or external-service mutation occurs.
 
 M13 adds a trusted worker path for prepared Numbers sync requests. Worker-authenticated requests can list queued sync work, claim one request, run read-only ESI ingestion, write a processed `numbers_snapshots` record, and mark the sync request completed or failed with safe metadata. Raw ESI payloads and token material are not returned to the browser or persisted as command-surface data.
 

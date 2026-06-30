@@ -2,6 +2,7 @@ import {
   esiSyncBlockedResponseSchema,
   esiSyncStatusResponseSchema,
   prepareEsiSyncResponseSchema,
+  prepareEsiSyncRequestSchema,
   revokeEsiVaultResponseSchema,
   scheduleRetryResponseSchema,
   startEsiSyncConsentResponseSchema
@@ -43,8 +44,22 @@ describe('ESI sync API contract', () => {
   });
 
   it('accepts prepare sync success and duplicate responses', () => {
+    expect(prepareEsiSyncRequestSchema.parse({ domain: 'people' })).toEqual({ domain: 'people' });
+    expect(prepareEsiSyncRequestSchema.parse({ domain: 'opportunity' })).toEqual({ domain: 'opportunity' });
     expect(prepareEsiSyncResponseSchema.parse(prepareEsiSyncResponse).duplicate).toBe(false);
     expect(prepareEsiSyncResponseSchema.parse(duplicatePrepareEsiSyncResponse).duplicate).toBe(true);
+  });
+
+  it('accepts expanded People and Opportunity read-sync domains', () => {
+    const parsed = esiSyncStatusResponseSchema.parse(activeEsiSyncStatus);
+
+    expect(parsed.domains.map((domain) => domain.domain)).toEqual(['numbers', 'people', 'opportunity']);
+    expect(parsed.domains.find((domain) => domain.domain === 'people')?.requiredScopes).toContain(
+      'esi-corporations.read_corporation_membership.v1'
+    );
+    expect(parsed.domains.find((domain) => domain.domain === 'opportunity')?.requiredScopes).toContain(
+      'esi-corporations.read_structures.v1'
+    );
   });
 
   it('accepts scheduled ESI sync retry responses', () => {

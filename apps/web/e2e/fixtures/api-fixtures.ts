@@ -125,7 +125,15 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     }
 
     if (url.pathname.endsWith('/prepare')) {
-      const response = preparedOnce ? commandSurfaceFixtures.esiSync.duplicatePrepare : commandSurfaceFixtures.esiSync.prepare;
+      const body = route.request().postDataJSON() as { domain?: string } | null;
+      const response =
+        body?.domain === 'people'
+          ? commandSurfaceFixtures.esiSync.preparePeople
+          : body?.domain === 'opportunity'
+            ? commandSurfaceFixtures.esiSync.prepareOpportunity
+            : preparedOnce
+              ? commandSurfaceFixtures.esiSync.duplicatePrepare
+              : commandSurfaceFixtures.esiSync.prepare;
       preparedOnce = true;
       return json(route, response);
     }

@@ -49,6 +49,8 @@ import {
   duplicatePrepareEsiSyncResponse,
   missingEsiSyncStatus,
   prepareEsiSyncResponse,
+  prepareOpportunityEsiSyncResponse,
+  preparePeopleEsiSyncResponse,
   revokeEsiVaultResponse,
   startEsiSyncConsentResponse
 } from '../../tests/fixtures/esiSync';
@@ -262,6 +264,8 @@ export const commandSurfaceFixtures = {
     startConsent: startEsiSyncConsentResponse,
     revoke: revokeEsiVaultResponse,
     prepare: prepareEsiSyncResponse,
+    preparePeople: preparePeopleEsiSyncResponse,
+    prepareOpportunity: prepareOpportunityEsiSyncResponse,
     duplicatePrepare: duplicatePrepareEsiSyncResponse
   },
   retries: {

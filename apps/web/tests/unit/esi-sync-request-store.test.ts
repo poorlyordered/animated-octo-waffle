@@ -60,16 +60,30 @@ const queuedSync = {
   updatedAt: '2026-06-02T12:45:00.000Z'
 };
 
+const queuedPeopleSync = {
+  ...queuedSync,
+  id: 'sync-people',
+  domain: 'people',
+  requiredScopes: ['esi-corporations.read_corporation_membership.v1']
+};
+
 describe('ESI sync request store worker transitions', () => {
   it('lists queued sync requests by domain', async () => {
-    const { db } = createDb([queuedSync, { ...queuedSync, id: 'sync-2', status: 'completed' }]);
+    const { db } = createDb([queuedSync, queuedPeopleSync, { ...queuedSync, id: 'sync-2', status: 'completed' }]);
 
     const ready = await listQueuedSyncRequests(db, 'numbers');
+    const peopleReady = await listQueuedSyncRequests(db, 'people');
 
     expect(ready).toHaveLength(1);
+    expect(peopleReady).toHaveLength(1);
     expect(workerSyncRequestSummary(ready[0])).toMatchObject({
       id: 'sync-1',
       domain: 'numbers',
+      status: 'queued'
+    });
+    expect(workerSyncRequestSummary(peopleReady[0])).toMatchObject({
+      id: 'sync-people',
+      domain: 'people',
       status: 'queued'
     });
   });

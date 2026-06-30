@@ -14,6 +14,9 @@ test('shows active ESI vault status and prepares queued read sync', async ({ pag
 
   await expectHeading(page, 'ESI token vault');
   await expectVisibleText(page, 'Vaulted consent can prepare read-only sync requests.');
+  await expectVisibleText(page, 'Numbers');
+  await expectVisibleText(page, 'People');
+  await expectVisibleText(page, 'Opportunity');
   await expectVisibleText(page, 'Recent sync history');
   await expectVisibleText(page, 'numbers sync: completed');
   await expectVisibleText(page, 'Failed: ESI market endpoint returned a safe fixture failure.');
@@ -41,9 +44,13 @@ test('shows active ESI vault status and prepares queued read sync', async ({ pag
   await expectVisibleText(page, 'Retry scheduled only. No worker was dispatched and no execution occurred.');
   await page.getByLabel('ESI sync history').getByRole('button', { name: 'Cancel retry' }).first().click();
   await expectVisibleText(page, 'Retry canceled by commander. No worker was dispatched and no execution occurred.');
-  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).click();
+  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).first().click();
   await expectVisibleText(page, 'Queued for future read-only worker sync. No ESI data was fetched and no worker was dispatched.');
   await expectVisibleText(page, 'Sync status: queued.');
+  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).nth(1).click();
+  await expectVisibleText(page, 'Queued for future read-only People sync. No ESI data was fetched and no worker was dispatched.');
+  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).nth(2).click();
+  await expectVisibleText(page, 'Queued for future read-only Opportunity sync. No ESI data was fetched and no worker was dispatched.');
   await assertNoBrowserDiagnostics();
 });
 
@@ -52,8 +59,8 @@ test('surfaces duplicate sync requests and revocation boundaries', async ({ page
 
   await page.goto('/');
 
-  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).click();
-  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).click();
+  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).first().click();
+  await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).first().click();
   await expectVisibleText(page, 'Existing queued sync request surfaced. No duplicate was created.');
 
   await page.getByLabel('ESI consent controls').getByRole('button', { name: 'Revoke consent' }).click();
