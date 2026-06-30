@@ -117,7 +117,7 @@ export async function handler(event: FunctionEvent) {
           : safeErrorResponse('Only scheduled worker handoff retries can be rescheduled', 409);
       }
 
-      assertWorkerCallbackAuthorized(event);
+      assertWorkerCallbackAuthorized(event, 'worker_handoff');
       if (actionPath.action === 'claim') {
         const request = workerClaimRequestSchema.parse(body);
         const handoff = await claimWorkerHandoff(db, corporationId, actionPath.id, request.workerId);
@@ -174,7 +174,7 @@ export async function handler(event: FunctionEvent) {
       ? workerHandoffStatusSchema.parse(event.queryStringParameters.status)
       : undefined;
     if (status === 'ready' && hasWorkerCallbackSecret(event)) {
-      assertWorkerCallbackAuthorized(event);
+      assertWorkerCallbackAuthorized(event, 'worker_handoff');
     }
     const handoffs = await listWorkerHandoffs(db, corporationId, {
       status,

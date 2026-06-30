@@ -7,9 +7,10 @@ Start here:
 - Constitution: `.specify/memory/constitution.md`
 - Roadmap: `docs/roadmap.md`
 - Production readiness: `docs/production-readiness.md`
+- Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Opportunity Ingestion Expansion ready for review on `043-opportunity-ingestion-expansion`.
+Current phase: Worker Policy Hardening ready for review on `044-worker-policy-hardening`.
 
 ## Local Development
 
@@ -43,6 +44,16 @@ Required Netlify/server environment variables:
 - `MONGODB_DB`
 - `EVEONLINE_CORPORATION_ID`
 - `WORKER_CALLBACK_SECRET`
+
+Optional class-specific worker callback secrets:
+
+- `WORKER_HANDOFF_CALLBACK_SECRET`
+- `RETRY_WORKER_CALLBACK_SECRET`
+- `ESI_SYNC_WORKER_CALLBACK_SECRET`
+- `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`
+- `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`
+
+Class-specific worker secrets override the shared fallback for their worker class. See `docs/worker-policy.md`.
 
 `EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
 
@@ -166,7 +177,9 @@ The Automation Queue stores auditable queued work in MongoDB `automation_queue` 
 
 Worker handoff records are stored separately in MongoDB `worker_handoffs`. Handoff preparation creates durable worker-ready metadata for eligible queue items, returns existing active handoffs idempotently, and surfaces readiness/failure state in queue detail.
 
-Worker callbacks can list ready handoffs, atomically claim a handoff, append safe progress events, and mark claimed work completed or failed. Callback requests require `WORKER_CALLBACK_SECRET` through the worker callback header. Callback handlers store safe audit metadata only; they do not dispatch workers, retry failed work, perform EVE actions, change permissions, move assets, touch wallets/contracts/standings, or call external services. Player-impacting queue work requires approval metadata already present on the source decision.
+Worker callbacks can list ready handoffs, atomically claim a handoff, append safe progress events, and mark claimed work completed or failed. Callback requests require a worker callback secret through the worker callback header. Callback handlers store safe audit metadata only; they do not dispatch workers, retry failed work, perform EVE actions, change permissions, move assets, touch wallets/contracts/standings, or call external services. Player-impacting queue work requires approval metadata already present on the source decision.
+
+M44 adds class-specific worker callback secrets for worker handoffs, retry workers, ESI sync workers, People ingestion workers, and Opportunity ingestion workers while preserving `WORKER_CALLBACK_SECRET` as a compatibility fallback. Once a class-specific secret is configured, the shared fallback no longer authorizes that worker class. The worker policy runbook documents retry/backoff boundaries and browser no-dispatch guarantees.
 
 For write-flow validation, keep using the isolated MongoDB database `gryyk47_greenfield_test` and seed or reuse approved `strategic_decisions` records for the configured corporation scope before writing `automation_queue` or `worker_handoffs` records.
 
