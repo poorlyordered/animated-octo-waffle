@@ -3,6 +3,7 @@ import { PeopleFollowUpList } from '../features/people/components/PeopleFollowUp
 import { PeopleIngestionProvenancePanel } from '../features/people/components/PeopleIngestionProvenancePanel';
 import { PeopleMemberDetail } from '../features/people/components/PeopleMemberDetail';
 import { PeopleMemberList } from '../features/people/components/PeopleMemberList';
+import { prepareWorkerHandoff } from '../features/automation-queue/services/workerHandoffClient';
 import { usePeople } from '../features/people/state/usePeople';
 
 export function PeopleRoute() {
@@ -42,6 +43,10 @@ export function PeopleRoute() {
         handoffByFollowUpId={people.handoffByFollowUpId}
         statusFilter={people.followUpStatusFilter}
         onCreateQueue={people.createFollowUpQueue}
+        onPrepareWorkerHandoff={async (queueItemId) => {
+          const { handoff } = await prepareWorkerHandoff(queueItemId);
+          return handoff;
+        }}
         onRecordDecision={people.recordFollowUpDecision}
         onStatusFilterChange={people.setFollowUpStatusFilter}
         onUpdateDecisionStatus={people.updateFollowUpDecisionStatus}

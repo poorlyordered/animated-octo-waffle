@@ -687,12 +687,32 @@ Validation:
 - Spec: `specs/032-people-followup-handoff`
 - Local validation covered targeted People Jest tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M33: People Worker Handoff - Complete
+
+Goal: let commanders prepare durable worker handoffs from approved People queued work without leaving the People surface.
+
+Delivered capabilities:
+
+- People queued-work detail on leadership follow-up rows after queue creation
+- Explicit Prepare worker handoff control for linked People queued work
+- Existing automation queue worker handoff API reused; no People-specific backend route added
+- Browser-visible handoff id, status, and created timestamp after preparation
+- No-execution boundary language for People worker handoff preparation
+- Unit and browser smoke coverage for People worker handoff visibility and preparation
+- No worker dispatch, handoff claim, retry scheduling, retry execution, ESI fetch, EVE write, role/access/standings mutation, wallet/asset/contract movement, or external-service execution
+
+Validation:
+
+- Spec: `specs/033-people-worker-handoff`
+- Local validation covered targeted People Jest tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M33 selection after M32 review.
+Proceed to M34 selection after M33 review.
 
 Recommended next-slice candidates:
 
 - Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
-- People worker handoff preparation from approved queued work if the People operating layer should continue matching the Opportunity command loop.
-- Opportunity or People retry policy extension only after the new People handoff and queued-work controls have been reviewed in browser.
+- People handoff retry controls if the People operating layer should continue matching Opportunity failed-handoff recovery.
+- Decision saved views or backend filtering if local pagination is not enough for real decision volume.
+- Opportunity or People retry policy extension after reviewing the new People worker handoff in browser.

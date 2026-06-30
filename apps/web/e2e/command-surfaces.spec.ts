@@ -186,5 +186,14 @@ test('renders people surface with member and leadership follow-up content', asyn
   await expectVisibleText(page, 'People queued work created.');
   await expectVisibleText(page, 'Queued work is linked to approved People decision');
   await expectVisibleText(page, 'No worker was dispatched, no handoff was prepared, and no EVE role/access or external-service change occurred.');
+  await expectVisibleText(page, 'People queued work queue-people-follow-up is ready for explicit worker handoff preparation.');
+  await followUps
+    .getByLabel('People queued work detail for Browser Smoke Pilot')
+    .first()
+    .getByRole('button', { name: 'Prepare worker handoff' })
+    .click();
+  await expectVisibleText(page, 'People worker handoff prepared.');
+  await expectVisibleText(page, 'Worker handoff handoff-browser-ready is ready for People queued work queue-people-follow-up.');
+  await expectVisibleText(page, 'People worker handoff preparation creates a durable record only.');
   await assertNoBrowserDiagnostics();
 });

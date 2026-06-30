@@ -4,6 +4,7 @@ import type {
   FollowUpStatus,
   LeadershipFollowUp,
   PeopleFollowUpHandoff,
+  WorkerHandoff,
   UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
 
@@ -12,12 +13,26 @@ interface PeopleFollowUpListProps {
   handoffByFollowUpId: Record<string, PeopleFollowUpHandoff>;
   statusFilter: FollowUpStatus | 'all';
   onCreateQueue: (followUpId: string, request: CreatePeopleFollowUpQueueRequest) => Promise<unknown>;
+  onPrepareWorkerHandoff?: (queueItemId: string) => Promise<WorkerHandoff>;
   onRecordDecision: (followUpId: string, request: { rationale?: string; expectedResult?: string }) => Promise<unknown>;
   onStatusFilterChange: (status: FollowUpStatus | 'all') => void;
   onUpdateDecisionStatus: (followUpId: string, request: UpdatePeopleFollowUpDecisionStatusRequest) => Promise<unknown>;
 }
 
 const statuses: Array<FollowUpStatus | 'all'> = ['all', 'open', 'blocked', 'completed', 'canceled'];
+
+interface PeopleQueuedWorkDetail {
+  queueItemId: string;
+  queueStatus?: string;
+  handoffId?: string;
+  handoffStatus?: WorkerHandoff['status'];
+  handoffCreatedAt?: string;
+  message: string;
+  boundary: string;
+}
+
+const peopleWorkerHandoffBoundary =
+  'People worker handoff preparation creates a durable record only. It does not dispatch, claim, retry, execute, fetch ESI, write to EVE, mutate roles or access, or call external services.';
 
 function derivedHandoff(followUp: LeadershipFollowUp): PeopleFollowUpHandoff {
   const decisionStatus = followUp.sourceContext.decisionStatus;
@@ -44,17 +59,37 @@ function derivedHandoff(followUp: LeadershipFollowUp): PeopleFollowUpHandoff {
   };
 }
 
+function peopleQueuedWorkDetail(handoff: PeopleFollowUpHandoff, workerHandoff?: WorkerHandoff): PeopleQueuedWorkDetail | null {
+  if (!handoff.queueItemId) {
+    return null;
+  }
+
+  return {
+    queueItemId: handoff.queueItemId,
+    queueStatus: handoff.queueStatus,
+    handoffId: workerHandoff?.id,
+    handoffStatus: workerHandoff?.status,
+    handoffCreatedAt: workerHandoff?.createdAt,
+    message: workerHandoff
+      ? `Worker handoff ${workerHandoff.id} is ${workerHandoff.status} for People queued work ${handoff.queueItemId}.`
+      : `People queued work ${handoff.queueItemId} is ready for explicit worker handoff preparation.`,
+    boundary: peopleWorkerHandoffBoundary
+  };
+}
+
 export function PeopleFollowUpList({
   followUps,
   handoffByFollowUpId,
   statusFilter,
   onCreateQueue,
+  onPrepareWorkerHandoff,
   onRecordDecision,
   onStatusFilterChange,
   onUpdateDecisionStatus
 }: PeopleFollowUpListProps) {
   const [busyFollowUpId, setBusyFollowUpId] = useState<string | null>(null);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+  const [workerHandoffByQueueItemId, setWorkerHandoffByQueueItemId] = useState<Record<string, WorkerHandoff>>({});
 
   async function runAction(followUp: LeadershipFollowUp, action: () => Promise<unknown>, successMessage: string) {
     setBusyFollowUpId(followUp.id);
@@ -115,6 +150,21 @@ export function PeopleFollowUpList({
     );
   }
 
+  function prepareWorkerHandoff(followUp: LeadershipFollowUp, queueItemId: string) {
+    return runAction(
+      followUp,
+      async () => {
+        if (!onPrepareWorkerHandoff) {
+          throw new Error('People worker handoff preparation is unavailable.');
+        }
+
+        const handoff = await onPrepareWorkerHandoff(queueItemId);
+        setWorkerHandoffByQueueItemId((current) => ({ ...current, [queueItemId]: handoff }));
+      },
+      'People worker handoff prepared.'
+    );
+  }
+
   return (
     <section aria-label="Leadership follow-ups">
       <h2>Leadership follow-ups</h2>
@@ -137,6 +187,10 @@ export function PeopleFollowUpList({
             const hasDecision = Boolean(handoff.decisionId);
             const canApprove = handoff.decisionStatus === 'proposed';
             const canQueue = handoff.queueReady && !handoff.queueItemId;
+            const queuedWorkDetail = peopleQueuedWorkDetail(
+              handoff,
+              handoff.queueItemId ? workerHandoffByQueueItemId[handoff.queueItemId] : undefined
+            );
             const busy = busyFollowUpId === followUp.id;
 
             return (
@@ -179,6 +233,38 @@ export function PeopleFollowUpList({
                   <button type="button" onClick={() => void createQueue(followUp)} disabled={busy}>
                     {busy ? 'Queueing...' : 'Create queued work'}
                   </button>
+                ) : null}
+                {queuedWorkDetail ? (
+                  <section aria-label={`People queued work detail for ${followUp.memberDisplayName}`}>
+                    <h3>People queued work detail</h3>
+                    <p>{queuedWorkDetail.message}</p>
+                    <dl className="metadata-grid">
+                      <div className="metadata-item">
+                        <dt>Queue item</dt>
+                        <dd>{queuedWorkDetail.queueItemId}</dd>
+                      </div>
+                      <div className="metadata-item">
+                        <dt>Queue status</dt>
+                        <dd>{queuedWorkDetail.queueStatus ?? 'unknown'}</dd>
+                      </div>
+                      <div className="metadata-item">
+                        <dt>Worker handoff</dt>
+                        <dd>{queuedWorkDetail.handoffId ? `${queuedWorkDetail.handoffId} ${queuedWorkDetail.handoffStatus ?? ''}` : 'not prepared'}</dd>
+                      </div>
+                      {queuedWorkDetail.handoffCreatedAt ? (
+                        <div className="metadata-item">
+                          <dt>Handoff created</dt>
+                          <dd>{new Date(queuedWorkDetail.handoffCreatedAt).toLocaleString()}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                    <p className="notice">{queuedWorkDetail.boundary}</p>
+                    {!queuedWorkDetail.handoffId && onPrepareWorkerHandoff ? (
+                      <button type="button" onClick={() => void prepareWorkerHandoff(followUp, queuedWorkDetail.queueItemId)} disabled={busy}>
+                        {busy ? 'Preparing...' : 'Prepare worker handoff'}
+                      </button>
+                    ) : null}
+                  </section>
                 ) : null}
                 {actionStatus[followUp.id] ? <p className="notice">{actionStatus[followUp.id]}</p> : null}
                 {handoff.missingLinkReasons.length > 0 ? (
