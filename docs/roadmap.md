@@ -939,7 +939,7 @@ Validation:
 
 ## Near-Term Recommendation
 
-Proceed to M46 selection after M45 review.
+Proceed to M47 selection after M46 review.
 
 ### M45: Roadmap Backlog Refresh - Complete
 
@@ -960,12 +960,34 @@ Validation:
 - Spec: `specs/045-roadmap-backlog-refresh`
 - Local validation covered roadmap consistency review, production-readiness gap review, code-review-and-quality gate, and diff hygiene
 
+### M46: Production Operations Follow-up - Complete
+
+Goal: convert remaining production-readiness gaps into concrete repo-side runbooks, environment verification checklists, and deployment/rollback evidence requirements without touching live provider state from the app request path.
+
+Delivered capabilities:
+
+- Production operations runbook added at `docs/production-operations.md`
+- Pre-deploy evidence checklist for validation results, Git state, Netlify build shape, environment inventory, no-secret evidence, and rollback targets
+- Netlify environment verification checklist for required, production-required, optional worker, live EVE SSO, and test-only variables
+- Live EVE SSO provider verification checklist for callback URL, client id, scopes, authorized command sessions, and unauthorized corporation behavior
+- MongoDB operations checklist for target database, least-privilege access, backups, restore expectations, index posture, and retention expectations
+- Monitoring and alerting ownership checklist for deploys, functions, browser runtime, MongoDB, EVE SSO, worker authorization, retries, ingestion, and handoffs
+- Worker secret rotation posture for class-specific callback secrets and shared fallback migration
+- Deploy smoke, rollback procedure, and go/no-go record requirements that preserve production data
+- Production readiness now links operators to the M46 runbook while preserving the conditional readiness verdict
+- No product behavior, live deployment, backend route, server preference storage, approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/046-production-operations-followup`
+- Local validation covered full local command gate, production-operations documentation review, code-review-and-quality gate, and diff hygiene
+
 Recommended next slice:
 
-- M46: Production Operations Follow-up. Convert the remaining production-readiness gaps into concrete repo-side runbooks, environment verification checklists, and deployment/rollback evidence requirements without touching live provider state from the app request path.
+- M47: Operations Health Surface. Add a read-only commander-facing health summary for configured command APIs, ingestion histories, retry posture, and worker readiness using server-safe status data. It must not expose secrets, dispatch workers, call live providers from the browser, or mutate EVE/external services.
 
 Recommended next-slice candidates:
 
-- M46: Production Operations Follow-up. Document Netlify environment verification, live EVE SSO callback checks, MongoDB backup/index/access policy expectations, monitoring requirements, production worker secret rotation posture, and rollback evidence. This remains documentation and operational verification only: no browser/request-path deployment, ESI fetch, EVE write, worker dispatch, or external-service mutation.
 - M47: Operations Health Surface. Add a read-only commander-facing health summary for configured command APIs, ingestion histories, retry posture, and worker readiness using server-safe status data. It must not expose secrets, dispatch workers, call live providers from the browser, or mutate EVE/external services.
 - M48: Live Read Consent Expansion. Extend explicit ESI read-consent planning for narrowly scoped read-only corporation data sources after production operations posture is documented. It must keep token material server-side, require commander consent, and avoid EVE writes or player-impacting mutation.
+- M49: Production Evidence Recorder. Add a server-side, operator-only record shape for value-free deployment evidence after the health surface exists. It must store no secrets, tokens, connection strings, cookies, JWTs, or production record exports.
