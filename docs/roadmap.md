@@ -817,11 +817,35 @@ Validation:
 - Spec: `specs/038-decision-saved-views`
 - Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M39: Roadmap Backlog Refresh - Complete
+
+Goal: convert the exhausted M38 recommendation into a concrete next-slice backlog so feature-by-feature development can continue from current repo evidence.
+
+Delivered capabilities:
+
+- Current roadmap tail audited after M38 completion
+- Deferred future-slice notes reviewed across prior specs and repo-facing documentation
+- Next-slice candidates reordered around command-loop stabilization before capability expansion
+- Production readiness audit selected as the recommended next slice
+- Follow-on candidates scoped for live authorization, ingestion expansion, and worker policy hardening
+- No product behavior, backend route, server preference storage, approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/039-roadmap-backlog-refresh`
+- Local validation covered roadmap consistency review, code-review-and-quality gate, and diff hygiene
+
 ## Near-Term Recommendation
 
-M38 completes the current near-term recommendation.
+Proceed to M40 selection after M39 review.
+
+Recommended next slice:
+
+- M40: Production Readiness Audit. Verify the current Decision/Numbers/Opportunity/People command loop is ready for a real deployment pass before adding new capability. Scope should cover required server environment, secret boundaries, deterministic smoke paths, command-surface health, and documented deploy/runbook gaps. It must not add player-impacting execution, EVE writes, wallet/asset/contract/role mutation, or external-service mutation.
 
 Recommended next-slice candidates:
 
-- Refresh the roadmap backlog and select the next command-operating slice.
-- Consider a production-readiness audit if the current Decision/Numbers/Opportunity/People command loop should stabilize before adding new capabilities.
+- M41: Commander Authorization Policy. Extend live EVE session scope with explicit corporation membership and commander authorization checks for command APIs, preserving local fallback behavior for development and tests. It must keep token material server-side and must not mutate EVE state.
+- M42: People Ingestion Expansion. Design worker-backed People ingestion beyond historical profile records so member activity, roles, and delegation context can refresh through auditable long-running jobs. It must keep role/access changes out of request paths.
+- M43: Opportunity Ingestion Expansion. Add a worker-backed Opportunity refresh path beyond latest processed briefs, with source provenance and safe failure states. It must not schedule research from browser display paths or write to EVE/external services.
+- M44: Worker Policy Hardening. Review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes. It must preserve commander approval boundaries and avoid implicit dispatch or execution from browser actions.

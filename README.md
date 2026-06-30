@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Decision Saved Views ready for review on `038-decision-saved-views`.
+Current phase: Roadmap Backlog Refresh ready for review on `039-roadmap-backlog-refresh`.
 
 ## Local Development
 
