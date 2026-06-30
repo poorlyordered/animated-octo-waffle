@@ -6,6 +6,7 @@ import {
   peopleFollowUpDecision,
   peopleFollowUpQueueItem
 } from '../fixtures/people';
+import { readyHandoff } from '../fixtures/workerHandoff';
 
 describe('People follow-up handoff rules', () => {
   it('marks proposed People decisions as approval required and queue blocked', () => {
@@ -33,6 +34,12 @@ describe('People follow-up handoff rules', () => {
     expect(handoff.queueItemId).toBe(peopleFollowUpQueueItem.id);
     expect(handoff.queueStatus).toBe('queued');
     expect(handoff.boundary).toContain('No worker was dispatched');
+  });
+
+  it('uses existing worker handoff contract state for People queued work', () => {
+    expect(readyHandoff.status).toBe('ready');
+    expect(readyHandoff.queueItemId).toBeTruthy();
+    expect(JSON.stringify(readyHandoff)).not.toContain('executeNow');
   });
 
   it('rejects browser-controlled execution and handoff fields', () => {
