@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import type {
+  CancelRetryResponse,
   CreatePeopleFollowUpQueueRequest,
   FollowUpStatus,
   LeadershipFollowUp,
   PeopleFollowUpHandoff,
+  RescheduleRetryResponse,
+  RetryPolicyDelayOption,
+  ScheduleRetryResponse,
   WorkerHandoff,
   UpdatePeopleFollowUpDecisionStatusRequest
 } from '@gryyk/contracts';
@@ -13,8 +17,11 @@ interface PeopleFollowUpListProps {
   handoffByFollowUpId: Record<string, PeopleFollowUpHandoff>;
   statusFilter: FollowUpStatus | 'all';
   onCreateQueue: (followUpId: string, request: CreatePeopleFollowUpQueueRequest) => Promise<unknown>;
+  onCancelHandoffRetry?: (handoffId: string, reason: string) => Promise<CancelRetryResponse>;
   onPrepareWorkerHandoff?: (queueItemId: string) => Promise<WorkerHandoff>;
   onRecordDecision: (followUpId: string, request: { rationale?: string; expectedResult?: string }) => Promise<unknown>;
+  onRescheduleHandoffRetry?: (handoffId: string, reason: string, notBefore?: string) => Promise<RescheduleRetryResponse>;
+  onScheduleHandoffRetry?: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
   onStatusFilterChange: (status: FollowUpStatus | 'all') => void;
   onUpdateDecisionStatus: (followUpId: string, request: UpdatePeopleFollowUpDecisionStatusRequest) => Promise<unknown>;
 }
@@ -81,9 +88,12 @@ export function PeopleFollowUpList({
   followUps,
   handoffByFollowUpId,
   statusFilter,
+  onCancelHandoffRetry,
   onCreateQueue,
   onPrepareWorkerHandoff,
   onRecordDecision,
+  onRescheduleHandoffRetry,
+  onScheduleHandoffRetry,
   onStatusFilterChange,
   onUpdateDecisionStatus
 }: PeopleFollowUpListProps) {
@@ -165,6 +175,85 @@ export function PeopleFollowUpList({
     );
   }
 
+  function updateWorkerHandoffRetry(queueItemId: string, retryResponse: ScheduleRetryResponse | CancelRetryResponse | RescheduleRetryResponse) {
+    setWorkerHandoffByQueueItemId((current) => {
+      const handoff = current[queueItemId];
+
+      if (!handoff) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [queueItemId]: {
+          ...handoff,
+          retry: retryResponse.retry,
+          retryHistory: [retryResponse.retry, ...(handoff.retryHistory ?? []).filter((item) => item.id !== retryResponse.retry.id)]
+        }
+      };
+    });
+  }
+
+  function scheduleHandoffRetry(followUp: LeadershipFollowUp, handoff: WorkerHandoff) {
+    return runAction(
+      followUp,
+      async () => {
+        if (!onScheduleHandoffRetry) {
+          throw new Error('People handoff retry scheduling is unavailable.');
+        }
+
+        const response = await onScheduleHandoffRetry(
+          handoff.id,
+          'Commander approved retry scheduling for failed People worker handoff.'
+        );
+        updateWorkerHandoffRetry(handoff.queueItemId, response);
+      },
+      'People handoff retry scheduled.'
+    );
+  }
+
+  function cancelHandoffRetry(followUp: LeadershipFollowUp, handoff: WorkerHandoff) {
+    return runAction(
+      followUp,
+      async () => {
+        if (!onCancelHandoffRetry) {
+          throw new Error('People handoff retry cancellation is unavailable.');
+        }
+
+        const response = await onCancelHandoffRetry(
+          handoff.id,
+          'Commander canceled People handoff retry after policy review.'
+        );
+        updateWorkerHandoffRetry(handoff.queueItemId, response);
+      },
+      'People handoff retry canceled.'
+    );
+  }
+
+  function rescheduleHandoffRetry(followUp: LeadershipFollowUp, handoff: WorkerHandoff, option?: RetryPolicyDelayOption) {
+    return runAction(
+      followUp,
+      async () => {
+        if (!onRescheduleHandoffRetry) {
+          throw new Error('People handoff retry rescheduling is unavailable.');
+        }
+
+        const notBefore = option?.delayHours
+          ? new Date(Date.now() + option.delayHours * 60 * 60 * 1000).toISOString()
+          : undefined;
+        const response = await onRescheduleHandoffRetry(
+          handoff.id,
+          option
+            ? `Commander applied retry policy control "${option.label}" for scheduled People worker handoff retry.`
+            : 'Commander deferred scheduled People worker handoff retry for later review.',
+          notBefore
+        );
+        updateWorkerHandoffRetry(handoff.queueItemId, response);
+      },
+      'People handoff retry rescheduled.'
+    );
+  }
+
   return (
     <section aria-label="Leadership follow-ups">
       <h2>Leadership follow-ups</h2>
@@ -191,6 +280,12 @@ export function PeopleFollowUpList({
               handoff,
               handoff.queueItemId ? workerHandoffByQueueItemId[handoff.queueItemId] : undefined
             );
+            const workerHandoff = handoff.queueItemId ? workerHandoffByQueueItemId[handoff.queueItemId] : undefined;
+            const hasActiveRetry =
+              workerHandoff?.retry?.status === 'scheduled' || workerHandoff?.retry?.status === 'blocked' || workerHandoff?.retry?.status === 'claimed';
+            const canScheduleRetry = workerHandoff?.status === 'failed' && !hasActiveRetry && Boolean(onScheduleHandoffRetry);
+            const canCancelRetry = Boolean(workerHandoff?.retry?.policy.canCancel && onCancelHandoffRetry);
+            const canRescheduleRetry = Boolean(workerHandoff?.retry?.policy.canReschedule && onRescheduleHandoffRetry);
             const busy = busyFollowUpId === followUp.id;
 
             return (
@@ -263,6 +358,58 @@ export function PeopleFollowUpList({
                       <button type="button" onClick={() => void prepareWorkerHandoff(followUp, queuedWorkDetail.queueItemId)} disabled={busy}>
                         {busy ? 'Preparing...' : 'Prepare worker handoff'}
                       </button>
+                    ) : null}
+                    {workerHandoff?.failure ? <p className="missing-reasons">Failed: {workerHandoff.failure.message}</p> : null}
+                    {workerHandoff?.retry ? (
+                      <p>
+                        Retry {workerHandoff.retry.status}: {workerHandoff.retry.reason} {workerHandoff.retry.policy.boundary}
+                      </p>
+                    ) : null}
+                    {workerHandoff?.retryHistory && workerHandoff.retryHistory.length > 0 ? (
+                      <section aria-label={`People worker handoff retry history for ${followUp.memberDisplayName}`}>
+                        <h4>Retry history</h4>
+                        <ul>
+                          {workerHandoff.retryHistory.map((retry) => (
+                            <li key={retry.id}>
+                              {retry.status}: {retry.reason}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="notice">People worker handoff retry history is read-only. This view does not dispatch, claim, execute, or call external services.</p>
+                      </section>
+                    ) : null}
+                    {workerHandoff?.status === 'failed' ? (
+                      <button type="button" onClick={() => void scheduleHandoffRetry(followUp, workerHandoff)} disabled={!canScheduleRetry || busy}>
+                        {busy ? 'Scheduling...' : 'Schedule handoff retry'}
+                      </button>
+                    ) : null}
+                    {workerHandoff?.retry ? (
+                      <button type="button" onClick={() => void cancelHandoffRetry(followUp, workerHandoff)} disabled={!canCancelRetry || busy}>
+                        {busy ? 'Canceling...' : 'Cancel handoff retry'}
+                      </button>
+                    ) : null}
+                    {workerHandoff?.retry ? (
+                      <button type="button" onClick={() => void rescheduleHandoffRetry(followUp, workerHandoff)} disabled={!canRescheduleRetry || busy}>
+                        {busy ? 'Rescheduling...' : 'Reschedule handoff retry'}
+                      </button>
+                    ) : null}
+                    {workerHandoff?.retry?.policy.canReschedule ? (
+                      <section aria-label={`People worker handoff retry policy controls for ${followUp.memberDisplayName}`}>
+                        <h4>Retry policy controls</h4>
+                        <div className="form-actions">
+                          {workerHandoff.retry.policy.delayOptions.map((option) => (
+                            <button
+                              type="button"
+                              key={option.key}
+                              disabled={!canRescheduleRetry || busy}
+                              onClick={() => void rescheduleHandoffRetry(followUp, workerHandoff, option)}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="notice">Retry policy controls update scheduled People handoff retry timing only. They do not dispatch, claim, or execute work.</p>
+                      </section>
                     ) : null}
                   </section>
                 ) : null}

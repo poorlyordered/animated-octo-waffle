@@ -165,9 +165,13 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
         handoffMatch[1] === 'queue-browser-opportunity'
           ? commandSurfaceFixtures.automationQueue.handoffs.find((item) => item.id === 'handoff-browser-opportunity-failed')
           : null;
+      const peopleHandoff =
+        handoffMatch[1] === 'queue-people-follow-up'
+          ? commandSurfaceFixtures.automationQueue.handoffs.find((item) => item.id === 'handoff-browser-people-failed')
+          : null;
       return json(route, {
         handoff: {
-          ...(opportunityHandoff ?? commandSurfaceFixtures.automationQueue.handoffs[0]),
+          ...(peopleHandoff ?? opportunityHandoff ?? commandSurfaceFixtures.automationQueue.handoffs[0]),
           queueItemId: queueItem?.id ?? handoffMatch[1]
         }
       });
@@ -235,8 +239,15 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     return json(route, { retry: workerHandoffRetryOverride });
   });
   await page.route('**/api/worker-handoffs/*/retry', (route) => {
-    workerHandoffRetryOverride = commandSurfaceFixtures.retries.handoff.retry;
-    return json(route, commandSurfaceFixtures.retries.handoff);
+    const body = route.request().postDataJSON() as { reason?: string } | null;
+    workerHandoffRetryOverride = {
+      ...commandSurfaceFixtures.retries.handoff.retry,
+      reason: body?.reason ?? commandSurfaceFixtures.retries.handoff.retry.reason
+    };
+    return json(route, {
+      ...commandSurfaceFixtures.retries.handoff,
+      retry: workerHandoffRetryOverride
+    });
   });
 
   await page.route('**/api/people/members/*', (route) => {

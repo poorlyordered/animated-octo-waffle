@@ -706,13 +706,34 @@ Validation:
 - Spec: `specs/033-people-worker-handoff`
 - Local validation covered targeted People Jest tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M34: People Handoff Retry Controls - Complete
+
+Goal: let commanders manage retries for failed People worker handoffs without leaving the People surface.
+
+Delivered capabilities:
+
+- Failed People worker handoff details shown in leadership follow-up queued-work detail
+- Schedule handoff retry control for failed People handoffs
+- Cancel and reschedule controls for scheduled People handoff retries
+- Retry delay policy controls reused from server-owned retry policy metadata
+- Local People handoff detail updates after retry schedule, cancel, and reschedule responses
+- Browser-visible retry status, retry history, and no-execution boundary language
+- Existing worker handoff retry APIs reused; no People-specific retry route added
+- Unit coverage for failed People handoff retry metadata
+- Browser smoke coverage for schedule, reschedule, delay policy, and cancel controls
+- No worker dispatch, handoff claim, retry execution, ESI fetch, EVE write, role/access/standings mutation, wallet/asset/contract movement, or external-service execution
+
+Validation:
+
+- Spec: `specs/034-people-handoff-retry-controls`
+- Local validation covered targeted People Jest tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M34 selection after M33 review.
+Proceed to M35 selection after M34 review.
 
 Recommended next-slice candidates:
 
 - Decision saved views or backend filtering only if local pagination is not enough for real decision volume.
-- People handoff retry controls if the People operating layer should continue matching Opportunity failed-handoff recovery.
-- Decision saved views or backend filtering if local pagination is not enough for real decision volume.
-- Opportunity or People retry policy extension after reviewing the new People worker handoff in browser.
+- Cross-surface retry audit filtering if retry history starts to dominate operator review.
+- Backend decision filtering if local pagination is not enough for real decision volume.
