@@ -8,6 +8,8 @@ Status: conditionally ready for a controlled Netlify deployment after server env
 
 Repo evidence proves the app builds, typechecks, lints, passes unit/contract tests, and has deterministic browser smoke coverage for the current command surfaces. Repo evidence does not prove that Netlify environment variables, the live EVE SSO application, MongoDB backup/index policy, or external monitoring are configured in a production account.
 
+Use `docs/production-operations.md` for the operator checklist that converts these gaps into pre-deploy evidence, live-provider verification, monitoring, worker-secret rotation, deploy smoke, rollback, and go/no-go records.
+
 ## Build And Deploy Shape
 
 - Runtime target: Node `22.x`.
