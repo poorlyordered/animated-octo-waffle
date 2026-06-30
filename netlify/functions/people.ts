@@ -6,7 +6,7 @@ import {
   followUpStatusSchema,
   updatePeopleFollowUpDecisionStatusRequestSchema
 } from '../../packages/contracts/src/index';
-import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import { getMongoDb } from './_shared/mongo';
 import {
@@ -183,6 +183,11 @@ export async function handler(event: FunctionEvent) {
 
     return safeErrorResponse('Method not allowed', 405);
   } catch (error) {
+    const authError = authScopeErrorResponse(error);
+    if (authError) {
+      return authError;
+    }
+
     if (error instanceof SyntaxError) {
       return safeErrorResponse('Request body must be valid JSON', 400);
     }

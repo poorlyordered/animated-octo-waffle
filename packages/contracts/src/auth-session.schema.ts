@@ -39,10 +39,21 @@ export const missingSessionStateResponseSchema = z.object({
   scopeSource: z.literal('missing')
 });
 
+export const unauthorizedSessionStateResponseSchema = z.object({
+  signedIn: z.literal(false),
+  scopeSource: z.literal('unauthorized'),
+  characterId: z.string().min(1),
+  characterName: z.string().min(1),
+  corporationId: z.string().min(1),
+  corporationName: z.string().min(1),
+  reason: z.string().min(1)
+});
+
 export const sessionStateResponseSchema = z.discriminatedUnion('scopeSource', [
   signedInSessionStateResponseSchema,
   fallbackSessionStateResponseSchema,
-  missingSessionStateResponseSchema
+  missingSessionStateResponseSchema,
+  unauthorizedSessionStateResponseSchema
 ]);
 
 export const scopeResolutionResultSchema = z.object({

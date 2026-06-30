@@ -1,5 +1,5 @@
 import { defaultResearchFocus } from '../../packages/contracts/src/index';
-import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { getMongoDb } from './_shared/mongo';
 import { normalizeCommandBriefDocument } from './_shared/command-brief-normalizer';
 import {
@@ -34,6 +34,11 @@ export async function handler(event: FunctionEvent) {
       opportunityProvenance: buildOpportunityIngestionProvenance(brief, history, briefCount, focus)
     });
   } catch (error) {
+    const authError = authScopeErrorResponse(error);
+    if (authError) {
+      return authError;
+    }
+
     if (error instanceof Error && error.message === 'EVEONLINE_CORPORATION_ID is required') {
       return safeErrorResponse('Corporation scope is not configured', 500);
     }

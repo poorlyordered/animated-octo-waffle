@@ -8,7 +8,7 @@ import {
   rescheduleRetryRequestSchema,
   scheduleRetryRequestSchema
 } from '../../packages/contracts/src/index';
-import { getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
 import { getMongoDb } from './_shared/mongo';
 import { assertWorkerCallbackAuthorized } from './_shared/worker-callback-auth';
 import {
@@ -183,6 +183,11 @@ export async function handler(event: FunctionEvent) {
 
     return jsonResponse(200, { handoffs });
   } catch (error) {
+    const authError = authScopeErrorResponse(error);
+    if (authError) {
+      return authError;
+    }
+
     if (error instanceof SyntaxError) {
       return safeErrorResponse('Request body must be valid JSON', 400);
     }

@@ -9,7 +9,7 @@ Start here:
 - Production readiness: `docs/production-readiness.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Production Readiness Audit ready for review on `040-production-readiness-audit`.
+Current phase: Commander Authorization Policy ready for review on `041-commander-authorization-policy`.
 
 ## Local Development
 
@@ -60,6 +60,8 @@ Optional EVE SSO/session variables:
 - `ESI_TOKEN_VAULT_SEALING_KEY`: server-only sealing key for durable ESI token vault records. Production must configure this server-side.
 
 The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
+
+Signed EVE sessions are authorized for command APIs only when the session corporation matches server-owned `EVEONLINE_CORPORATION_ID`. A signed session from another corporation receives a safe unauthorized response and does not fall back to the configured corporation. No-session local fallback remains available for development and deterministic tests.
 
 ## MongoDB Data Sources
 

@@ -8,12 +8,12 @@ function setEnv(nextEnv: NodeJS.ProcessEnv) {
   process.env = { ...originalEnv, ...nextEnv };
 }
 
-function activeSessionCookie() {
+function activeSessionCookie(corporationId = '917701062') {
   const signed = createSignedCookieValue(
     {
       characterId: '2110000001',
       characterName: 'Ari Voss',
-      corporationId: '123456789',
+      corporationId,
       corporationName: 'Session Corp',
       issuedAt: '2026-06-01T00:00:00.000Z',
       expiresAt: '2099-06-01T00:00:00.000Z',
@@ -43,7 +43,7 @@ describe('EVE session API contract', () => {
       signedIn: true,
       scopeSource: 'session',
       characterName: 'Ari Voss',
-      corporationId: '123456789'
+      corporationId: '917701062'
     });
     expect(response.body).not.toContain('secret');
     expect(response.body).not.toContain('token');
@@ -69,6 +69,27 @@ describe('EVE session API contract', () => {
       signedIn: false,
       scopeSource: 'missing'
     });
+  });
+
+  it('returns unauthorized state for a signed session outside the configured corporation', async () => {
+    setEnv({ EVEONLINE_CORPORATION_ID: '917701062', EVE_SESSION_SECRET: 'test-secret' });
+
+    const response = await handler({
+      headers: { cookie: activeSessionCookie('123456789') },
+      httpMethod: 'GET'
+    });
+
+    expect(sessionStateResponseSchema.parse(JSON.parse(response.body))).toEqual({
+      signedIn: false,
+      scopeSource: 'unauthorized',
+      characterId: '2110000001',
+      characterName: 'Ari Voss',
+      corporationId: '123456789',
+      corporationName: 'Session Corp',
+      reason: 'Signed EVE session is not authorized for this corporation'
+    });
+    expect(response.body).not.toContain('secret');
+    expect(response.body).not.toContain('token');
   });
 
   it('clears session cookie on idempotent sign-out', async () => {

@@ -46,6 +46,21 @@ export function SessionStatus() {
     );
   }
 
+  if (session.scopeSource === 'unauthorized') {
+    return (
+      <aside className="session-status session-status-missing" aria-label="Command scope">
+        <div>
+          <span>Unauthorized corporation</span>
+          <strong>{session.corporationName}</strong>
+          <small>{session.reason}</small>
+        </div>
+        <button type="button" onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="session-status session-status-missing" aria-label="Command scope">
       <div>
