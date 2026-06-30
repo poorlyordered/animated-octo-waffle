@@ -9,7 +9,7 @@ Start here:
 - Production readiness: `docs/production-readiness.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: People Ingestion Expansion ready for review on `042-people-ingestion-expansion`.
+Current phase: Opportunity Ingestion Expansion ready for review on `043-opportunity-ingestion-expansion`.
 
 ## Local Development
 
@@ -95,6 +95,8 @@ M22 adds a dedicated Opportunity operating layer in the command center. It reuse
 M23 lets commanders record proposed decisions directly from Opportunity recommendations on the dedicated Opportunity surface. The browser shows a safe Opportunity decision handoff with decision id, proposed status, source brief, source count, focus, provenance mode, and approval/queue separation language. It does not approve decisions, create queued work, schedule research, dispatch workers, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
 
 M27 lets commanders approve or reject recorded Opportunity decisions on the dedicated Opportunity surface, then create queued planning work as a separate action only after approval. Approval and rejection update only decision status; queue creation creates an auditable queued work record only. These flows do not schedule research, dispatch workers, prepare handoffs, fetch ESI, write to EVE, move wallets/assets/contracts, change roles, or execute external services.
+
+M43 lets commanders prepare durable Opportunity ingestion requests from the Opportunity surface, and lets trusted workers list, claim, complete, or fail those requests through worker-only callbacks. The browser shows queued/processing/processed/failed provenance, source count, sources/impacts/recommendations/watchlist section coverage, and no-execution boundary language. Browser preparation does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, mutate external services, or execute external calls.
 
 ## People Operating Layer
 

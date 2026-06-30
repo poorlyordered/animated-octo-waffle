@@ -1,5 +1,10 @@
 import { completedItem, failedItem, queuedItem } from '../../tests/fixtures/automationQueue';
-import { opportunityIngestionProvenance, processedBrief, processedRequest } from '../../tests/fixtures/commandBrief';
+import {
+  opportunityIngestionProvenance,
+  preparedOpportunityIngestionResponse,
+  processedBrief,
+  processedRequest
+} from '../../tests/fixtures/commandBrief';
 import { approvedDecision, playerImpactingDecision, proposedDecision, rejectedDecision } from '../../tests/fixtures/decisionRecords';
 import { numbersLiveProvenance, numbersSnapshot } from '../../tests/fixtures/numbers';
 import {
@@ -54,6 +59,7 @@ export const commandSurfaceFixtures = {
       ...opportunityIngestionProvenance,
       message: 'Latest Opportunity context is linked to processed browser research history.'
     },
+    preparedOpportunityIngestion: preparedOpportunityIngestionResponse,
     brief: {
       ...processedBrief,
       executiveSummary: 'Browser smoke brief confirms the command surface renders with deterministic opportunity context.',

@@ -1,4 +1,9 @@
-import type { CommandBrief, OpportunityIngestionProvenance, ResearchRequest } from '@gryyk/contracts';
+import type {
+  CommandBrief,
+  OpportunityIngestionProvenance,
+  PrepareOpportunityIngestionResponse,
+  ResearchRequest
+} from '@gryyk/contracts';
 
 export const processedBrief: CommandBrief = {
   id: 'brief-1',
@@ -92,4 +97,41 @@ export const opportunityIngestionProvenance: OpportunityIngestionProvenance = {
   message: 'Latest Opportunity context is linked to processed research history.',
   boundary:
     'Opportunity ingestion history is read-only. This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, or execute external services.'
+};
+
+export const preparedOpportunityIngestionResponse: PrepareOpportunityIngestionResponse = {
+  request: {
+    id: 'research-request-queued',
+    status: 'queued',
+    requestedAt: '2026-06-30T12:00:00.000Z',
+    updatedAt: '2026-06-30T12:00:00.000Z',
+    requestedBy: 'Commander',
+    sectionStatuses: [
+      { key: 'sources', status: 'present' },
+      { key: 'impacts', status: 'present' },
+      { key: 'recommendations', status: 'present' },
+      { key: 'watchlist', status: 'present' }
+    ],
+    boundary:
+      'Prepared for future Opportunity ingestion. No research pull was scheduled, no worker was dispatched, no ESI data was fetched, no EVE write occurred, and no external service was executed.'
+  },
+  provenance: {
+    ...opportunityIngestionProvenance,
+    history: [
+      {
+        id: 'research-request-queued',
+        status: 'queued',
+        requestedAt: '2026-06-30T12:00:00.000Z',
+        updatedAt: '2026-06-30T12:00:00.000Z',
+        requestedBy: 'Commander',
+        sectionStatuses: opportunityIngestionProvenance.sectionStatuses,
+        boundary:
+          'Prepared for future Opportunity ingestion. No research pull was scheduled, no worker was dispatched, no ESI data was fetched, no EVE write occurred, and no external service was executed.'
+      },
+      ...opportunityIngestionProvenance.history
+    ],
+    message: 'Opportunity context is available from historical command brief records.'
+  },
+  message:
+    'Opportunity ingestion prepared for worker pickup. No research pull was scheduled, no worker was dispatched, no ESI data was fetched, no EVE write occurred, and no external service was executed.'
 };

@@ -1,8 +1,17 @@
-import { commandBriefResponseSchema } from '@gryyk/contracts';
+import {
+  commandBriefResponseSchema,
+  opportunityIngestionWorkerClaimRequestSchema,
+  opportunityIngestionWorkerCompleteRequestSchema,
+  opportunityIngestionWorkerFailRequestSchema,
+  opportunityIngestionWorkerListResponseSchema,
+  opportunityIngestionWorkerResponseSchema,
+  prepareOpportunityIngestionRequestSchema,
+  prepareOpportunityIngestionResponseSchema
+} from '@gryyk/contracts';
 import { getAuthScope } from '../../../../netlify/functions/_shared/auth-scope';
 import { handler } from '../../../../netlify/functions/command-brief';
 import { createSignedCookieValue, sessionCookieName } from '../../../../netlify/functions/_shared/session-cookie';
-import { opportunityIngestionProvenance, processedBrief } from '../fixtures/commandBrief';
+import { opportunityIngestionProvenance, preparedOpportunityIngestionResponse, processedBrief } from '../fixtures/commandBrief';
 
 const originalEnv = process.env;
 
@@ -38,6 +47,33 @@ describe('GET /api/command-brief contract', () => {
 
   it('accepts an empty command brief response', () => {
     expect(commandBriefResponseSchema.parse({ brief: null })).toEqual({ brief: null });
+  });
+
+  it('accepts Opportunity ingestion prepare and worker payloads', () => {
+    expect(prepareOpportunityIngestionRequestSchema.parse({ reason: 'Refresh Opportunity context.' }).reason).toContain('Refresh');
+    expect(prepareOpportunityIngestionResponseSchema.parse(preparedOpportunityIngestionResponse).request.status).toBe('queued');
+    expect(opportunityIngestionWorkerClaimRequestSchema.parse({ workerId: 'opportunity-worker-1' }).workerId).toBe(
+      'opportunity-worker-1'
+    );
+    expect(
+      opportunityIngestionWorkerCompleteRequestSchema.parse({
+        workerId: 'opportunity-worker-1',
+        sourceCount: 4,
+        sectionStatuses: preparedOpportunityIngestionResponse.request.sectionStatuses
+      }).sourceCount
+    ).toBe(4);
+    expect(
+      opportunityIngestionWorkerFailRequestSchema.parse({ workerId: 'opportunity-worker-1', reason: 'Official feed unavailable.' }).reason
+    ).toContain('Official');
+    const workerResponse = {
+      request: {
+        ...preparedOpportunityIngestionResponse.request,
+        corporationId: '917701062',
+        focus: processedBrief.focus
+      }
+    };
+    expect(opportunityIngestionWorkerResponseSchema.parse(workerResponse).request.focus).toBe(processedBrief.focus);
+    expect(opportunityIngestionWorkerListResponseSchema.parse({ requests: [workerResponse.request] }).requests[0].status).toBe('queued');
   });
 
   it('keeps no-session fallback corporation scope for local command API reads', () => {

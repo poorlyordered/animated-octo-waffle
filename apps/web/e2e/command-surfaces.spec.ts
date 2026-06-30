@@ -35,6 +35,10 @@ test('renders dedicated opportunity surface with provenance and read-only bounda
   await expectVisibleText(page, 'Latest Opportunity context is linked to processed browser research history.');
   await expectVisibleText(page, 'Opportunity surface is read-only.');
   await expect(page.getByLabel('Opportunity section status')).toBeVisible();
+  await page.getByLabel('Opportunity provenance').getByRole('button', { name: 'Prepare ingestion' }).click();
+  await expectVisibleText(page, 'Opportunity ingestion prepared for worker pickup.');
+  await expectVisibleText(page, 'queued');
+  await expectVisibleText(page, 'No research pull was scheduled, no worker was dispatched, no ESI data was fetched, no EVE write occurred, and no external service was executed.');
   await assertNoBrowserDiagnostics();
 });
 
@@ -193,7 +197,7 @@ test('renders people surface with member and leadership follow-up content', asyn
   await expectVisibleText(page, 'Browser Smoke Pilot');
   await expectVisibleText(page, 'Latest People profiles are linked to completed browser ingestion history.');
   await expectVisibleText(page, 'This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.');
-  await page.getByRole('button', { name: 'Prepare ingestion' }).click();
+  await page.getByLabel('People ingestion provenance').getByRole('button', { name: 'Prepare ingestion' }).click();
   await expectVisibleText(page, 'People ingestion prepared for worker pickup.');
   await expectVisibleText(page, 'queued');
   await expectVisibleText(page, 'No worker was dispatched, no ESI data was fetched, and no EVE role/access or external-service change occurred.');
