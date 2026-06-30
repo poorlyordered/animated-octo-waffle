@@ -33,7 +33,7 @@ function workerActionPath(event: FunctionEvent): { id: string; action: 'claim' |
 
 export async function handler(event: FunctionEvent) {
   try {
-    assertWorkerCallbackAuthorized(event);
+    assertWorkerCallbackAuthorized(event, 'esi_sync');
     const method = event.httpMethod ?? 'GET';
     const db = await getMongoDb();
 

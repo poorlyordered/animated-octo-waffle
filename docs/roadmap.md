@@ -918,14 +918,33 @@ Validation:
 - Spec: `specs/043-opportunity-ingestion-expansion`
 - Local validation covered targeted Opportunity contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
 
+### M44: Worker Policy Hardening - Complete
+
+Goal: review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes while preserving commander approval boundaries.
+
+Delivered capabilities:
+
+- Class-specific worker callback secret support for worker handoffs, retry workers, ESI sync workers, People ingestion workers, and Opportunity ingestion workers
+- Shared `WORKER_CALLBACK_SECRET` compatibility fallback when a class-specific secret is not configured
+- Class-specific secrets override the shared fallback for their worker class once configured
+- Worker endpoint call sites now pass server-owned worker classes instead of accepting client-selected classes
+- Worker policy runbook documents worker classes, class secret env vars, retry/backoff boundaries, and no-execution browser guarantees
+- Unit coverage for class-specific authorization, cross-class rejection, fallback compatibility, and class override behavior
+- No browser/client secret exposure, dispatch, claim, retry execution, ESI fetch, EVE write, external-service mutation, or commander approval bypass
+
+Validation:
+
+- Spec: `specs/044-worker-policy-hardening`
+- Local validation covered targeted worker callback auth tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
 ## Near-Term Recommendation
 
-Proceed to M44 selection after M43 review.
+Proceed to M45 selection after M44 review.
 
 Recommended next slice:
 
-- M44: Worker Policy Hardening. Review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes. It must preserve commander approval boundaries and avoid implicit dispatch or execution from browser actions.
+- M45: Roadmap Backlog Refresh. Re-assess the next command-OS slices after worker-backed Numbers, People, and Opportunity ingestion lifecycle coverage.
 
 Recommended next-slice candidates:
 
-- M45: Roadmap Backlog Refresh. Re-assess the next command-OS slices after worker-backed Numbers, People, and Opportunity ingestion lifecycle coverage.
+- M46: Production Operations Follow-up. Revisit production readiness gaps after worker policy hardening and ingestion lifecycle expansion.

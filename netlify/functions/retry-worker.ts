@@ -25,7 +25,7 @@ function retryWorkerActionPath(event: FunctionEvent): { id: string; action: 'cla
 
 export async function handler(event: FunctionEvent) {
   try {
-    assertWorkerCallbackAuthorized(event);
+    assertWorkerCallbackAuthorized(event, 'retry_worker');
     const method = event.httpMethod ?? 'GET';
     const db = await getMongoDb();
 
