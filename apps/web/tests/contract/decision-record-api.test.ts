@@ -8,9 +8,20 @@ import { approvedDecision, proposedDecision } from '../fixtures/decisionRecords'
 
 describe('Decision Record API contract', () => {
   it('accepts decision list responses', () => {
-    const parsed = decisionRecordListResponseSchema.parse({ decisions: [proposedDecision] });
+    const parsed = decisionRecordListResponseSchema.parse({
+      decisions: [proposedDecision],
+      pagination: {
+        endIndex: 1,
+        page: 1,
+        pageSize: 5,
+        startIndex: 1,
+        totalItems: 1,
+        totalPages: 1
+      }
+    });
 
     expect(parsed.decisions[0].sourceBriefId).toBe('brief-1');
+    expect(parsed.pagination.totalItems).toBe(1);
   });
 
   it('accepts decision mutation responses', () => {

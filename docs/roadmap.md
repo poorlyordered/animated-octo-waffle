@@ -773,11 +773,33 @@ Validation:
 - Spec: `specs/036-cross-surface-retry-audit-filtering`
 - Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
 
+### M37: Decision Backend Pagination - Complete
+
+Goal: page Decision Records through the API so large filtered result sets do not have to load fully into the browser.
+
+Delivered capabilities:
+
+- Bounded decision page-size contract shared by API and browser
+- Decision list response pagination metadata for page, page size, totals, and visible item range
+- Decision-record store counts filtered records and returns only the requested page
+- Out-of-range page requests clamp to the final available page
+- Empty result sets return page 1 of 1 with zero start/end indexes
+- Decision-record API parses page and page-size query parameters
+- Decision-record client sends page and page-size query parameters
+- Decision Records browser route stores and renders server pagination metadata
+- Browser fixtures return paginated decision responses for smoke validation
+- Contract/unit coverage for paginated response shape and metadata clamping
+- No approval mutation, queue creation, worker dispatch, retry scheduling, ESI fetch, EVE write, wallet/asset/contract/role mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/037-decision-backend-pagination`
+- Local validation covered targeted unit tests, targeted Playwright browser smoke tests, typecheck, lint, full Jest tests, and production build
+
 ## Near-Term Recommendation
 
-Proceed to M37 selection after M36 review.
+Proceed to M38 selection after M37 review.
 
 Recommended next-slice candidates:
 
-- Backend decision pagination if filtered decision result sets are still too large for local pagination.
 - Decision saved views if commanders need reusable operational filter presets.

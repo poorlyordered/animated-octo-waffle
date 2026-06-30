@@ -5,6 +5,7 @@ import {
   updateDecisionStatusRequestSchema,
   type CreateDecisionRecordRequest,
   type DecisionRecordListResponse,
+  type DecisionRecordPageSize,
   type DecisionRecordSourceFilter,
   type DecisionRecordResponse,
   type DecisionStatus,
@@ -20,6 +21,8 @@ async function parseJson<T>(response: Response, schema: { parse(value: unknown):
 }
 
 export interface ListDecisionRecordFilters {
+  page?: number;
+  pageSize?: DecisionRecordPageSize;
   source?: DecisionRecordSourceFilter;
   sourceBriefId?: string;
   status?: DecisionStatus;
@@ -30,6 +33,14 @@ export async function listDecisionRecords(filters: ListDecisionRecordFilters = {
 
   if (filters.source) {
     params.set('source', filters.source);
+  }
+
+  if (filters.page) {
+    params.set('page', String(filters.page));
+  }
+
+  if (filters.pageSize) {
+    params.set('pageSize', String(filters.pageSize));
   }
 
   if (filters.sourceBriefId) {

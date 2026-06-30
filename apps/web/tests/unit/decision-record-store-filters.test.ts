@@ -1,4 +1,4 @@
-import { buildDecisionRecordListQuery } from '../../../../netlify/functions/_shared/decision-record-store';
+import { buildDecisionRecordListQuery, buildDecisionRecordPagination } from '../../../../netlify/functions/_shared/decision-record-store';
 
 describe('decision record store filters', () => {
   it('builds bounded query filters for decision status and source domains', () => {
@@ -29,6 +29,26 @@ describe('decision record store filters', () => {
           ]
         }
       ]
+    });
+  });
+
+  it('builds clamped backend pagination metadata', () => {
+    expect(buildDecisionRecordPagination(8, 2, 3)).toEqual({
+      endIndex: 6,
+      page: 2,
+      pageSize: 3,
+      startIndex: 4,
+      totalItems: 8,
+      totalPages: 3
+    });
+
+    expect(buildDecisionRecordPagination(0, 99, 5)).toEqual({
+      endIndex: 0,
+      page: 1,
+      pageSize: 5,
+      startIndex: 0,
+      totalItems: 0,
+      totalPages: 1
     });
   });
 });

@@ -3,6 +3,8 @@ import type {
   ApprovalRecord,
   CreateDecisionRecordRequest,
   DecisionRecord,
+  DecisionRecordListResponse,
+  DecisionRecordPageSize,
   NumbersFollowUpOrigin,
   NumbersSnapshot,
   NumbersFollowUpCandidate,
@@ -27,9 +29,31 @@ function idFilter(id: string, corporationId: string) {
 }
 
 export interface ListDecisionFilters {
+  page?: number;
+  pageSize?: DecisionRecordPageSize;
   source?: DecisionRecordSourceFilter;
   sourceBriefId?: string;
   status?: DecisionStatus;
+}
+
+export function buildDecisionRecordPagination(
+  totalItems: number,
+  requestedPage = 1,
+  pageSize: DecisionRecordPageSize = 5
+): DecisionRecordListResponse['pagination'] {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const page = Math.min(Math.max(Math.trunc(requestedPage) || 1, 1), totalPages);
+  const startIndex = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, totalItems);
+
+  return {
+    endIndex,
+    page,
+    pageSize,
+    startIndex,
+    totalItems,
+    totalPages
+  };
 }
 
 export function buildDecisionRecordListQuery(corporationId: string, filters: ListDecisionFilters): Record<string, unknown> {
@@ -73,10 +97,22 @@ export async function listDecisionRecords(
   db: Db,
   corporationId: string,
   filters: ListDecisionFilters
-): Promise<DecisionRecord[]> {
+): Promise<DecisionRecordListResponse> {
   const query = buildDecisionRecordListQuery(corporationId, filters);
-  const documents = await db.collection(collectionName).find(query).sort({ updatedAt: -1, timestamp: -1 }).toArray();
-  return documents.map((document) => normalizeDecisionRecordDocument(document as DecisionDocument));
+  const totalItems = await db.collection(collectionName).countDocuments(query);
+  const pagination = buildDecisionRecordPagination(totalItems, filters.page, filters.pageSize);
+  const documents = await db
+    .collection(collectionName)
+    .find(query)
+    .sort({ updatedAt: -1, timestamp: -1 })
+    .skip(pagination.startIndex === 0 ? 0 : pagination.startIndex - 1)
+    .limit(pagination.pageSize)
+    .toArray();
+
+  return {
+    decisions: documents.map((document) => normalizeDecisionRecordDocument(document as DecisionDocument)),
+    pagination
+  };
 }
 
 export async function findDecisionRecord(db: Db, corporationId: string, id: string): Promise<DecisionRecord | null> {

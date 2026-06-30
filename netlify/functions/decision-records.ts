@@ -1,5 +1,6 @@
 import {
   createDecisionRecordRequestSchema,
+  decisionRecordPageSizeSchema,
   decisionRecordSourceFilterSchema,
   decisionStatusSchema,
   updateDecisionStatusRequestSchema
@@ -22,6 +23,15 @@ function statusPathId(event: FunctionEvent): string | null {
   return match?.[1] ?? null;
 }
 
+function parsePage(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const page = Number(value);
+  return Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : undefined;
+}
+
 export async function handler(event: FunctionEvent) {
   try {
     const method = event.httpMethod ?? 'GET';
@@ -35,13 +45,18 @@ export async function handler(event: FunctionEvent) {
       const source = event.queryStringParameters?.source
         ? decisionRecordSourceFilterSchema.parse(event.queryStringParameters.source)
         : undefined;
-      const decisions = await listDecisionRecords(db, corporationId, {
+      const pageSize = event.queryStringParameters?.pageSize
+        ? decisionRecordPageSizeSchema.parse(Number(event.queryStringParameters.pageSize))
+        : undefined;
+      const response = await listDecisionRecords(db, corporationId, {
+        page: parsePage(event.queryStringParameters?.page),
+        pageSize,
         source,
         sourceBriefId: event.queryStringParameters?.sourceBriefId,
         status
       });
 
-      return jsonResponse(200, { decisions });
+      return jsonResponse(200, response);
     }
 
     if (method === 'POST') {
