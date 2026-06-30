@@ -1,4 +1,4 @@
-import type { Db } from 'mongodb';
+import { ObjectId, type Db } from 'mongodb';
 import type {
   CommandBrief,
   CoverageState,
@@ -6,6 +6,8 @@ import type {
   OpportunityIngestionProvenance,
   OpportunityIngestionSectionKey,
   OpportunityIngestionSectionStatus,
+  OpportunityIngestionWorkerCompleteRequest,
+  OpportunityIngestionWorkerRequestSummary,
   ResearchStatus
 } from '../../../packages/contracts/src/index';
 import {
@@ -18,12 +20,31 @@ const requestCollectionName = 'research_requests';
 const briefCollectionName = 'research_briefs';
 const boundary =
   'Opportunity ingestion history is read-only. This view does not schedule research pulls, dispatch workers, fetch ESI, write to EVE, or execute external services.';
+const prepareBoundary =
+  'Prepared for future Opportunity ingestion. No research pull was scheduled, no worker was dispatched, no ESI data was fetched, no EVE write occurred, and no external service was executed.';
 const sectionKeys: OpportunityIngestionSectionKey[] = ['sources', 'impacts', 'recommendations', 'watchlist'];
 
 export type OpportunityResearchRequestDocument = Record<string, unknown> & {
-  _id?: { toString(): string };
+  _id?: ObjectId | { toString(): string };
   id?: string;
+  status?: unknown;
+  corporationId?: unknown;
+  focus?: unknown;
+  requestedBy?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  claimedBy?: unknown;
+  claimedAt?: unknown;
+  result?: unknown;
+  rawItemCount?: unknown;
+  sourceCount?: unknown;
+  errorMessage?: unknown;
+  failedAt?: unknown;
 };
+
+function opportunityResearchRequestIdFilter(id: string) {
+  return ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id };
+}
 
 function recordValue(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
@@ -46,6 +67,15 @@ function isoDate(value: unknown): string {
   }
 
   return new Date(0).toISOString();
+}
+
+function optionalIsoDate(value: unknown): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = isoDate(value);
+  return parsed === new Date(0).toISOString() ? undefined : parsed;
 }
 
 function nonNegativeNumber(value: unknown): number | undefined {
@@ -117,6 +147,7 @@ export function normalizeOpportunityIngestionHistoryItem(
   const errorMessage = optionalString(document.errorMessage);
   const status = normalizeStatus(document.status);
   const updatedAt = isoDate(document.updatedAt ?? document.createdAt);
+  const failedAt = isoDate(document.failedAt ?? document.updatedAt ?? document.createdAt);
 
   return {
     id: String(document.id ?? document._id?.toString() ?? 'unknown'),
@@ -124,8 +155,10 @@ export function normalizeOpportunityIngestionHistoryItem(
     requestedAt: isoDate(document.createdAt ?? document.requestedAt),
     updatedAt,
     requestedBy: optionalString(document.requestedBy),
+    claimedBy: optionalString(document.claimedBy),
+    claimedAt: optionalIsoDate(document.claimedAt),
     sourceCount: nonNegativeNumber(document.rawItemCount ?? document.sourceCount ?? result.sourceCount),
-    failure: status === 'failed' && errorMessage ? { reason: errorMessage, failedAt: updatedAt } : undefined,
+    failure: status === 'failed' && errorMessage ? { reason: errorMessage, failedAt } : undefined,
     sectionStatuses: normalizeSectionStatuses(result.sectionStatuses, fallbackSections),
     boundary
   };
@@ -148,6 +181,174 @@ export async function listOpportunityIngestionHistory(
   return documents.map((document) =>
     normalizeOpportunityIngestionHistoryItem(document as OpportunityResearchRequestDocument, fallbackSections)
   );
+}
+
+export async function findOpportunityIngestionRequest(
+  db: Db,
+  id: string
+): Promise<OpportunityResearchRequestDocument | null> {
+  const document = await db.collection(requestCollectionName).findOne(opportunityResearchRequestIdFilter(id));
+  return document ? normalizeOpportunityResearchRequestDocument(document as OpportunityResearchRequestDocument) : null;
+}
+
+export async function findActiveOpportunityIngestionRequest(
+  db: Db,
+  corporationId: string,
+  focus: string
+): Promise<OpportunityResearchRequestDocument | null> {
+  const document = await db.collection(requestCollectionName).findOne({
+    corporationId,
+    focus,
+    status: { $in: ['queued', 'processing'] }
+  });
+
+  return document ? normalizeOpportunityResearchRequestDocument(document as OpportunityResearchRequestDocument) : null;
+}
+
+export async function listQueuedOpportunityIngestionRequests(
+  db: Db,
+  focus?: string
+): Promise<OpportunityResearchRequestDocument[]> {
+  const query: Record<string, unknown> = { status: 'queued' };
+  if (focus) {
+    query.focus = focus;
+  }
+
+  const documents = await db.collection(requestCollectionName).find(query).sort({ createdAt: 1 }).toArray();
+  return documents.map((document) => normalizeOpportunityResearchRequestDocument(document as OpportunityResearchRequestDocument));
+}
+
+export async function createOrFindQueuedOpportunityIngestionRequest(
+  db: Db,
+  corporationId: string,
+  focus: string,
+  requestedBy: string,
+  reason?: string
+): Promise<{ request: OpportunityResearchRequestDocument; duplicate: boolean }> {
+  const existing = await findActiveOpportunityIngestionRequest(db, corporationId, focus);
+  if (existing) {
+    return { request: existing, duplicate: true };
+  }
+
+  const now = new Date().toISOString();
+  const document: Omit<OpportunityResearchRequestDocument, '_id' | 'id'> = {
+    corporationId,
+    focus,
+    status: 'queued',
+    requestedBy,
+    requestReason: reason?.trim() || 'Commander prepared Opportunity ingestion for worker pickup.',
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const result = await db.collection(requestCollectionName).insertOne(document);
+  return {
+    request: normalizeOpportunityResearchRequestDocument({ ...document, _id: result.insertedId } as OpportunityResearchRequestDocument),
+    duplicate: false
+  };
+}
+
+export async function claimOpportunityIngestionRequest(
+  db: Db,
+  id: string,
+  workerId: string
+): Promise<OpportunityResearchRequestDocument | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection(requestCollectionName).findOneAndUpdate(
+    {
+      ...opportunityResearchRequestIdFilter(id),
+      status: 'queued'
+    },
+    {
+      $set: {
+        status: 'processing',
+        claimedBy: workerId,
+        claimedAt: now,
+        updatedAt: now
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeOpportunityResearchRequestDocument(result as OpportunityResearchRequestDocument) : null;
+}
+
+export async function completeOpportunityIngestionRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  request: OpportunityIngestionWorkerCompleteRequest
+): Promise<OpportunityResearchRequestDocument | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection(requestCollectionName).findOneAndUpdate(
+    {
+      ...opportunityResearchRequestIdFilter(id),
+      status: 'processing',
+      claimedBy: workerId
+    },
+    {
+      $set: {
+        status: 'processed',
+        rawItemCount: request.sourceCount,
+        result: {
+          sourceCount: request.sourceCount,
+          sectionStatuses: request.sectionStatuses
+        },
+        updatedAt: now
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeOpportunityResearchRequestDocument(result as OpportunityResearchRequestDocument) : null;
+}
+
+export async function failOpportunityIngestionRequest(
+  db: Db,
+  id: string,
+  workerId: string,
+  reason: string
+): Promise<OpportunityResearchRequestDocument | null> {
+  const now = new Date().toISOString();
+  const result = await db.collection(requestCollectionName).findOneAndUpdate(
+    {
+      ...opportunityResearchRequestIdFilter(id),
+      status: 'processing',
+      claimedBy: workerId
+    },
+    {
+      $set: {
+        status: 'failed',
+        errorMessage: reason,
+        failedAt: now,
+        updatedAt: now
+      }
+    },
+    { returnDocument: 'after' }
+  );
+
+  return result ? normalizeOpportunityResearchRequestDocument(result as OpportunityResearchRequestDocument) : null;
+}
+
+export function opportunityIngestionPrepareSummary(
+  request: OpportunityResearchRequestDocument,
+  fallbackSections: OpportunityIngestionSectionStatus[]
+): OpportunityIngestionHistoryItem {
+  return {
+    ...normalizeOpportunityIngestionHistoryItem(request, fallbackSections),
+    boundary: prepareBoundary
+  };
+}
+
+export function opportunityIngestionWorkerSummary(
+  request: OpportunityResearchRequestDocument,
+  fallbackSections: OpportunityIngestionSectionStatus[] = []
+): OpportunityIngestionWorkerRequestSummary {
+  return {
+    ...normalizeOpportunityIngestionHistoryItem(request, fallbackSections),
+    corporationId: String(request.corporationId ?? ''),
+    focus: String(request.focus ?? defaultResearchFocus)
+  };
 }
 
 export async function countOpportunityBriefs(db: Db, corporationId: string, focus: string): Promise<number> {
@@ -182,4 +383,13 @@ export function buildOpportunityIngestionProvenance(
     message,
     boundary
   });
+}
+
+function normalizeOpportunityResearchRequestDocument(
+  document: OpportunityResearchRequestDocument
+): OpportunityResearchRequestDocument {
+  return {
+    ...document,
+    id: document.id ?? document._id?.toString()
+  };
 }

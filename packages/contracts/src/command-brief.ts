@@ -33,6 +33,8 @@ export interface OpportunityIngestionHistoryItem {
   requestedAt: string;
   updatedAt: string;
   requestedBy?: string;
+  claimedBy?: string;
+  claimedAt?: string;
   sourceCount?: number;
   failure?: {
     reason: string;
@@ -40,6 +42,30 @@ export interface OpportunityIngestionHistoryItem {
   };
   sectionStatuses: OpportunityIngestionSectionStatus[];
   boundary: string;
+}
+
+export interface PrepareOpportunityIngestionRequest {
+  reason?: string;
+}
+
+export interface OpportunityIngestionWorkerClaimRequest {
+  workerId: string;
+}
+
+export interface OpportunityIngestionWorkerCompleteRequest {
+  workerId: string;
+  sourceCount: number;
+  sectionStatuses: OpportunityIngestionSectionStatus[];
+}
+
+export interface OpportunityIngestionWorkerFailRequest {
+  workerId: string;
+  reason: string;
+}
+
+export interface OpportunityIngestionWorkerRequestSummary extends OpportunityIngestionHistoryItem {
+  corporationId: string;
+  focus: string;
 }
 
 export interface OpportunityIngestionProvenance {
@@ -86,6 +112,21 @@ export interface ResearchRequest {
 export interface CommandBriefResponse {
   brief: CommandBrief | null;
   opportunityProvenance?: OpportunityIngestionProvenance;
+}
+
+export interface PrepareOpportunityIngestionResponse {
+  request: OpportunityIngestionHistoryItem;
+  provenance: OpportunityIngestionProvenance;
+  duplicate?: boolean;
+  message: string;
+}
+
+export interface OpportunityIngestionWorkerListResponse {
+  requests: OpportunityIngestionWorkerRequestSummary[];
+}
+
+export interface OpportunityIngestionWorkerResponse {
+  request: OpportunityIngestionWorkerRequestSummary;
 }
 
 export interface ResearchStatusResponse {

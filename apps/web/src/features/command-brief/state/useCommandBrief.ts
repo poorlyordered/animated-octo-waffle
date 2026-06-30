@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { CommandBriefViewModel } from '@gryyk/contracts';
-import { getCommandBrief, getResearchStatus } from '../services/commandBriefClient';
+import type { CommandBriefViewModel, PrepareOpportunityIngestionResponse } from '@gryyk/contracts';
+import { getCommandBrief, getResearchStatus, prepareOpportunityIngestion } from '../services/commandBriefClient';
 import { deriveDisplayState } from '../services/displayState';
 
 interface UseCommandBriefOptions {
@@ -16,6 +16,7 @@ interface CommandBriefState {
 interface UseCommandBriefState {
   loading: boolean;
   error: string | null;
+  prepareOpportunityIngestion: () => Promise<PrepareOpportunityIngestionResponse>;
   viewModel: CommandBriefViewModel;
 }
 
@@ -71,9 +72,28 @@ export function useCommandBrief({ focus }: UseCommandBriefOptions): UseCommandBr
 
   const currentRequestKey = focus ?? '';
 
+  async function prepareIngestion(): Promise<PrepareOpportunityIngestionResponse> {
+    const response = await prepareOpportunityIngestion(
+      {
+        reason: 'Refresh official news and strategic Opportunity context.'
+      },
+      { focus }
+    );
+    setState((current) => ({
+      ...current,
+      error: null,
+      viewModel: {
+        ...current.viewModel,
+        opportunityProvenance: response.provenance
+      }
+    }));
+    return response;
+  }
+
   return {
     loading: state.requestKey !== currentRequestKey,
     error: state.error,
+    prepareOpportunityIngestion: prepareIngestion,
     viewModel: state.viewModel
   };
 }

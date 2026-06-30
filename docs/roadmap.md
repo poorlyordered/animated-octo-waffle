@@ -897,14 +897,35 @@ Validation:
 - Spec: `specs/042-people-ingestion-expansion`
 - Local validation covered targeted People contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
 
+### M43: Opportunity Ingestion Expansion - Complete
+
+Goal: add a worker-backed Opportunity refresh path beyond latest processed briefs, with source provenance and safe failure states.
+
+Delivered capabilities:
+
+- Commander-facing Opportunity ingestion prepare endpoint
+- Browser control to prepare Opportunity ingestion from the Opportunity provenance panel
+- Duplicate-safe active request handling per corporation scope and focus
+- Worker-only Opportunity ingestion endpoint for list, claim, complete, and fail callbacks
+- Atomic claim transition from queued to processing and worker-owned completion/failure transitions
+- Browser-safe provenance for queued, processing, processed, and failed Opportunity ingestion requests
+- Source count and sources/impacts/recommendations/watchlist section coverage in completed worker summaries
+- Contract/unit/browser coverage for prepare payloads, worker payloads, duplicate active requests, state transitions, and no-execution boundary language
+- No browser/request-path research scheduling, worker dispatch, ESI fetch, EVE write, external-service mutation, or external-service execution
+
+Validation:
+
+- Spec: `specs/043-opportunity-ingestion-expansion`
+- Local validation covered targeted Opportunity contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
 ## Near-Term Recommendation
 
-Proceed to M43 selection after M42 review.
+Proceed to M44 selection after M43 review.
 
 Recommended next slice:
 
-- M43: Opportunity Ingestion Expansion. Add a worker-backed Opportunity refresh path beyond latest processed briefs, with source provenance and safe failure states. It must not schedule research from browser display paths or write to EVE/external services.
+- M44: Worker Policy Hardening. Review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes. It must preserve commander approval boundaries and avoid implicit dispatch or execution from browser actions.
 
 Recommended next-slice candidates:
 
-- M44: Worker Policy Hardening. Review worker secret separation, retry/backoff policy, and operational runbooks for multiple worker classes. It must preserve commander approval boundaries and avoid implicit dispatch or execution from browser actions.
+- M45: Roadmap Backlog Refresh. Re-assess the next command-OS slices after worker-backed Numbers, People, and Opportunity ingestion lifecycle coverage.

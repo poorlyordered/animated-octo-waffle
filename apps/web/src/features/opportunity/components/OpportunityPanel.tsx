@@ -12,7 +12,7 @@ import type {
   UpdateDecisionStatusRequest,
   WorkerHandoffSummary
 } from '@gryyk/contracts';
-import type { OpportunityIngestionProvenance, SourceReference } from '@gryyk/contracts';
+import type { OpportunityIngestionProvenance, PrepareOpportunityIngestionResponse, SourceReference } from '@gryyk/contracts';
 import { DecisionRecordCreate } from '../../decision-records/components/DecisionRecordCreate';
 import { RetryAuditHistory } from '../../retry-audit/components/RetryAuditHistory';
 import {
@@ -32,6 +32,7 @@ interface OpportunityPanelProps {
   onCreateQueue?: (request: CreateAutomationQueueItemRequest) => Promise<AutomationQueueItem>;
   onCreateDecision?: (request: CreateDecisionRecordRequest) => DecisionRecord | Promise<DecisionRecord | void> | void;
   onPrepareWorkerHandoff?: (queueItemId: string) => Promise<WorkerHandoffSummary>;
+  prepareIngestion?: () => Promise<PrepareOpportunityIngestionResponse>;
   onRescheduleHandoffRetry?: (handoffId: string, reason: string, notBefore?: string) => Promise<RescheduleRetryResponse>;
   onScheduleHandoffRetry?: (handoffId: string, reason: string) => Promise<ScheduleRetryResponse>;
   onUpdateDecisionStatus?: (decisionId: string, request: UpdateDecisionStatusRequest) => Promise<DecisionRecord>;
@@ -207,14 +208,30 @@ function SourceList({ sources }: { sources: SourceReference[] }) {
   );
 }
 
-function OpportunityProvenanceSummary({ provenance }: { provenance: OpportunityIngestionProvenance | null }) {
+function OpportunityProvenanceSummary({
+  busy,
+  message,
+  onPrepare,
+  provenance
+}: {
+  busy: boolean;
+  message: string | null;
+  onPrepare?: () => void;
+  provenance: OpportunityIngestionProvenance | null;
+}) {
   if (!provenance) {
     return <p className="empty-state">No Opportunity provenance is available for this corporation scope.</p>;
   }
 
   return (
     <>
+      {onPrepare ? (
+        <button type="button" onClick={onPrepare} disabled={busy}>
+          {busy ? 'Preparing...' : 'Prepare ingestion'}
+        </button>
+      ) : null}
       <p>{provenance.message}</p>
+      {message ? <p>{message}</p> : null}
       <dl className="metadata-grid">
         <Metadata label="Mode" value={provenance.mode.replace('_', ' ')} />
         <Metadata label="Focus" value={provenance.focus} />
@@ -258,6 +275,7 @@ export function OpportunityPanel({
   onScheduleHandoffRetry,
   onUpdateDecisionStatus,
   opportunity,
+  prepareIngestion,
   sourceBrief
 }: OpportunityPanelProps) {
   const [selectedRecommendation, setSelectedRecommendation] = useState<string | null>(null);
@@ -266,6 +284,7 @@ export function OpportunityPanel({
   const [queuedWorkDetail, setQueuedWorkDetail] = useState<OpportunityQueuedWorkDetail | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [ingestionStatus, setIngestionStatus] = useState<string | null>(null);
 
   async function handleDecisionStatus(status: Extract<UpdateDecisionStatusRequest['status'], 'approved' | 'rejected'>) {
     if (!createdDecision || !onUpdateDecisionStatus) {
@@ -405,6 +424,22 @@ export function OpportunityPanel({
     }
   }
 
+  async function handlePrepareIngestion() {
+    if (!prepareIngestion) {
+      return;
+    }
+
+    setBusyAction('opportunity-ingestion');
+    try {
+      const response = await prepareIngestion();
+      setIngestionStatus(response.message);
+    } catch (actionError) {
+      setIngestionStatus(actionError instanceof Error ? actionError.message : 'Unable to prepare Opportunity ingestion.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   if (loading) {
     return <main className="command-brief">Loading opportunity...</main>;
   }
@@ -520,7 +555,12 @@ export function OpportunityPanel({
 
       <section aria-label="Opportunity provenance">
         <h2>Opportunity provenance</h2>
-        <OpportunityProvenanceSummary provenance={opportunity.provenance} />
+        <OpportunityProvenanceSummary
+          busy={busyAction === 'opportunity-ingestion'}
+          message={ingestionStatus}
+          onPrepare={prepareIngestion ? () => void handlePrepareIngestion() : undefined}
+          provenance={opportunity.provenance}
+        />
       </section>
 
       <p className="notice">{opportunity.boundary}</p>

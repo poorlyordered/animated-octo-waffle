@@ -37,6 +37,7 @@ async function json(route: Route, body: unknown) {
 
 export async function installCommandSurfaceApiFixtures(page: Page) {
   let workerHandoffRetryOverride: RetryRequestSummary | null = null;
+  let opportunityProvenance = commandSurfaceFixtures.commandBrief.opportunityProvenance;
   let peopleDecisionStatus: 'none' | 'proposed' | 'approved' | 'rejected' = 'none';
   let peopleQueueLinked = false;
   let peopleIngestionProvenance = commandSurfaceFixtures.people.ingestionProvenance;
@@ -57,7 +58,24 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     });
   });
 
-  await page.route('**/api/command-brief**', (route) => json(route, commandSurfaceFixtures.commandBrief));
+  await page.route('**/api/command-brief**', (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/opportunity/prepare')) {
+      opportunityProvenance = {
+        ...commandSurfaceFixtures.commandBrief.preparedOpportunityIngestion.provenance,
+        message: 'Opportunity context is available from historical browser command brief records.'
+      };
+      return json(route, {
+        ...commandSurfaceFixtures.commandBrief.preparedOpportunityIngestion,
+        provenance: opportunityProvenance
+      });
+    }
+
+    return json(route, {
+      ...commandSurfaceFixtures.commandBrief,
+      opportunityProvenance
+    });
+  });
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
   await page.route('**/api/numbers**', (route) => {
     const url = new URL(route.request().url());
