@@ -30,9 +30,11 @@ export interface ApprovalRecord {
 }
 
 export interface DecisionSourceContext {
-  sourceType: 'research_brief' | 'numbers_follow_up';
+  sourceType: 'research_brief' | 'numbers_follow_up' | 'people_follow_up';
   snapshotId?: string;
   candidateId?: string;
+  followUpId?: string;
+  memberProfileId?: string;
   relatedSection?: string;
   suggestedPath?: string;
 }

@@ -1,5 +1,12 @@
-import type { LeadershipFollowUp, MemberProfile, PeopleIngestionProvenance } from '@gryyk/contracts';
-import { approvedDecision } from './decisionRecords';
+import type {
+  DecisionRecord,
+  LeadershipFollowUp,
+  MemberProfile,
+  PeopleFollowUpDecisionResponse,
+  PeopleFollowUpQueueResponse,
+  PeopleIngestionProvenance
+} from '@gryyk/contracts';
+import { approvedDecision, proposedDecision, rejectedDecision } from './decisionRecords';
 import { queuedItem } from './automationQueue';
 
 export const completeMember: MemberProfile = {
@@ -212,4 +219,150 @@ export const playerImpactingFollowUp: LeadershipFollowUp = {
     approvedAt: '2026-06-01T12:05:00.000Z',
     approvalText: 'I approve this player-impacting follow-up.'
   }
+};
+
+export const peopleFollowUpDecision: DecisionRecord = {
+  ...proposedDecision,
+  id: 'decision-people-follow-up',
+  sourceBriefId: openFollowUp.id,
+  sourceRecommendation: openFollowUp.reason,
+  sourceContext: {
+    sourceType: 'people_follow_up',
+    followUpId: openFollowUp.id,
+    memberProfileId: openFollowUp.memberProfileId,
+    relatedSection: 'leadership_followups',
+    suggestedPath: 'queue'
+  },
+  sourceProvenance: {
+    ...proposedDecision.sourceProvenance,
+    briefId: openFollowUp.id,
+    briefCreatedAt: openFollowUp.createdAt,
+    focus: 'people',
+    model: 'processed-people-profile',
+    promptVersion: 'people-followup-v1',
+    confidence: 0,
+    sourceCount: 1,
+    sourceReferences: [],
+    coverage: {
+      numbers: 'missing',
+      opportunity: 'missing',
+      people: 'present',
+      missingReasons: []
+    }
+  },
+  rationale: openFollowUp.reason,
+  expectedResult: 'Commander decision recorded from People follow-up.'
+};
+
+export const approvedPeopleFollowUpDecision: DecisionRecord = {
+  ...peopleFollowUpDecision,
+  status: 'approved',
+  approval: approvedDecision.approval,
+  updatedAt: '2026-06-01T12:05:00.000Z'
+};
+
+export const rejectedPeopleFollowUpDecision: DecisionRecord = {
+  ...peopleFollowUpDecision,
+  id: 'decision-people-follow-up-rejected',
+  status: 'rejected',
+  approval: null,
+  updatedAt: rejectedDecision.updatedAt
+};
+
+export const decidedPeopleFollowUp: LeadershipFollowUp = {
+  ...openFollowUp,
+  sourceDecisionId: peopleFollowUpDecision.id,
+  sourceContext: {
+    ...openFollowUp.sourceContext,
+    decisionId: peopleFollowUpDecision.id,
+    decisionStatus: peopleFollowUpDecision.status
+  }
+};
+
+export const approvedPeopleFollowUp: LeadershipFollowUp = {
+  ...decidedPeopleFollowUp,
+  sourceContext: {
+    ...decidedPeopleFollowUp.sourceContext,
+    decisionStatus: 'approved'
+  }
+};
+
+export const queuedPeopleFollowUp: LeadershipFollowUp = {
+  ...approvedPeopleFollowUp,
+  sourceQueueItemId: 'queue-people-follow-up',
+  sourceContext: {
+    ...approvedPeopleFollowUp.sourceContext,
+    queueItemId: 'queue-people-follow-up',
+    queueStatus: 'queued'
+  }
+};
+
+export const peopleFollowUpQueueItem = {
+  ...queuedItem,
+  id: 'queue-people-follow-up',
+  sourceDecisionId: approvedPeopleFollowUpDecision.id,
+  taskIntent: `Prepare People follow-up plan: ${openFollowUp.reason}`,
+  inputSummary: `Use the approved People decision for ${openFollowUp.memberDisplayName}.`,
+  expectedOutput: `Prepare commander review options for People follow-up: ${openFollowUp.reason}.`
+};
+
+export const peopleFollowUpDecisionResponse: PeopleFollowUpDecisionResponse = {
+  followUp: decidedPeopleFollowUp,
+  decision: peopleFollowUpDecision,
+  handoff: {
+    followUpId: openFollowUp.id,
+    memberProfileId: openFollowUp.memberProfileId,
+    memberDisplayName: openFollowUp.memberDisplayName,
+    decisionId: peopleFollowUpDecision.id,
+    decisionStatus: 'proposed',
+    approvalRequired: true,
+    queueReady: false,
+    message: `Decision ${peopleFollowUpDecision.id} is proposed. Approval is required before queued work can be created.`,
+    boundary:
+      'People follow-up handoff only. No queued work, worker dispatch, EVE role/access change, retry, or external execution occurred.',
+    missingLinkReasons: []
+  },
+  message: 'People follow-up decision recorded.'
+};
+
+export const approvedPeopleFollowUpDecisionResponse: PeopleFollowUpDecisionResponse = {
+  ...peopleFollowUpDecisionResponse,
+  followUp: approvedPeopleFollowUp,
+  decision: approvedPeopleFollowUpDecision,
+  handoff: {
+    ...peopleFollowUpDecisionResponse.handoff,
+    decisionStatus: 'approved',
+    approvalRequired: false,
+    queueReady: true,
+    message: `Decision ${approvedPeopleFollowUpDecision.id} is approved and ready for separate queued work.`
+  },
+  message: 'People follow-up decision approved.'
+};
+
+export const rejectedPeopleFollowUpDecisionResponse: PeopleFollowUpDecisionResponse = {
+  ...peopleFollowUpDecisionResponse,
+  decision: rejectedPeopleFollowUpDecision,
+  handoff: {
+    ...peopleFollowUpDecisionResponse.handoff,
+    decisionId: rejectedPeopleFollowUpDecision.id,
+    decisionStatus: 'rejected',
+    approvalRequired: false,
+    queueReady: false,
+    message: `Decision ${rejectedPeopleFollowUpDecision.id} is rejected. Queued work cannot be created from this People follow-up.`
+  },
+  message: 'People follow-up decision rejected.'
+};
+
+export const peopleFollowUpQueueResponse: PeopleFollowUpQueueResponse = {
+  followUp: queuedPeopleFollowUp,
+  queueItem: peopleFollowUpQueueItem,
+  handoff: {
+    ...approvedPeopleFollowUpDecisionResponse.handoff,
+    queueItemId: peopleFollowUpQueueItem.id,
+    queueStatus: peopleFollowUpQueueItem.status,
+    message: `Queued work is linked to approved People decision ${approvedPeopleFollowUpDecision.id}.`,
+    boundary:
+      'People queued work handoff only. No worker was dispatched, no handoff was prepared, and no EVE role/access or external-service change occurred.'
+  },
+  message: 'People queued work created.'
 };

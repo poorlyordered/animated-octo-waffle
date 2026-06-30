@@ -1,14 +1,25 @@
 import { ObjectId, type Db } from 'mongodb';
 import type {
+  AutomationQueueItem,
+  DecisionRecord,
   CreateLeadershipFollowUpRequest,
+  CreatePeopleFollowUpDecisionRequest,
+  CreatePeopleFollowUpQueueRequest,
   FollowUpPriority,
   FollowUpStatus,
   LeadershipFollowUp,
   MemberProfile,
-  PeopleIngestionProvenance
+  PeopleIngestionProvenance,
+  UpdatePeopleFollowUpDecisionStatusRequest
 } from '../../../packages/contracts/src/index';
-import { findAutomationQueueItem } from './automation-queue-store';
-import { findDecisionRecord } from './decision-record-store';
+import {
+  createAutomationQueueItem,
+  findAutomationQueueItem,
+  findAutomationQueueItemByDecisionAndIntent,
+  listAutomationQueueItems
+} from './automation-queue-store';
+import { findDecisionRecord, updateDecisionStatus } from './decision-record-store';
+import { normalizeDecisionRecordDocument, type DecisionDocument } from './decision-record-normalizer';
 import {
   aggregatePeopleIngestionSectionStatuses,
   buildPeopleIngestionProvenance,
@@ -20,7 +31,7 @@ import {
   type LeadershipFollowUpDocument,
   type MemberProfileDocument
 } from './people-normalizer';
-import { assertFollowUpApprovalBoundary, assertNoDuplicateFollowUp, needsFollowUp } from './people-rules';
+import { assertFollowUpApprovalBoundary, assertNoDuplicateFollowUp, assertPeopleDecisionOrigin, needsFollowUp } from './people-rules';
 
 const memberCollectionName = 'member_profiles';
 const followUpCollectionName = 'leadership_followups';
@@ -79,6 +90,11 @@ export async function listMemberProfiles(
 export async function findMemberProfile(db: Db, corporationId: string, id: string): Promise<MemberProfile | null> {
   const document = await db.collection(memberCollectionName).findOne(idFilter(id, corporationId));
   return document ? normalizeMemberProfileDocument(document as MemberProfileDocument) : null;
+}
+
+export async function findLeadershipFollowUp(db: Db, corporationId: string, id: string): Promise<LeadershipFollowUp | null> {
+  const document = await db.collection(followUpCollectionName).findOne(idFilter(id, corporationId));
+  return document ? normalizeLeadershipFollowUpDocument(document as LeadershipFollowUpDocument) : null;
 }
 
 export async function getPeopleIngestionProvenance(
@@ -189,4 +205,252 @@ export async function createLeadershipFollowUp(
 
   const result = await db.collection(followUpCollectionName).insertOne(document);
   return normalizeLeadershipFollowUpDocument({ ...document, _id: result.insertedId } as LeadershipFollowUpDocument);
+}
+
+async function updateFollowUpLinks(
+  db: Db,
+  corporationId: string,
+  followUp: LeadershipFollowUp,
+  links: {
+    decision?: DecisionRecord;
+    queueItem?: AutomationQueueItem;
+  }
+): Promise<LeadershipFollowUp> {
+  const now = new Date().toISOString();
+  const sourceContext = {
+    ...followUp.sourceContext,
+    decisionId: links.decision?.id ?? followUp.sourceContext.decisionId,
+    decisionStatus: links.decision?.status ?? followUp.sourceContext.decisionStatus,
+    queueItemId: links.queueItem?.id ?? followUp.sourceContext.queueItemId,
+    queueStatus: links.queueItem?.status ?? followUp.sourceContext.queueStatus
+  };
+
+  const set: Record<string, unknown> = {
+    sourceContext,
+    updatedAt: now
+  };
+
+  if (links.decision) {
+    set.sourceDecisionId = links.decision.id;
+  }
+
+  if (links.queueItem) {
+    set.sourceQueueItemId = links.queueItem.id;
+  }
+
+  await db.collection(followUpCollectionName).updateOne(idFilter(followUp.id, corporationId), { $set: set });
+
+  const updated = await findLeadershipFollowUp(db, corporationId, followUp.id);
+  if (!updated) {
+    throw new Error('Leadership follow-up not found');
+  }
+
+  return updated;
+}
+
+async function linkedDecisionForFollowUp(
+  db: Db,
+  corporationId: string,
+  followUp: LeadershipFollowUp
+): Promise<DecisionRecord | null> {
+  if (followUp.sourceDecisionId) {
+    const linked = await findDecisionRecord(db, corporationId, followUp.sourceDecisionId);
+    if (linked) {
+      return linked;
+    }
+  }
+
+  const document = await db.collection('strategic_decisions').findOne({
+    corporationId,
+    'sourceContext.sourceType': 'people_follow_up',
+    'sourceContext.followUpId': followUp.id,
+    'sourceContext.memberProfileId': followUp.memberProfileId
+  });
+
+  return document ? normalizeDecisionRecordDocument(document as DecisionDocument) : null;
+}
+
+export async function createDecisionRecordFromPeopleFollowUp(
+  db: Db,
+  corporationId: string,
+  followUpId: string,
+  request: CreatePeopleFollowUpDecisionRequest
+): Promise<{ followUp: LeadershipFollowUp; decision: DecisionRecord; duplicate: boolean }> {
+  const followUp = await findLeadershipFollowUp(db, corporationId, followUpId);
+
+  if (!followUp) {
+    throw new Error('Leadership follow-up not found');
+  }
+
+  const existingDecision = await linkedDecisionForFollowUp(db, corporationId, followUp);
+  if (existingDecision) {
+    return {
+      followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision: existingDecision }),
+      decision: existingDecision,
+      duplicate: true
+    };
+  }
+
+  const now = new Date().toISOString();
+  const document = {
+    corporationId,
+    sourceBriefId: followUp.id,
+    researchBriefId: followUp.id,
+    sourceRecommendation: followUp.reason,
+    sourceContext: {
+      sourceType: 'people_follow_up',
+      followUpId: followUp.id,
+      memberProfileId: followUp.memberProfileId,
+      relatedSection: 'leadership_followups',
+      suggestedPath: 'queue'
+    },
+    sourceProvenance: {
+      briefId: followUp.id,
+      briefCreatedAt: followUp.createdAt,
+      focus: 'people',
+      model: 'processed-people-profile',
+      promptVersion: 'people-followup-v1',
+      confidence: 0,
+      sourceCount: followUp.sourceContext.coverage.missingReasons.length === 0 ? 1 : 0,
+      sourceReferences: [],
+      coverage: {
+        numbers: 'missing',
+        opportunity: 'missing',
+        people: 'present',
+        missingReasons: followUp.sourceContext.coverage.missingReasons
+      }
+    },
+    status: 'proposed',
+    rationale: request.rationale?.trim() || followUp.reason,
+    expectedResult:
+      request.expectedResult?.trim() ||
+      `Commander decision recorded from People follow-up for ${followUp.memberDisplayName}. No execution has been performed.`,
+    isPlayerImpacting: followUp.isPlayerImpacting,
+    approval: null,
+    statusHistory: [
+      {
+        toStatus: 'proposed',
+        changedAt: now
+      }
+    ],
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const result = await db.collection('strategic_decisions').insertOne(document);
+  const decision = normalizeDecisionRecordDocument({ ...document, _id: result.insertedId } as DecisionDocument);
+  return {
+    followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision }),
+    decision,
+    duplicate: false
+  };
+}
+
+export async function updatePeopleFollowUpDecisionStatus(
+  db: Db,
+  corporationId: string,
+  followUpId: string,
+  request: UpdatePeopleFollowUpDecisionStatusRequest
+): Promise<{ followUp: LeadershipFollowUp; decision: DecisionRecord }> {
+  const followUp = await findLeadershipFollowUp(db, corporationId, followUpId);
+
+  if (!followUp) {
+    throw new Error('Leadership follow-up not found');
+  }
+
+  const decision = await linkedDecisionForFollowUp(db, corporationId, followUp);
+
+  if (!decision) {
+    throw new Error('People follow-up decision not found');
+  }
+
+  assertPeopleDecisionOrigin(followUp, decision);
+
+  const updatedDecision = await updateDecisionStatus(db, corporationId, decision.id, {
+    status: request.status,
+    approvalText: request.approvalText,
+    note: request.status === 'rejected' ? request.rejectionReason : undefined
+  });
+
+  if (!updatedDecision) {
+    throw new Error('People follow-up decision not found');
+  }
+
+  return {
+    followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision: updatedDecision }),
+    decision: updatedDecision
+  };
+}
+
+export async function createQueueItemFromPeopleFollowUp(
+  db: Db,
+  corporationId: string,
+  followUpId: string,
+  request: CreatePeopleFollowUpQueueRequest
+): Promise<{ followUp: LeadershipFollowUp; decision: DecisionRecord; queueItem: AutomationQueueItem; duplicate: boolean }> {
+  const followUp = await findLeadershipFollowUp(db, corporationId, followUpId);
+
+  if (!followUp) {
+    throw new Error('Leadership follow-up not found');
+  }
+
+  const decision = await linkedDecisionForFollowUp(db, corporationId, followUp);
+
+  if (!decision) {
+    throw new Error('People follow-up decision not found');
+  }
+
+  assertPeopleDecisionOrigin(followUp, decision);
+
+  if (followUp.sourceQueueItemId) {
+    const linkedQueueItem = await findAutomationQueueItem(db, corporationId, followUp.sourceQueueItemId);
+
+    if (linkedQueueItem) {
+      return {
+        followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision, queueItem: linkedQueueItem }),
+        decision,
+        queueItem: linkedQueueItem,
+        duplicate: true
+      };
+    }
+  }
+
+  const existingDecisionQueueItem = (await listAutomationQueueItems(db, corporationId, { sourceDecisionId: decision.id }))[0];
+  if (existingDecisionQueueItem) {
+    return {
+      followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision, queueItem: existingDecisionQueueItem }),
+      decision,
+      queueItem: existingDecisionQueueItem,
+      duplicate: true
+    };
+  }
+
+  const existingQueueItem = await findAutomationQueueItemByDecisionAndIntent(db, corporationId, decision.id, request.title);
+  if (existingQueueItem) {
+    return {
+      followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision, queueItem: existingQueueItem }),
+      decision,
+      queueItem: existingQueueItem,
+      duplicate: true
+    };
+  }
+
+  const queueItem = await createAutomationQueueItem(db, corporationId, {
+    sourceDecisionId: decision.id,
+    taskIntent: request.title,
+    inputSummary: request.inputSummary,
+    expectedOutput: request.expectedOutput,
+    owner: request.owner
+  });
+
+  if (!queueItem) {
+    throw new Error('People follow-up decision not found');
+  }
+
+  return {
+    followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision, queueItem }),
+    decision,
+    queueItem,
+    duplicate: false
+  };
 }

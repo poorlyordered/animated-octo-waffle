@@ -39,8 +39,12 @@ export function PeopleRoute() {
       <PeopleFollowUpCreate member={people.selectedMember} onCreate={people.createMemberFollowUp} />
       <PeopleFollowUpList
         followUps={people.followUps}
+        handoffByFollowUpId={people.handoffByFollowUpId}
         statusFilter={people.followUpStatusFilter}
+        onCreateQueue={people.createFollowUpQueue}
+        onRecordDecision={people.recordFollowUpDecision}
         onStatusFilterChange={people.setFollowUpStatusFilter}
+        onUpdateDecisionStatus={people.updateFollowUpDecisionStatus}
       />
     </main>
   );

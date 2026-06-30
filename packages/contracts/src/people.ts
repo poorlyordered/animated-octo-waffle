@@ -1,5 +1,7 @@
 import type { ApprovalSnapshot } from './automation-queue.js';
 import type { OperatingLegCoverage, SourceReference } from './command-brief.js';
+import type { AutomationQueueItem } from './automation-queue.js';
+import type { DecisionRecord } from './decision-record.js';
 
 export const peopleCoverageStates = ['present', 'missing', 'stale'] as const;
 export type PeopleCoverageState = (typeof peopleCoverageStates)[number];
@@ -134,6 +136,22 @@ export interface LeadershipFollowUp {
   updatedAt: string;
 }
 
+export interface PeopleFollowUpHandoff {
+  followUpId: string;
+  memberProfileId: string;
+  memberDisplayName: string;
+  decisionId?: string;
+  decisionStatus?: string;
+  approvalRequired: boolean;
+  queueReady: boolean;
+  queueItemId?: string;
+  queueStatus?: string;
+  duplicate?: boolean;
+  message: string;
+  boundary: string;
+  missingLinkReasons: string[];
+}
+
 export interface CreateLeadershipFollowUpRequest {
   memberProfileId: string;
   reason: string;
@@ -144,6 +162,24 @@ export interface CreateLeadershipFollowUpRequest {
   sourceQueueItemId?: string;
   isPlayerImpacting: boolean;
   approvalText?: string;
+}
+
+export interface CreatePeopleFollowUpDecisionRequest {
+  rationale?: string;
+  expectedResult?: string;
+}
+
+export interface UpdatePeopleFollowUpDecisionStatusRequest {
+  status: 'approved' | 'rejected';
+  approvalText?: string;
+  rejectionReason?: string;
+}
+
+export interface CreatePeopleFollowUpQueueRequest {
+  title: string;
+  inputSummary: string;
+  expectedOutput: string;
+  owner?: string;
 }
 
 export interface MemberProfileListResponse {
@@ -162,4 +198,20 @@ export interface LeadershipFollowUpListResponse {
 
 export interface LeadershipFollowUpResponse {
   followUp: LeadershipFollowUp;
+}
+
+export interface PeopleFollowUpDecisionResponse {
+  followUp: LeadershipFollowUp;
+  decision: DecisionRecord;
+  handoff: PeopleFollowUpHandoff;
+  duplicate?: boolean;
+  message: string;
+}
+
+export interface PeopleFollowUpQueueResponse {
+  followUp: LeadershipFollowUp;
+  queueItem: AutomationQueueItem;
+  handoff: PeopleFollowUpHandoff;
+  duplicate?: boolean;
+  message: string;
 }

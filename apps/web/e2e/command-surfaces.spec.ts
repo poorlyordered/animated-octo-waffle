@@ -175,5 +175,16 @@ test('renders people surface with member and leadership follow-up content', asyn
   await expectVisibleText(page, 'This view does not retry, dispatch, fetch ESI, change roles, change access, or execute external services.');
   await expectVisibleText(page, 'Browser smoke member profile renders leadership context.');
   await expectVisibleText(page, 'Browser smoke leadership follow-up.');
+  const followUps = page.getByLabel('Leadership follow-ups');
+  await followUps.getByRole('button', { name: 'Record decision' }).first().click();
+  await expectVisibleText(page, 'People follow-up decision recorded.');
+  await expectVisibleText(page, 'Approval is required before queued work can be created.');
+  await followUps.getByLabel('People decision approval controls for Browser Smoke Pilot').getByRole('button', { name: 'Approve decision' }).click();
+  await expectVisibleText(page, 'People follow-up decision approved. Queue creation remains separate.');
+  await expectVisibleText(page, 'approved and ready for separate queued work.');
+  await followUps.getByRole('button', { name: 'Create queued work' }).first().click();
+  await expectVisibleText(page, 'People queued work created.');
+  await expectVisibleText(page, 'Queued work is linked to approved People decision');
+  await expectVisibleText(page, 'No worker was dispatched, no handoff was prepared, and no EVE role/access or external-service change occurred.');
   await assertNoBrowserDiagnostics();
 });

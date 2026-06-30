@@ -1,6 +1,6 @@
 import type { DecisionRecord, DecisionStatus } from '@gryyk/contracts';
 
-export type DecisionSourceFilter = 'all' | 'opportunity' | 'numbers';
+export type DecisionSourceFilter = 'all' | 'opportunity' | 'numbers' | 'people';
 export type DecisionStatusFilter = 'all' | DecisionStatus;
 
 export interface DecisionListFilters {
@@ -41,7 +41,7 @@ export const defaultDecisionListSettings: DecisionListSettings = {
 };
 
 const decisionStatuses: DecisionStatus[] = ['proposed', 'approved', 'delegated', 'done', 'rejected'];
-const decisionSources: DecisionSourceFilter[] = ['all', 'opportunity', 'numbers'];
+const decisionSources: DecisionSourceFilter[] = ['all', 'opportunity', 'numbers', 'people'];
 
 export function isDecisionStatusFilter(value: unknown): value is DecisionStatusFilter {
   return value === 'all' || decisionStatuses.includes(value as DecisionStatus);
@@ -90,11 +90,29 @@ export function writeDecisionListSettings(
 }
 
 export function decisionSourceDomain(decision: DecisionRecord): Exclude<DecisionSourceFilter, 'all'> {
-  return decision.sourceContext?.sourceType === 'numbers_follow_up' ? 'numbers' : 'opportunity';
+  if (decision.sourceContext?.sourceType === 'numbers_follow_up') {
+    return 'numbers';
+  }
+
+  if (decision.sourceContext?.sourceType === 'people_follow_up') {
+    return 'people';
+  }
+
+  return 'opportunity';
 }
 
 export function decisionSourceLabel(decision: DecisionRecord): string {
-  return decisionSourceDomain(decision) === 'numbers' ? 'Numbers follow-up' : 'Opportunity / brief';
+  const source = decisionSourceDomain(decision);
+
+  if (source === 'numbers') {
+    return 'Numbers follow-up';
+  }
+
+  if (source === 'people') {
+    return 'People follow-up';
+  }
+
+  return 'Opportunity / brief';
 }
 
 export function filterDecisionRecords(decisions: DecisionRecord[], filters: DecisionListFilters): DecisionRecord[] {

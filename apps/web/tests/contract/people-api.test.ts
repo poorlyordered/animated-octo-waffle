@@ -1,16 +1,24 @@
 import {
   createLeadershipFollowUpRequestSchema,
+  createPeopleFollowUpDecisionRequestSchema,
+  createPeopleFollowUpQueueRequestSchema,
   leadershipFollowUpListResponseSchema,
   leadershipFollowUpResponseSchema,
   memberProfileDetailResponseSchema,
-  memberProfileListResponseSchema
+  memberProfileListResponseSchema,
+  peopleFollowUpDecisionResponseSchema,
+  peopleFollowUpQueueResponseSchema,
+  updatePeopleFollowUpDecisionStatusRequestSchema
 } from '@gryyk/contracts';
 import {
   completeMember,
   linkedDecisionFollowUp,
   linkedQueueFollowUp,
   openFollowUp,
+  approvedPeopleFollowUpDecisionResponse,
   peopleIngestionProvenance,
+  peopleFollowUpDecisionResponse,
+  peopleFollowUpQueueResponse,
   playerImpactingFollowUp
 } from '../fixtures/people';
 
@@ -53,5 +61,24 @@ describe('People API contract', () => {
   it('accepts linked decision and linked queue follow-up payloads', () => {
     expect(leadershipFollowUpResponseSchema.parse({ followUp: linkedDecisionFollowUp }).followUp.sourceContext.decisionId).toBeTruthy();
     expect(leadershipFollowUpResponseSchema.parse({ followUp: linkedQueueFollowUp }).followUp.sourceContext.queueStatus).toBe('queued');
+  });
+
+  it('accepts People follow-up decision and queue handoff payloads', () => {
+    expect(peopleFollowUpDecisionResponseSchema.parse(peopleFollowUpDecisionResponse).handoff.approvalRequired).toBe(true);
+    expect(peopleFollowUpDecisionResponseSchema.parse(approvedPeopleFollowUpDecisionResponse).handoff.queueReady).toBe(true);
+    expect(peopleFollowUpQueueResponseSchema.parse(peopleFollowUpQueueResponse).handoff.queueStatus).toBe('queued');
+  });
+
+  it('accepts People follow-up action requests and rejects invalid status', () => {
+    expect(createPeopleFollowUpDecisionRequestSchema.parse({ rationale: 'Review leadership follow-up.' }).rationale).toContain('Review');
+    expect(updatePeopleFollowUpDecisionStatusRequestSchema.parse({ status: 'approved', approvalText: 'Approved.' }).status).toBe('approved');
+    expect(
+      createPeopleFollowUpQueueRequestSchema.parse({
+        title: 'Prepare People plan',
+        inputSummary: 'Use approved decision.',
+        expectedOutput: 'Draft options.'
+      }).title
+    ).toBe('Prepare People plan');
+    expect(() => updatePeopleFollowUpDecisionStatusRequestSchema.parse({ status: 'delegated' })).toThrow();
   });
 });

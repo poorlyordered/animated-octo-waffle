@@ -8,7 +8,7 @@ Start here:
 - Roadmap: `docs/roadmap.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Numbers Approval Handoff in progress on `017-numbers-approval-handoff`.
+Current phase: People Follow-Up Handoff in progress on `032-people-followup-handoff`.
 
 ## Local Development
 
@@ -98,6 +98,8 @@ M27 lets commanders approve or reject recorded Opportunity decisions on the dedi
 The People Operating Layer reads processed member profiles and leadership follow-ups from MongoDB `member_profiles` and `leadership_followups`. It shows member identity, role context, activity, delegation, source coverage, and approval-gated follow-up creation.
 
 M18 adds browser-safe People ingestion provenance to the member list surface. The browser shows whether People profiles are linked to completed ingestion history, historical profile records, or unavailable ingestion history; it also shows source count, profile count, identity/roles/activity/delegation status, recent ingestion history, and no-execution boundary language. This remains read-only: no retry scheduling, worker dispatch, ESI fetch, EVE write, role mutation, access mutation, or external-service execution occurs in browser or request paths.
+
+M32 lets commanders record proposed decisions from People leadership follow-ups, approve or reject those People-origin decisions, and create queued planning work only after approval. Decision approval and queue creation remain separate commander actions. These flows do not dispatch workers, prepare handoffs, schedule retries, fetch ESI, write to EVE, change roles/access/standings, move assets/wallets/contracts, or execute external services.
 
 ## ESI Token Vault Sync
 

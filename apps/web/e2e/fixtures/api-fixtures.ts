@@ -12,6 +12,8 @@ async function json(route: Route, body: unknown) {
 
 export async function installCommandSurfaceApiFixtures(page: Page) {
   let workerHandoffRetryOverride: RetryRequestSummary | null = null;
+  let peopleDecisionStatus: 'none' | 'proposed' | 'approved' | 'rejected' = 'none';
+  let peopleQueueLinked = false;
 
   await page.route('**/api/eve-session**', (route) => {
     if (route.request().method() === 'POST') {
@@ -251,11 +253,114 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     })
   );
   await page.route('**/api/people/follow-ups**', (route) => {
+    const url = new URL(route.request().url());
+    const actionMatch = url.pathname.match(/\/api\/people\/follow-ups\/([^/]+)\/(decision\/status|decision|queue)$/);
+
+    if (actionMatch) {
+      const followUpId = decodeURIComponent(actionMatch[1]);
+      const sourceFollowUp =
+        commandSurfaceFixtures.people.followUps.find((followUp) => followUp.id === followUpId) ??
+        commandSurfaceFixtures.people.followUps[0];
+      const decision =
+        actionMatch[2] === 'decision/status'
+          ? (route.request().postDataJSON() as { status?: string } | null)?.status === 'rejected'
+            ? commandSurfaceFixtures.people.rejectedDecision
+            : commandSurfaceFixtures.people.approvedDecision
+          : commandSurfaceFixtures.people.decision;
+      peopleDecisionStatus = decision.status === 'approved' || decision.status === 'rejected' ? decision.status : 'proposed';
+      const queueItem = {
+        ...commandSurfaceFixtures.people.queueItem,
+        sourceDecisionId: decision.id
+      };
+      const linkedFollowUp = {
+        ...sourceFollowUp,
+        sourceDecisionId: decision.id,
+        sourceQueueItemId: peopleQueueLinked || actionMatch[2] === 'queue' ? queueItem.id : undefined,
+        sourceContext: {
+          ...sourceFollowUp.sourceContext,
+          decisionId: decision.id,
+          decisionStatus: decision.status,
+          queueItemId: peopleQueueLinked || actionMatch[2] === 'queue' ? queueItem.id : undefined,
+          queueStatus: peopleQueueLinked || actionMatch[2] === 'queue' ? queueItem.status : undefined
+        }
+      };
+
+      if (actionMatch[2] === 'queue') {
+        peopleQueueLinked = true;
+        return json(route, {
+          followUp: linkedFollowUp,
+          queueItem,
+          handoff: {
+            followUpId: linkedFollowUp.id,
+            memberProfileId: linkedFollowUp.memberProfileId,
+            memberDisplayName: linkedFollowUp.memberDisplayName,
+            decisionId: decision.id,
+            decisionStatus: 'approved',
+            approvalRequired: false,
+            queueReady: true,
+            queueItemId: queueItem.id,
+            queueStatus: queueItem.status,
+            message: `Queued work is linked to approved People decision ${decision.id}.`,
+            boundary:
+              'People queued work handoff only. No worker was dispatched, no handoff was prepared, and no EVE role/access or external-service change occurred.',
+            missingLinkReasons: []
+          },
+          message: 'People queued work created.'
+        });
+      }
+
+      return json(route, {
+        followUp: linkedFollowUp,
+        decision,
+        handoff: {
+          followUpId: linkedFollowUp.id,
+          memberProfileId: linkedFollowUp.memberProfileId,
+          memberDisplayName: linkedFollowUp.memberDisplayName,
+          decisionId: decision.id,
+          decisionStatus: decision.status,
+          approvalRequired: decision.status === 'proposed',
+          queueReady: decision.status === 'approved',
+          message:
+            decision.status === 'approved'
+              ? `Decision ${decision.id} is approved and ready for separate queued work.`
+              : decision.status === 'rejected'
+                ? `Decision ${decision.id} is rejected. Queued work cannot be created from this People follow-up.`
+                : `Decision ${decision.id} is proposed. Approval is required before queued work can be created.`,
+          boundary:
+            'People follow-up handoff only. No queued work, worker dispatch, EVE role/access change, retry, or external execution occurred.',
+          missingLinkReasons: []
+        },
+        message:
+          decision.status === 'approved'
+            ? 'People follow-up decision approved.'
+            : decision.status === 'rejected'
+              ? 'People follow-up decision rejected.'
+              : 'People follow-up decision recorded.'
+      });
+    }
+
     if (route.request().method() !== 'GET') {
       return json(route, { followUp: commandSurfaceFixtures.people.followUps[0] });
     }
 
-    return json(route, { followUps: commandSurfaceFixtures.people.followUps });
+    return json(route, {
+      followUps: commandSurfaceFixtures.people.followUps.map((followUp) =>
+        followUp.id === 'follow-up-browser-open' && peopleDecisionStatus !== 'none'
+          ? {
+              ...followUp,
+              sourceDecisionId: commandSurfaceFixtures.people.decision.id,
+              sourceQueueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
+              sourceContext: {
+                ...followUp.sourceContext,
+                decisionId: commandSurfaceFixtures.people.decision.id,
+                decisionStatus: peopleDecisionStatus,
+                queueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
+                queueStatus: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.status : undefined
+              }
+            }
+          : followUp
+      )
+    });
   });
 }
 
