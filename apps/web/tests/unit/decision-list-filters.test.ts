@@ -1,5 +1,6 @@
 import {
   decisionListCounts,
+  decisionServerFilters,
   decisionSourceDomain,
   decisionSourceLabel,
   filterDecisionRecords,
@@ -39,6 +40,14 @@ describe('decision list filters', () => {
     expect(filterDecisionRecords(decisions, { status: 'all', source: 'people' }).map((decision) => decision.id)).toEqual([
       peopleFollowUpDecision.id
     ]);
+  });
+
+  it('maps browser all-filters to bounded server query filters', () => {
+    expect(decisionServerFilters({ status: 'all', source: 'all' })).toEqual({});
+    expect(decisionServerFilters({ status: 'approved', source: 'people' })).toEqual({
+      status: 'approved',
+      source: 'people'
+    });
   });
 
   it('derives workload counts from all and visible decisions', () => {

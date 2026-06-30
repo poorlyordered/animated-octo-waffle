@@ -1,4 +1,4 @@
-import type { DecisionRecord, DecisionStatus } from '@gryyk/contracts';
+import type { DecisionRecord, DecisionRecordSourceFilter, DecisionStatus } from '@gryyk/contracts';
 
 export type DecisionSourceFilter = 'all' | 'opportunity' | 'numbers' | 'people';
 export type DecisionStatusFilter = 'all' | DecisionStatus;
@@ -6,6 +6,11 @@ export type DecisionStatusFilter = 'all' | DecisionStatus;
 export interface DecisionListFilters {
   source: DecisionSourceFilter;
   status: DecisionStatusFilter;
+}
+
+export interface DecisionServerFilters {
+  source?: DecisionRecordSourceFilter;
+  status?: DecisionStatus;
 }
 
 export interface DecisionListSettings extends DecisionListFilters {
@@ -122,6 +127,13 @@ export function filterDecisionRecords(decisions: DecisionRecord[], filters: Deci
 
     return statusMatches && sourceMatches;
   });
+}
+
+export function decisionServerFilters(filters: DecisionListFilters): DecisionServerFilters {
+  return {
+    source: filters.source === 'all' ? undefined : filters.source,
+    status: filters.status === 'all' ? undefined : filters.status
+  };
 }
 
 export function paginateDecisionRecords<T>(

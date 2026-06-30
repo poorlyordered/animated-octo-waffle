@@ -2,6 +2,18 @@ import type { Page, Route } from '@playwright/test';
 import type { RetryRequestSummary, SessionStateResponse } from '@gryyk/contracts';
 import { commandSurfaceFixtures } from './command-surfaces';
 
+function browserDecisionSource(decision: (typeof commandSurfaceFixtures.decisionRecords.decisions)[number]) {
+  if (decision.sourceContext?.sourceType === 'numbers_follow_up') {
+    return 'numbers';
+  }
+
+  if (decision.sourceContext?.sourceType === 'people_follow_up') {
+    return 'people';
+  }
+
+  return 'opportunity';
+}
+
 async function json(route: Route, body: unknown) {
   await route.fulfill({
     body: JSON.stringify(body),
@@ -151,7 +163,17 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
       });
     }
 
-    return json(route, commandSurfaceFixtures.decisionRecords);
+    const url = new URL(route.request().url());
+    const source = url.searchParams.get('source');
+    const status = url.searchParams.get('status');
+    return json(route, {
+      decisions: commandSurfaceFixtures.decisionRecords.decisions.filter((decision) => {
+        const sourceMatches = !source || browserDecisionSource(decision) === source;
+        const statusMatches = !status || decision.status === status;
+
+        return sourceMatches && statusMatches;
+      })
+    });
   });
 
   await page.route('**/api/automation-queue**', (route) => {

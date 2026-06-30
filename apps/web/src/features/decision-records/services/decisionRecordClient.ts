@@ -5,7 +5,9 @@ import {
   updateDecisionStatusRequestSchema,
   type CreateDecisionRecordRequest,
   type DecisionRecordListResponse,
+  type DecisionRecordSourceFilter,
   type DecisionRecordResponse,
+  type DecisionStatus,
   type UpdateDecisionStatusRequest
 } from '@gryyk/contracts';
 
@@ -17,8 +19,28 @@ async function parseJson<T>(response: Response, schema: { parse(value: unknown):
   return schema.parse(await response.json());
 }
 
-export async function listDecisionRecords(): Promise<DecisionRecordListResponse> {
-  const response = await fetch('/api/decision-records');
+export interface ListDecisionRecordFilters {
+  source?: DecisionRecordSourceFilter;
+  sourceBriefId?: string;
+  status?: DecisionStatus;
+}
+
+export async function listDecisionRecords(filters: ListDecisionRecordFilters = {}): Promise<DecisionRecordListResponse> {
+  const params = new URLSearchParams();
+
+  if (filters.source) {
+    params.set('source', filters.source);
+  }
+
+  if (filters.sourceBriefId) {
+    params.set('sourceBriefId', filters.sourceBriefId);
+  }
+
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+
+  const response = await fetch(`/api/decision-records${params.size ? `?${params.toString()}` : ''}`);
   return parseJson(response, decisionRecordListResponseSchema);
 }
 
