@@ -42,9 +42,22 @@ function inspectUnsafeEvidence(value: unknown, path = 'request'): void {
     return;
   }
 
-  if (typeof value === 'string' && unsafeValuePattern.test(value)) {
+  if (typeof value === 'string' && (unsafeValuePattern.test(value) || containsUrlUserinfo(value))) {
     throw new UnsafeProductionEvidenceError(`Production evidence field "${path}" contains unsafe value material`);
   }
+}
+
+function containsUrlUserinfo(value: string): boolean {
+  const urlMatches = value.match(/[a-z][a-z0-9+.-]*:\/\/[^\s<>"']+/gi) ?? [];
+
+  return urlMatches.some((candidate) => {
+    try {
+      const url = new URL(candidate);
+      return Boolean(url.username || url.password);
+    } catch {
+      return false;
+    }
+  });
 }
 
 export function assertValueFreeProductionEvidence(value: unknown): void {

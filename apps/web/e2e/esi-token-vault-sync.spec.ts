@@ -60,6 +60,7 @@ test('surfaces duplicate sync requests and revocation boundaries', async ({ page
   await page.goto('/');
 
   await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).first().click();
+  await expectVisibleText(page, 'Queued for future read-only worker sync. No ESI data was fetched and no worker was dispatched.');
   await page.getByLabel('ESI sync domains').getByRole('button', { name: 'Prepare read sync' }).first().click();
   await expectVisibleText(page, 'Existing queued sync request surfaced. No duplicate was created.');
 

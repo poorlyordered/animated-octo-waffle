@@ -91,6 +91,22 @@ export async function listRecentSyncRequests(
   return documents.map((document) => normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument));
 }
 
+export async function listRecentSyncRequestsForDomains(
+  db: Db,
+  corporationId: string,
+  domains: EsiSyncDomain[],
+  limit = 8
+): Promise<EsiSyncRequestDocument[]> {
+  const documents = await db
+    .collection(collectionName)
+    .find({ corporationId, domain: { $in: domains } })
+    .sort({ requestedAt: -1, createdAt: -1 })
+    .limit(Math.min(Math.max(Math.trunc(limit) || 8, 1), 25))
+    .toArray();
+
+  return documents.map((document) => normalizeSyncRequestDocument(document as unknown as EsiSyncRequestDocument));
+}
+
 export async function findCompletedSyncRequestForSnapshot(
   db: Db,
   corporationId: string,

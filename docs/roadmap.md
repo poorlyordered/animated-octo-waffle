@@ -1161,8 +1161,24 @@ Validation:
 
 Recommended next slice:
 
-- None. Roadmap feature slices M1-M54 are complete.
+### M55: Codex Review Followups - Complete
+
+Goal: resolve actionable Codex review findings from PRs #30, #47, and #52 without introducing new execution surfaces.
+
+Delivered capabilities:
+
+- People follow-up queue readiness requires an approved People-origin decision for the same follow-up and member
+- People queued-work duplicate handling ignores unrelated pre-existing queue links
+- Production evidence rejects credentialed/tokenized URL values before storage
+- ESI status history includes safe Opportunity worker completion/failure outcomes alongside existing Numbers history
+- Browser ESI duplicate-sync smoke coverage now waits for the first Numbers prepare result before issuing the duplicate request
+- No browser worker dispatch, ESI fetch, EVE write, role/access/standing mutation, wallet/asset/contract mutation, token exposure, raw provider payload exposure, or external-service mutation
+
+Validation:
+
+- Spec: `specs/055-codex-review-followups`
+- Local validation covered targeted People, production evidence, and ESI sync tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
 
 Recommended next-slice candidates:
 
-- None. Roadmap feature slices M1-M54 are complete.
+- None. Roadmap feature slices M1-M54 are complete, and M55 resolved the actionable Codex review follow-up slice.

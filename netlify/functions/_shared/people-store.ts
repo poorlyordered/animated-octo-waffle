@@ -9,6 +9,7 @@ import type {
   FollowUpStatus,
   LeadershipFollowUp,
   MemberProfile,
+  PeopleFollowUpHandoff,
   PeopleIngestionProvenance,
   UpdatePeopleFollowUpDecisionStatusRequest
 } from '../../../packages/contracts/src/index';
@@ -31,7 +32,14 @@ import {
   type LeadershipFollowUpDocument,
   type MemberProfileDocument
 } from './people-normalizer';
-import { assertFollowUpApprovalBoundary, assertNoDuplicateFollowUp, assertPeopleDecisionOrigin, needsFollowUp } from './people-rules';
+import {
+  assertFollowUpApprovalBoundary,
+  assertNoDuplicateFollowUp,
+  assertPeopleDecisionOrigin,
+  isPeopleDecisionOrigin,
+  needsFollowUp,
+  peopleFollowUpHandoff
+} from './people-rules';
 
 const memberCollectionName = 'member_profiles';
 const followUpCollectionName = 'leadership_followups';
@@ -128,6 +136,36 @@ export async function listLeadershipFollowUps(
 
   const documents = await db.collection(followUpCollectionName).find(query).sort({ updatedAt: -1, createdAt: -1 }).toArray();
   return documents.map((document) => normalizeLeadershipFollowUpDocument(document as LeadershipFollowUpDocument));
+}
+
+export async function buildPeopleFollowUpHandoffs(
+  db: Db,
+  corporationId: string,
+  followUps: LeadershipFollowUp[]
+): Promise<Record<string, PeopleFollowUpHandoff>> {
+  const entries = await Promise.all(
+    followUps.map(async (followUp) => {
+      const decision = await linkedDecisionForFollowUp(db, corporationId, followUp);
+      let queueItem: AutomationQueueItem | null = null;
+
+      if (isPeopleDecisionOrigin(followUp, decision)) {
+        if (followUp.sourceQueueItemId) {
+          const linkedQueueItem = await findAutomationQueueItem(db, corporationId, followUp.sourceQueueItemId);
+          if (linkedQueueItem?.sourceDecisionId === decision.id) {
+            queueItem = linkedQueueItem;
+          }
+        }
+
+        if (!queueItem) {
+          queueItem = (await listAutomationQueueItems(db, corporationId, { sourceDecisionId: decision.id }))[0] ?? null;
+        }
+      }
+
+      return [followUp.id, peopleFollowUpHandoff(followUp, { decision, queueItem })] as const;
+    })
+  );
+
+  return Object.fromEntries(entries);
 }
 
 export async function createLeadershipFollowUp(
@@ -405,7 +443,7 @@ export async function createQueueItemFromPeopleFollowUp(
   if (followUp.sourceQueueItemId) {
     const linkedQueueItem = await findAutomationQueueItem(db, corporationId, followUp.sourceQueueItemId);
 
-    if (linkedQueueItem) {
+    if (linkedQueueItem && linkedQueueItem.sourceDecisionId === decision.id) {
       return {
         followUp: await updateFollowUpLinks(db, corporationId, followUp, { decision, queueItem: linkedQueueItem }),
         decision,
