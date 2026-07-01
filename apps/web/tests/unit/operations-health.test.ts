@@ -39,4 +39,29 @@ describe('operations health summaries', () => {
       )
     ).toBe('blocked');
   });
+
+  it('treats missing OpenRouter configuration as blocking for Brain readiness', () => {
+    const brainWorker = summarizeWorkerReadiness({
+      BRAIN_WORKER_CALLBACK_SECRET: 'brain-secret'
+    }).find((worker) => worker.workerClass === 'brain_worker');
+
+    expect(brainWorker).toMatchObject({
+      secretState: 'configured',
+      status: 'ready'
+    });
+    expect(
+      deriveOverallStatus(
+        [],
+        [],
+        [brainWorker!],
+        [
+          {
+            key: 'missing_openrouter_api_key',
+            severity: 'critical',
+            message: 'OPENROUTER_API_KEY is not configured in this runtime; Brain worker runs are blocked.'
+          }
+        ]
+      )
+    ).toBe('blocked');
+  });
 });

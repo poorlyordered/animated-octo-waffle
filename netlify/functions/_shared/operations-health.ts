@@ -242,14 +242,7 @@ export function summarizeWorkerReadiness(env: NodeJS.ProcessEnv = process.env): 
 function configurationWarnings(env: NodeJS.ProcessEnv, workerReadiness: WorkerReadinessSummary[]): OperationsHealthWarning[] {
   const warnings: OperationsHealthWarning[] = [];
 
-  for (const name of [
-    'EVE_SESSION_SECRET',
-    'ESI_TOKEN_VAULT_SEALING_KEY',
-    'EVE_SSO_CLIENT_ID',
-    'EVE_SSO_CLIENT_SECRET',
-    'EVE_SSO_REDIRECT_URI',
-    'OPENROUTER_API_KEY'
-  ]) {
+  for (const name of ['EVE_SESSION_SECRET', 'ESI_TOKEN_VAULT_SEALING_KEY', 'EVE_SSO_CLIENT_ID', 'EVE_SSO_CLIENT_SECRET', 'EVE_SSO_REDIRECT_URI']) {
     if (!env[name]) {
       warnings.push({
         key: `missing_${name.toLowerCase()}`,
@@ -257,6 +250,14 @@ function configurationWarnings(env: NodeJS.ProcessEnv, workerReadiness: WorkerRe
         message: `${name} is not configured in this runtime.`
       });
     }
+  }
+
+  if (!env.OPENROUTER_API_KEY) {
+    warnings.push({
+      key: 'missing_openrouter_api_key',
+      severity: 'critical',
+      message: 'OPENROUTER_API_KEY is not configured in this runtime; Brain worker runs are blocked.'
+    });
   }
 
   if (env.EVE_SSO_TEST_IDENTITY_JSON) {
