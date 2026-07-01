@@ -11,19 +11,45 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Opportunity ESI Worker Planning ready for review on `054-opportunity-esi-worker-planning`.
+Current phase: roadmap feature slices M1-M54 are complete. M55 is a quality follow-up slice on `055-codex-review-followups` that resolves actionable Codex review findings from PRs #30, #47, and #52.
+
+## What Has Been Built
+
+Gryyk-47 now has the core command-center loop in place:
+
+- Command Brief: latest structured corporation state with source count, confidence, model/prompt metadata, watchlist, recommendations, and missing-data callouts.
+- Decision Records: commander-owned decision tracking with source provenance, status filters, pagination, saved views, and explicit approval boundaries.
+- Automation Queue: approved decisions can become auditable queued work without executing game or external actions.
+- Worker Handoffs: approved queued work can be prepared for trusted workers, claimed/completed/failed by callbacks, and retried through auditable retry records.
+- Numbers: read-only corporation health across wallet, assets, logistics, market, activity, follow-up candidates, and live/historical ESI provenance.
+- Opportunity: official-news/research context, dedicated Opportunity surface, decision/queue workflow, ingestion preparation, worker callbacks, and retry controls.
+- People: member profiles, ingestion provenance, leadership follow-ups, People-origin decisions, approved queued work, worker handoff preparation, and retry controls.
+- ESI Token Vault Sync: explicit consent, sealed server-side token vault records, read-sync request preparation for Numbers/People/Opportunity, worker-owned sync completion/failure, and read-only sync history.
+- Operations Health: read-only health summary for command APIs, ingestion posture, retries, worker secret configuration, filters, and browser-local saved views.
+- Production Evidence: value-free deployment evidence recorder with local filters and unsafe secret/token/credential rejection.
+
+The browser is intentionally a command and review surface. It does not dispatch workers, claim work, fetch ESI directly, write to EVE, mutate roles/access/standings, move wallets/assets/contracts, deploy, roll back, or call external services from request paths.
 
 ## Local Development
 
-The default test suite uses Jest in Node for contract and unit tests. Jest is capped at two workers in `jest.config.cjs` to keep local test runs dependable.
+Use Node 22.x. Install dependencies once:
+
+```sh
+npm install
+```
 
 Useful commands:
 
-- `npm test`
-- `npm run test:e2e`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run build`
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite web dev server only. Use for static/browser fixture work. |
+| `npm run dev:netlify` | Start Netlify Dev on port 8888 with function-backed API routes. Use this for realistic local app usage. |
+| `npm test` | Run Jest contract/unit tests in Node. |
+| `npm run test:e2e` | Run Playwright browser smoke tests with deterministic fixtures. |
+| `npm run test:e2e:ui` | Run Playwright in UI mode. |
+| `npm run lint` | Run ESLint across apps, functions, packages, and config. |
+| `npm run typecheck` | Run TypeScript project references. |
+| `npm run build` | Build contracts and the web app for production. |
 
 `npm test` runs Jest in Node for contract and unit coverage. `npm run test:e2e` runs real-browser smoke validation for the command surfaces and uses deterministic local fixtures instead of live MongoDB, EVE, or Netlify credentials.
 
@@ -34,6 +60,49 @@ If browser binaries are not installed yet, run:
 Use Netlify Dev, not plain Vite, when validating function-backed API calls locally:
 
 - `npm run dev:netlify`
+
+Then open the local Netlify URL, usually:
+
+- `http://localhost:8888`
+
+## Using The Application
+
+1. Start the app with `npm run dev:netlify`.
+2. Configure the required server environment variables listed below. For local fixture-style browsing, `EVEONLINE_CORPORATION_ID` provides the fallback command scope when no signed EVE session exists.
+3. Open the command center in the browser.
+4. Review the Command Brief first. It shows the current corporation summary, operating-leg coverage, recommendations, watchlist, source metadata, and missing data.
+5. Use the Numbers, Opportunity, and People surfaces for domain work:
+   - Numbers: inspect wallet/assets/logistics/market/activity health, live ESI provenance, and Numbers follow-up candidates.
+   - Opportunity: inspect research-backed opportunities, record decisions, approve/reject them, create queued planning work, prepare ingestion, and inspect retry history.
+   - People: inspect member profiles, missing/stale people data, leadership follow-ups, People-origin decisions, approved queued work, worker handoffs, and retry history.
+6. Use Decision Records to review the commander's decision backlog. Filters, pagination, and saved views organize records without changing their status.
+7. Use Automation Queue and Worker Handoffs to inspect queued work and worker lifecycle state. Preparing a handoff creates durable metadata only; it does not dispatch or execute work.
+8. Use ESI Token Vault to start explicit read-sync consent, inspect vault status, revoke consent, and prepare duplicate-safe read-sync requests for available domains. Tokens stay server-side and sealed.
+9. Use Operations Health to inspect command API evidence, ingestion posture, retry posture, worker callback secret state, and warnings.
+10. Use Production Evidence to record value-free deployment posture after validation. Do not paste secrets, tokenized URLs, raw production records, connection strings, JWTs, cookies, or private keys; unsafe material is rejected before storage.
+
+The expected operating pattern is: inspect evidence, record a decision, approve or reject explicitly, create queued work only after approval, prepare handoffs for workers when appropriate, and review safe outcomes/retries later.
+
+## Quality Gate
+
+Before merging product behavior changes, run:
+
+```sh
+npm test
+npm run typecheck
+npm run lint
+npm run test:e2e
+npm run build
+git diff --check
+```
+
+For focused changes, run targeted suites first, then the full gate. Recent examples:
+
+```sh
+npm test -- people-followup
+npm test -- production-evidence
+npm test -- esi-sync
+```
 
 ## Server Environment
 
