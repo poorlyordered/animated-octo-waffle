@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: M56 OpenRouter Brain is active on `056-openrouter-brain`. It adds a trusted server-side Brain worker that calls OpenRouter, validates structured model output, and stores command intelligence for the existing command brief surface.
+Current phase: M57 Auth Landing Gate is complete on `057-auth-landing-gate`. It adds an EVE SSO landing gate based on the original front page while requiring signed production sessions before command information is shown.
 
 ## What Has Been Built
 
@@ -68,9 +68,9 @@ Then open the local Netlify URL, usually:
 ## Using The Application
 
 1. Start the app with `npm run dev:netlify`.
-2. Configure the required server environment variables listed below. For local fixture-style browsing, `EVEONLINE_CORPORATION_ID` provides the fallback command scope when no signed EVE session exists.
-3. Open the command center in the browser.
-4. Review the Command Brief first. It shows the current corporation summary, operating-leg coverage, recommendations, watchlist, source metadata, and missing data.
+2. Configure the required server environment variables listed below. For local fixture-style browsing, `EVEONLINE_CORPORATION_ID` provides the fallback command scope when no signed EVE session exists. Production command access requires a signed EVE session.
+3. Open the app in the browser. Without a signed session, the first screen is the Gryyk-47 EVE SSO access gate.
+4. Sign in with an EVE character in the configured corporation, then review the Command Brief first. It shows the current corporation summary, operating-leg coverage, recommendations, watchlist, source metadata, and missing data.
 5. Use the Numbers, Opportunity, and People surfaces for domain work:
    - Numbers: inspect wallet/assets/logistics/market/activity health, live ESI provenance, and Numbers follow-up candidates.
    - Opportunity: inspect research-backed opportunities, record decisions, approve/reject them, create queued planning work, prepare ingestion, and inspect retry history.
@@ -138,7 +138,7 @@ OpenRouter Brain variables:
 
 The Brain worker endpoint is trusted-worker only. Do not expose OpenRouter keys as `VITE_*`, and do not call OpenRouter directly from browser code.
 
-`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
+`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. In production command API reads and writes require a signed EVE session unless `GRYYK_ALLOW_FALLBACK_SCOPE=true` is deliberately configured for a controlled exception. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
 
 Optional EVE SSO/session variables:
 
@@ -155,7 +155,7 @@ Optional EVE SSO/session variables:
 
 The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
 
-Signed EVE sessions are authorized for command APIs only when the session corporation matches server-owned `EVEONLINE_CORPORATION_ID`. A signed session from another corporation receives a safe unauthorized response and does not fall back to the configured corporation. No-session local fallback remains available for development and deterministic tests.
+Signed EVE sessions are authorized for command APIs only when the session corporation matches server-owned `EVEONLINE_CORPORATION_ID`. A signed session from another corporation receives a safe unauthorized response and does not fall back to the configured corporation. No-session local fallback remains available for development and deterministic tests; production no-session command API access receives a safe signed-session-required response.
 
 ## MongoDB Data Sources
 

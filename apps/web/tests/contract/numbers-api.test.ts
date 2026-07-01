@@ -17,8 +17,15 @@ import {
   rejectedNumbersFollowUpDecisionStatusResponse
 } from '../fixtures/numbersFollowUpActions';
 import { getAuthScope } from '../../../../netlify/functions/_shared/auth-scope';
+import { handler } from '../../../../netlify/functions/numbers';
+
+const originalEnv = process.env;
 
 describe('Numbers API contract', () => {
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
   it('accepts processed numbers snapshot responses', () => {
     const parsed = numbersSnapshotResponseSchema.parse({ snapshot: numbersSnapshot, liveProvenance: numbersLiveProvenance });
 
@@ -49,6 +56,26 @@ describe('Numbers API contract', () => {
     );
 
     expect(scope.corporationId).toBe('917701062');
+  });
+
+  it('requires a signed EVE session for production numbers reads', async () => {
+    process.env = {
+      ...originalEnv,
+      EVEONLINE_CORPORATION_ID: '917701062',
+      EVE_SESSION_SECRET: 'test-secret',
+      NODE_ENV: 'production'
+    };
+
+    const response = await handler({
+      headers: {},
+      httpMethod: 'GET',
+      queryStringParameters: { focus: 'corporation' }
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(JSON.parse(response.body)).toEqual({
+      error: 'Signed EVE session is required'
+    });
   });
 
   it('does not include secrets or dispatch targets in browser-visible numbers JSON', () => {

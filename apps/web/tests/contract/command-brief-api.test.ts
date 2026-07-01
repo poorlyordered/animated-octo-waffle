@@ -88,6 +88,25 @@ describe('GET /api/command-brief contract', () => {
     });
   });
 
+  it('requires a signed EVE session for production command brief reads', async () => {
+    process.env = {
+      ...originalEnv,
+      EVEONLINE_CORPORATION_ID: '917701062',
+      EVE_SESSION_SECRET: 'test-secret',
+      NODE_ENV: 'production'
+    };
+
+    const response = await handler({
+      headers: {},
+      httpMethod: 'GET'
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(JSON.parse(response.body)).toEqual({
+      error: 'Signed EVE session is required'
+    });
+  });
+
   it('rejects signed command API sessions from another corporation', async () => {
     process.env = {
       ...originalEnv,

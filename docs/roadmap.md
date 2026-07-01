@@ -1200,3 +1200,25 @@ Validation:
 
 - Spec: `specs/056-openrouter-brain`
 - Focused validation currently covers Brain, command brief normalization, and operations health tests. Full quality gate pending.
+
+Recommended next slice:
+
+### M57: Auth Landing Gate - Complete
+
+Goal: show a Gryyk-47 EVE SSO landing gate to unauthenticated visitors and require signed production sessions before command information is rendered or returned by command APIs.
+
+Delivered capabilities in this slice:
+
+- Landing/login gate based on the original `/mnt/f/Eve AI/project` front page, adapted from marketing-style AI assistant language to corporation command operating system access
+- App shell now loads browser-safe session state before mounting command surfaces
+- Command surfaces render only for authorized signed EVE sessions
+- Missing-session and unauthorized-corporation states show safe access UI without command data
+- Production command API scope resolution requires a signed EVE session and returns a safe `401` for no-session command data access
+- Local/test fallback scope remains available outside production or with an explicit controlled override
+- Browser smoke coverage verifies unauthenticated loads do not start command data API requests
+- No legacy client-side OAuth URL generation, localStorage auth token storage, browser ESI fetch, worker dispatch, EVE write, wallet/asset/contract/role/access/standing mutation, token exposure, raw provider payload exposure, or external-service mutation
+
+Validation:
+
+- Spec: `specs/057-auth-landing-gate`
+- Local validation covered focused auth-scope, command brief, numbers API, app gate unit tests, auth-gate Playwright smoke, command-brief signed-session smoke, full Jest tests, typecheck, lint, full Playwright browser smoke tests, production build, and diff hygiene.

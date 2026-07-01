@@ -3,14 +3,19 @@ import { installCommandSurfaceApiFixtures, installSessionApiFixture } from './fi
 import { installBrowserDiagnostics } from './support/diagnostics';
 import { expectVisibleText } from './support/surface-assertions';
 
-test('shows signed-out local fallback scope', async ({ page }, testInfo) => {
+test('shows login gate when command scope is not backed by a signed session', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
-  await installCommandSurfaceApiFixtures(page);
+  await installCommandSurfaceApiFixtures(page, {
+    sessionState: {
+      signedIn: false,
+      scopeSource: 'fallback',
+      corporationId: '917701062'
+    }
+  });
 
   await page.goto('/');
 
-  await expectVisibleText(page, 'Local fallback scope');
-  await expectVisibleText(page, '917701062');
+  await expectVisibleText(page, 'EVE Online corporation command operating system');
   await expect(page.getByRole('link', { name: 'Sign in with EVE' })).toBeVisible();
   await assertNoBrowserDiagnostics();
 });
@@ -36,6 +41,7 @@ test('shows signed-in command scope and clears it on sign-out', async ({ page },
 
   await page.getByRole('button', { name: 'Sign out' }).click();
 
-  await expectVisibleText(page, 'Local fallback scope');
+  await expectVisibleText(page, 'EVE Online corporation command operating system');
+  await expect(page.getByRole('link', { name: 'Sign in with EVE' })).toBeVisible();
   await assertNoBrowserDiagnostics();
 });

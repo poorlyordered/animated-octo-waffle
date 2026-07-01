@@ -1,5 +1,5 @@
 import { createSignedCookieValue, sessionCookieName } from '../../../../netlify/functions/_shared/session-cookie';
-import { AuthScopeError, getAuthScope, getSessionState } from '../../../../netlify/functions/_shared/auth-scope';
+import { AuthScopeError, SignedSessionRequiredError, getAuthScope, getSessionState } from '../../../../netlify/functions/_shared/auth-scope';
 import { readScopeEnv } from '../../../../netlify/functions/_shared/env';
 
 const env = {
@@ -59,6 +59,34 @@ describe('getAuthScope', () => {
     });
   });
 
+  it('requires signed session instead of fallback scope in production', () => {
+    expect(() =>
+      getAuthScope(
+        { headers: {} },
+        {
+          ...env,
+          NODE_ENV: 'production'
+        }
+      )
+    ).toThrow(SignedSessionRequiredError);
+  });
+
+  it('allows explicit fallback override in production only when configured', () => {
+    const scope = getAuthScope(
+      { headers: {} },
+      {
+        ...env,
+        NODE_ENV: 'production',
+        GRYYK_ALLOW_FALLBACK_SCOPE: 'true'
+      }
+    );
+
+    expect(scope).toEqual({
+      corporationId: '917701062',
+      source: 'fallback'
+    });
+  });
+
   it('ignores browser-controlled corporation identity in headers, query values, and body', () => {
     const scope = getAuthScope(
       {
@@ -90,6 +118,22 @@ describe('getAuthScope', () => {
     expect(getSessionState({ headers: {} }, { EVE_SESSION_SECRET: 'test-secret' })).toEqual({
       signedIn: false,
       scopeSource: 'missing'
+    });
+  });
+
+  it('reports fallback display state without requiring a production session secret when no cookie exists', () => {
+    expect(
+      getSessionState(
+        { headers: {} },
+        {
+          EVEONLINE_CORPORATION_ID: '917701062',
+          NODE_ENV: 'production'
+        }
+      )
+    ).toEqual({
+      signedIn: false,
+      scopeSource: 'fallback',
+      corporationId: '917701062'
     });
   });
 

@@ -35,7 +35,22 @@ async function json(route: Route, body: unknown) {
   });
 }
 
-export async function installCommandSurfaceApiFixtures(page: Page) {
+interface CommandSurfaceApiFixtureOptions {
+  sessionState?: SessionStateResponse;
+}
+
+const signedInBrowserSession: SessionStateResponse = {
+  signedIn: true,
+  scopeSource: 'session',
+  characterId: '2110000001',
+  characterName: 'Browser Smoke Commander',
+  corporationId: '917701062',
+  corporationName: 'Gryyk-47',
+  expiresAt: '2099-06-01T00:00:00.000Z'
+};
+
+export async function installCommandSurfaceApiFixtures(page: Page, options: CommandSurfaceApiFixtureOptions = {}) {
+  const sessionState = options.sessionState ?? signedInBrowserSession;
   let workerHandoffRetryOverride: RetryRequestSummary | null = null;
   let opportunityProvenance = commandSurfaceFixtures.commandBrief.opportunityProvenance;
   let peopleDecisionStatus: 'none' | 'proposed' | 'approved' | 'rejected' = 'none';
@@ -104,16 +119,11 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     if (route.request().method() === 'POST') {
       return json(route, {
         signedIn: false,
-        scopeSource: 'fallback',
-        corporationId: '917701062'
+        scopeSource: 'missing'
       });
     }
 
-    return json(route, {
-      signedIn: false,
-      scopeSource: 'fallback',
-      corporationId: '917701062'
-    });
+    return json(route, sessionState);
   });
 
   await page.route('**/api/command-brief**', (route) => {
@@ -509,8 +519,7 @@ export async function installSessionApiFixture(page: Page, session: SessionState
     if (route.request().method() === 'POST') {
       currentSession = {
         signedIn: false,
-        scopeSource: 'fallback',
-        corporationId: '917701062'
+        scopeSource: 'missing'
       };
     }
 

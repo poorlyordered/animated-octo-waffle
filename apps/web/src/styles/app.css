@@ -10,6 +10,108 @@ a {
   color: #8fd6ff;
 }
 
+.login-gate {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  gap: 32px;
+  padding: 48px clamp(20px, 5vw, 72px);
+  background:
+    radial-gradient(circle at 78% 18%, rgb(143 214 255 / 22%) 0 2px, transparent 3px),
+    radial-gradient(circle at 88% 42%, rgb(240 209 123 / 18%) 0 1px, transparent 2px),
+    radial-gradient(circle at 64% 72%, rgb(216 162 61 / 24%) 0 2px, transparent 3px),
+    linear-gradient(118deg, rgb(16 20 24 / 98%), rgb(16 20 24 / 88%) 46%, rgb(18 32 42 / 84%)),
+    linear-gradient(28deg, #101418, #162a31 52%, #2a2313);
+}
+
+.login-gate-hero {
+  max-width: 760px;
+  display: grid;
+  gap: 18px;
+}
+
+.login-gate-hero h1 {
+  font-size: clamp(3rem, 9vw, 6.5rem);
+  line-height: 0.95;
+}
+
+.login-gate-subtitle {
+  max-width: 680px;
+  color: #f0d17b;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.login-gate-copy,
+.login-gate-trust {
+  max-width: 680px;
+  color: #d8cfc0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.login-gate-actions {
+  min-height: 52px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.eve-login-button {
+  min-height: 48px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #4f8fb4;
+  border-radius: 6px;
+  background: #13202a;
+  color: #f4f0e8;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-gate-status {
+  border: 1px solid #4a5561;
+  border-radius: 6px;
+  background: rgb(13 17 22 / 88%);
+  color: #d8cfc0;
+  padding: 10px 12px;
+}
+
+.login-gate-status-warning {
+  border-color: #d8a23d;
+  color: #ffd58a;
+}
+
+.login-gate-cues {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 1120px;
+}
+
+.login-gate-cue {
+  box-sizing: border-box;
+  min-height: 148px;
+  border: 1px solid rgb(216 162 61 / 46%);
+  border-radius: 6px;
+  background: rgb(13 17 22 / 82%);
+  padding: 18px;
+}
+
+.login-gate-cue h2 {
+  margin-bottom: 10px;
+}
+
+.login-gate-cue p {
+  color: #d8cfc0;
+  line-height: 1.5;
+}
+
 .session-status {
   box-sizing: border-box;
   display: flex;
@@ -255,4 +357,33 @@ textarea {
 
 .decision-list-item.selected {
   border-color: #e8c46b;
+}
+
+@media (max-width: 860px) {
+  .login-gate {
+    align-content: start;
+    padding-top: 36px;
+  }
+
+  .login-gate-cues {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .login-gate-cues {
+    grid-template-columns: 1fr;
+  }
+
+  .login-gate-actions,
+  .eve-login-button,
+  .login-gate-actions button,
+  .login-gate-status {
+    width: 100%;
+  }
+
+  .eve-login-button,
+  .login-gate-actions button {
+    justify-content: center;
+  }
 }
