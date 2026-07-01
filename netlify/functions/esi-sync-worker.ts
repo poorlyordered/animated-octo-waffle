@@ -21,7 +21,8 @@ import {
 import { ingestNumbersFromEsiSyncRequest } from './_shared/esi-numbers-ingestion';
 
 const runnableWorkerDomain = 'numbers';
-const externallyCompletableWorkerDomain = 'people';
+const externallyCompletableWorkerDomains = ['people', 'opportunity'] as const;
+type ExternallyCompletableWorkerDomain = (typeof externallyCompletableWorkerDomains)[number];
 const unsafeWorkerResultPattern =
   /(accessToken|refreshToken|sealed|client[-_ ]?secret|bearer\s+[A-Za-z0-9._-]+|dispatchTarget|retrySchedule|walletAction|roleMutation|accessMutation|rawEsi|rawPayload|eyJ[A-Za-z0-9_-]{10,})/i;
 
@@ -29,12 +30,12 @@ export function isRunnableEsiSyncWorkerDomain(domain: string): domain is typeof 
   return domain === runnableWorkerDomain;
 }
 
-export function isClaimableEsiSyncWorkerDomain(domain: string): domain is typeof runnableWorkerDomain | typeof externallyCompletableWorkerDomain {
-  return domain === runnableWorkerDomain || domain === externallyCompletableWorkerDomain;
+export function isClaimableEsiSyncWorkerDomain(domain: string): domain is typeof runnableWorkerDomain | ExternallyCompletableWorkerDomain {
+  return domain === runnableWorkerDomain || externallyCompletableWorkerDomains.includes(domain as ExternallyCompletableWorkerDomain);
 }
 
-export function isExternallyCompletableEsiSyncWorkerDomain(domain: string): domain is typeof externallyCompletableWorkerDomain {
-  return domain === externallyCompletableWorkerDomain;
+export function isExternallyCompletableEsiSyncWorkerDomain(domain: string): domain is ExternallyCompletableWorkerDomain {
+  return externallyCompletableWorkerDomains.includes(domain as ExternallyCompletableWorkerDomain);
 }
 
 export function assertSafeEsiSyncWorkerResult(result: EsiSyncWorkerResultSummary): void {
@@ -86,7 +87,7 @@ export async function handler(event: FunctionEvent) {
       const request = esiSyncWorkerClaimRequestSchema.parse(body);
       const existing = await findSyncRequest(db, actionPath.id);
       if (existing && !isClaimableEsiSyncWorkerDomain(existing.domain)) {
-        return safeErrorResponse('Only Numbers and People ESI sync requests are claimable in this worker slice', 409);
+        return safeErrorResponse('Only Numbers, People, and Opportunity ESI sync requests are claimable in this worker slice', 409);
       }
       const syncRequest = await claimQueuedSyncRequest(db, actionPath.id, request.workerId);
       return syncRequest
@@ -131,7 +132,7 @@ export async function handler(event: FunctionEvent) {
       assertSafeEsiSyncWorkerResult(request.result);
       const existing = await findClaimedByWorker(db, actionPath.id, request.workerId);
       if (existing && !isExternallyCompletableEsiSyncWorkerDomain(existing.domain)) {
-        return safeErrorResponse('Only People ESI sync requests are externally completable in this worker slice', 409);
+        return safeErrorResponse('Only People and Opportunity ESI sync requests are externally completable in this worker slice', 409);
       }
       const completed = existing ? await completeSyncRequest(db, actionPath.id, request.workerId, request.result) : null;
       return completed
@@ -142,7 +143,7 @@ export async function handler(event: FunctionEvent) {
     const request = esiSyncWorkerFailRequestSchema.parse(body);
     const existing = await findClaimedByWorker(db, actionPath.id, request.workerId);
     if (existing && !isClaimableEsiSyncWorkerDomain(existing.domain)) {
-      return safeErrorResponse('Only Numbers and People ESI sync requests are failable in this worker slice', 409);
+      return safeErrorResponse('Only Numbers, People, and Opportunity ESI sync requests are failable in this worker slice', 409);
     }
     const failed = await failSyncRequest(db, actionPath.id, request.workerId, request.reason);
     return failed
