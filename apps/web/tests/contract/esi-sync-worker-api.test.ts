@@ -49,6 +49,28 @@ const peopleWorkerSummary = {
   }
 };
 
+const opportunityWorkerSummary = {
+  id: 'sync-opportunity-1',
+  corporationId: '123456789',
+  domain: 'opportunity',
+  status: 'completed',
+  requiredScopes: ['esi-corporations.read_structures.v1'],
+  requestedAt: '2026-07-01T10:00:00.000Z',
+  claimedBy: 'opportunity-esi-worker-1',
+  claimedAt: '2026-07-01T10:02:00.000Z',
+  completedAt: '2026-07-01T10:05:00.000Z',
+  result: {
+    snapshotId: 'opportunity-sync-1',
+    sourceCount: 3,
+    summary: 'Opportunity ESI worker completed structures read and stored safe opportunity context externally.',
+    sectionStatuses: [
+      { key: 'structures', status: 'processed' },
+      { key: 'market_windows', status: 'not_applicable' }
+    ],
+    failures: []
+  }
+};
+
 describe('ESI sync worker API contract', () => {
   it('accepts worker request schemas', () => {
     expect(esiSyncWorkerClaimRequestSchema.parse({ workerId: 'numbers-worker-1' })).toEqual({
@@ -63,6 +85,12 @@ describe('ESI sync worker API contract', () => {
         result: peopleWorkerSummary.result
       }).result.sourceCount
     ).toBe(25);
+    expect(
+      esiSyncWorkerCompleteRequestSchema.parse({
+        workerId: 'opportunity-esi-worker-1',
+        result: opportunityWorkerSummary.result
+      }).result.snapshotId
+    ).toBe('opportunity-sync-1');
     expect(esiSyncWorkerFailRequestSchema.parse({ workerId: 'numbers-worker-1', reason: 'ESI returned 403' })).toEqual({
       workerId: 'numbers-worker-1',
       reason: 'ESI returned 403'
@@ -70,15 +98,16 @@ describe('ESI sync worker API contract', () => {
   });
 
   it('accepts worker-safe list and completion responses', () => {
-    expect(esiSyncWorkerListResponseSchema.parse({ syncRequests: [workerSummary, peopleWorkerSummary] }).syncRequests).toHaveLength(2);
+    expect(esiSyncWorkerListResponseSchema.parse({ syncRequests: [workerSummary, peopleWorkerSummary, opportunityWorkerSummary] }).syncRequests).toHaveLength(3);
     expect(esiSyncWorkerRequestResponseSchema.parse({ syncRequest: workerSummary }).syncRequest.result?.snapshotId).toBe(
       'numbers-snapshot-1'
     );
     expect(esiSyncWorkerRequestResponseSchema.parse({ syncRequest: peopleWorkerSummary }).syncRequest.domain).toBe('people');
+    expect(esiSyncWorkerRequestResponseSchema.parse({ syncRequest: opportunityWorkerSummary }).syncRequest.domain).toBe('opportunity');
   });
 
   it('keeps token and execution handles out of worker-safe responses', () => {
-    const body = JSON.stringify({ syncRequests: [workerSummary, peopleWorkerSummary] });
+    const body = JSON.stringify({ syncRequests: [workerSummary, peopleWorkerSummary, opportunityWorkerSummary] });
 
     expect(body).not.toContain('accessToken');
     expect(body).not.toContain('refreshToken');

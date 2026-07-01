@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Operations Health Saved Views ready for review on `053-operations-health-saved-views`.
+Current phase: Opportunity ESI Worker Planning ready for review on `054-opportunity-esi-worker-planning`.
 
 ## Local Development
 
@@ -195,6 +195,8 @@ M53 adds browser-local saved views to the Operations Health filter section for w
 M49 adds a value-free Production Evidence recorder backed by `/api/production-evidence`. It stores scoped deployment posture records with fixed validation checks, commit/deploy/rollback identifiers, safe operator attribution, and no-secret boundary text. It rejects obvious secret, token, cookie, JWT, connection string, private key, raw production record, and production export material before storage. It does not deploy, rollback, call live providers, fetch ESI, write to EVE, dispatch workers, execute retries, or mutate external services.
 
 M52 adds browser-local Production Evidence filters for environment, decision, and check status. These filters organize already visible value-free evidence records only; they do not store server preferences, export production data, deploy, rollback, call live providers, dispatch workers, fetch ESI, write to EVE, or mutate external services.
+
+M54 expands the worker-owned ESI sync lifecycle so trusted ESI workers can list, claim, externally complete, and fail Opportunity sync requests after explicit read consent. The in-process run action remains Numbers-only, and browser paths still do not fetch ESI, dispatch workers, write to EVE, mutate roles/access/standings, move wallets/assets/contracts, or call external services.
 
 For write-flow validation, keep using the isolated MongoDB database `gryyk47_greenfield_test` and seed or reuse approved `strategic_decisions` records for the configured corporation scope before writing `automation_queue` or `worker_handoffs` records.
 

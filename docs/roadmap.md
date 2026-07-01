@@ -1140,8 +1140,29 @@ Validation:
 
 Recommended next slice:
 
-- M54: Opportunity ESI Worker Planning. Define worker-owned Opportunity ESI sync handling after People ESI worker planning is stable.
+### M54: Opportunity ESI Worker Planning - Complete
+
+Goal: define worker-owned Opportunity ESI sync handling after People ESI worker planning is stable.
+
+Delivered capabilities:
+
+- ESI sync worker domain policy now treats Opportunity sync requests as claimable by trusted `esi_sync` workers
+- Opportunity ESI sync requests can be externally completed with safe worker result summaries
+- Opportunity ESI sync requests can be failed by the claiming worker
+- Numbers in-process `run` action remains Numbers-only
+- Worker-safe response contracts cover Opportunity completion summaries without token material or execution handles
+- Store coverage verifies Opportunity queued listing, completion, and failure transitions
+- No browser ESI fetch, browser worker dispatch, EVE write, role/access/standing mutation, wallet/asset/contract mutation, token exposure, raw ESI payload exposure, or external-service mutation
+
+Validation:
+
+- Spec: `specs/054-opportunity-esi-worker-planning`
+- Local validation covered targeted ESI sync worker contract/unit tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- None. Roadmap feature slices M1-M54 are complete.
 
 Recommended next-slice candidates:
 
-- M54: Opportunity ESI Worker Planning. Define worker-owned Opportunity ESI sync handling after People ESI worker planning is stable.
+- None. Roadmap feature slices M1-M54 are complete.

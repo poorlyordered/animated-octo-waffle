@@ -67,15 +67,24 @@ const queuedPeopleSync = {
   requiredScopes: ['esi-corporations.read_corporation_membership.v1']
 };
 
+const queuedOpportunitySync = {
+  ...queuedSync,
+  id: 'sync-opportunity',
+  domain: 'opportunity',
+  requiredScopes: ['esi-corporations.read_structures.v1']
+};
+
 describe('ESI sync request store worker transitions', () => {
   it('lists queued sync requests by domain', async () => {
-    const { db } = createDb([queuedSync, queuedPeopleSync, { ...queuedSync, id: 'sync-2', status: 'completed' }]);
+    const { db } = createDb([queuedSync, queuedPeopleSync, queuedOpportunitySync, { ...queuedSync, id: 'sync-2', status: 'completed' }]);
 
     const ready = await listQueuedSyncRequests(db, 'numbers');
     const peopleReady = await listQueuedSyncRequests(db, 'people');
+    const opportunityReady = await listQueuedSyncRequests(db, 'opportunity');
 
     expect(ready).toHaveLength(1);
     expect(peopleReady).toHaveLength(1);
+    expect(opportunityReady).toHaveLength(1);
     expect(workerSyncRequestSummary(ready[0])).toMatchObject({
       id: 'sync-1',
       domain: 'numbers',
@@ -84,6 +93,11 @@ describe('ESI sync request store worker transitions', () => {
     expect(workerSyncRequestSummary(peopleReady[0])).toMatchObject({
       id: 'sync-people',
       domain: 'people',
+      status: 'queued'
+    });
+    expect(workerSyncRequestSummary(opportunityReady[0])).toMatchObject({
+      id: 'sync-opportunity',
+      domain: 'opportunity',
       status: 'queued'
     });
   });
@@ -105,7 +119,9 @@ describe('ESI sync request store worker transitions', () => {
   it('completes and fails only requests claimed by the worker', async () => {
     const { db } = createDb([
       { ...queuedSync, status: 'claimed', claimedBy: 'numbers-worker-1' },
-      { ...queuedPeopleSync, status: 'claimed', claimedBy: 'people-esi-worker-1' }
+      { ...queuedPeopleSync, status: 'claimed', claimedBy: 'people-esi-worker-1' },
+      { ...queuedOpportunitySync, status: 'claimed', claimedBy: 'opportunity-esi-worker-1' },
+      { ...queuedOpportunitySync, id: 'sync-opportunity-failed', status: 'claimed', claimedBy: 'opportunity-esi-worker-2' }
     ]);
     const result = {
       snapshotId: 'snapshot-1',
@@ -120,13 +136,28 @@ describe('ESI sync request store worker transitions', () => {
       sectionStatuses: [{ key: 'membership', status: 'processed' }],
       failures: []
     };
+    const opportunityResult = {
+      snapshotId: 'opportunity-sync-1',
+      sourceCount: 3,
+      summary: 'Opportunity ESI structures read completed.',
+      sectionStatuses: [{ key: 'structures', status: 'processed' }],
+      failures: []
+    };
 
     const completed = await completeSyncRequest(db, 'sync-1', 'numbers-worker-1', result);
     const completedPeople = await completeSyncRequest(db, 'sync-people', 'people-esi-worker-1', peopleResult);
+    const completedOpportunity = await completeSyncRequest(db, 'sync-opportunity', 'opportunity-esi-worker-1', opportunityResult);
+    const failedOpportunity = await failSyncRequest(db, 'sync-opportunity-failed', 'opportunity-esi-worker-2', 'Structures endpoint unavailable.');
     const failed = await failSyncRequest(db, 'sync-1', 'numbers-worker-1', 'Should not apply after completion');
 
     expect(completed).toMatchObject({ status: 'completed', result });
     expect(completedPeople).toMatchObject({ status: 'completed', domain: 'people', result: peopleResult });
+    expect(completedOpportunity).toMatchObject({ status: 'completed', domain: 'opportunity', result: opportunityResult });
+    expect(failedOpportunity).toMatchObject({
+      status: 'failed',
+      domain: 'opportunity',
+      failure: { reason: 'Structures endpoint unavailable.' }
+    });
     expect(failed).toBeNull();
   });
 });
