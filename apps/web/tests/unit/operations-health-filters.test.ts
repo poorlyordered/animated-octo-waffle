@@ -1,7 +1,13 @@
 import {
   filterOperationsWarnings,
   filterWorkerReadiness,
-  operationsHealthFilterCounts
+  operationsHealthFilterCounts,
+  operationsHealthSavedViewFromFilters,
+  parseOperationsHealthFilters,
+  parseOperationsHealthSavedViews,
+  readOperationsHealthSavedViews,
+  saveOperationsHealthView,
+  writeOperationsHealthSavedViews
 } from '../../src/features/operations-health/services/operationsHealthFilters';
 import { operationsHealthResponse } from '../fixtures/operationsHealth';
 
@@ -49,5 +55,57 @@ describe('operations health filters', () => {
       visibleWarnings: 1,
       visibleWorkers: 1
     });
+  });
+
+  it('parses operations health filters safely', () => {
+    expect(parseOperationsHealthFilters({ warningSeverity: 'warning', workerStatus: 'blocked', workerSecret: 'missing' })).toEqual({
+      warningSeverity: 'warning',
+      workerStatus: 'blocked',
+      workerSecret: 'missing'
+    });
+    expect(parseOperationsHealthFilters({ warningSeverity: 'unsafe', workerStatus: 'bad', workerSecret: 'unknown' })).toEqual({
+      warningSeverity: 'all',
+      workerStatus: 'all',
+      workerSecret: 'all'
+    });
+  });
+
+  it('saves and parses browser-local operations health views safely', () => {
+    const filters = { warningSeverity: 'warning' as const, workerStatus: 'blocked' as const, workerSecret: 'missing' as const };
+    const view = operationsHealthSavedViewFromFilters(filters);
+
+    expect(view).toEqual({
+      id: 'warning:blocked:missing',
+      label: 'Warnings: warning / Workers: blocked / Secrets: missing',
+      filters
+    });
+    expect(saveOperationsHealthView([view], filters)).toHaveLength(1);
+    expect(
+      parseOperationsHealthSavedViews([
+        { filters, label: 'Blocked opportunity ingestion' },
+        { filters },
+        { filters: { warningSeverity: 'unsafe', workerStatus: 'bad', workerSecret: 'unknown' } }
+      ])
+    ).toEqual([view]);
+  });
+
+  it('reads and writes browser-local operations health saved views', () => {
+    const storage = new Map<string, string>();
+    const adapter = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value)
+    };
+    const views = [
+      operationsHealthSavedViewFromFilters({
+        warningSeverity: 'info',
+        workerStatus: 'ready',
+        workerSecret: 'configured'
+      })
+    ];
+
+    writeOperationsHealthSavedViews(adapter, 'operations-health-views', views);
+    expect(readOperationsHealthSavedViews(adapter, 'operations-health-views')).toEqual(views);
+    storage.set('operations-health-views', '{bad json');
+    expect(readOperationsHealthSavedViews(adapter, 'operations-health-views')).toEqual([]);
   });
 });

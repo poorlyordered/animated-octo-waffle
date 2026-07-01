@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { OperationsHealthResponse } from '@gryyk/contracts';
 import {
   defaultOperationsHealthFilters,
   filterOperationsWarnings,
   filterWorkerReadiness,
   operationsHealthFilterCounts,
+  readOperationsHealthSavedViews,
+  saveOperationsHealthView,
+  writeOperationsHealthSavedViews,
   type OperationsHealthFilters,
+  type OperationsHealthSavedView,
   type OperationsWarningSeverityFilter,
   type OperationsWorkerSecretFilter,
   type OperationsWorkerStatusFilter
@@ -25,8 +29,26 @@ function statusClass(status: string): string {
   return status === 'ready' ? 'status-processed' : status === 'blocked' ? 'status-stale failure-state' : 'status-stale';
 }
 
+const operationsHealthSavedViewsStorageKey = 'gryyk47.operationsHealthSavedViews';
+
+function initialOperationsHealthSavedViews(): OperationsHealthSavedView[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  return readOperationsHealthSavedViews(window.localStorage, operationsHealthSavedViewsStorageKey);
+}
+
 export function OperationsHealthPanel({ error, health, loading }: OperationsHealthPanelProps) {
   const [filters, setFilters] = useState<OperationsHealthFilters>(defaultOperationsHealthFilters);
+  const [savedViews, setSavedViews] = useState<OperationsHealthSavedView[]>(initialOperationsHealthSavedViews);
+  const [selectedSavedViewId, setSelectedSavedViewId] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      writeOperationsHealthSavedViews(window.localStorage, operationsHealthSavedViewsStorageKey, savedViews);
+    }
+  }, [savedViews]);
 
   if (loading) {
     return <main className="command-brief">Loading operations health...</main>;
@@ -43,6 +65,48 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
   const visibleWarnings = filterOperationsWarnings(health.warnings, filters.warningSeverity);
   const visibleWorkerReadiness = filterWorkerReadiness(health.workerReadiness, filters);
   const counts = operationsHealthFilterCounts(health.warnings, visibleWarnings, health.workerReadiness, visibleWorkerReadiness);
+
+  function updateWarningSeverity(warningSeverity: OperationsWarningSeverityFilter) {
+    setFilters((current) => ({ ...current, warningSeverity }));
+    setSelectedSavedViewId('');
+  }
+
+  function updateWorkerStatus(workerStatus: OperationsWorkerStatusFilter) {
+    setFilters((current) => ({ ...current, workerStatus }));
+    setSelectedSavedViewId('');
+  }
+
+  function updateWorkerSecret(workerSecret: OperationsWorkerSecretFilter) {
+    setFilters((current) => ({ ...current, workerSecret }));
+    setSelectedSavedViewId('');
+  }
+
+  function saveCurrentView() {
+    const next = saveOperationsHealthView(savedViews, filters);
+    setSavedViews(next);
+    setSelectedSavedViewId(next[0]?.id ?? '');
+  }
+
+  function applySavedView(savedViewId: string) {
+    const savedView = savedViews.find((view) => view.id === savedViewId);
+
+    if (!savedView) {
+      setSelectedSavedViewId('');
+      return;
+    }
+
+    setSelectedSavedViewId(savedViewId);
+    setFilters(savedView.filters);
+  }
+
+  function deleteSavedView() {
+    if (!selectedSavedViewId) {
+      return;
+    }
+
+    setSavedViews((current) => current.filter((view) => view.id !== selectedSavedViewId));
+    setSelectedSavedViewId('');
+  }
 
   return (
     <main className="command-brief" aria-label="Operations health">
@@ -81,12 +145,7 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
             <select
               id="operations-warning-filter"
               value={filters.warningSeverity}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  warningSeverity: event.target.value as OperationsWarningSeverityFilter
-                }))
-              }
+              onChange={(event) => updateWarningSeverity(event.target.value as OperationsWarningSeverityFilter)}
             >
               <option value="all">All warnings</option>
               <option value="info">Info</option>
@@ -99,12 +158,7 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
             <select
               id="operations-worker-status-filter"
               value={filters.workerStatus}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  workerStatus: event.target.value as OperationsWorkerStatusFilter
-                }))
-              }
+              onChange={(event) => updateWorkerStatus(event.target.value as OperationsWorkerStatusFilter)}
             >
               <option value="all">All worker statuses</option>
               <option value="ready">Ready</option>
@@ -117,12 +171,7 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
             <select
               id="operations-worker-secret-filter"
               value={filters.workerSecret}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  workerSecret: event.target.value as OperationsWorkerSecretFilter
-                }))
-              }
+              onChange={(event) => updateWorkerSecret(event.target.value as OperationsWorkerSecretFilter)}
             >
               <option value="all">All secret states</option>
               <option value="configured">Configured</option>
@@ -130,6 +179,23 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
               <option value="missing">Missing</option>
             </select>
           </label>
+          <label htmlFor="operations-health-saved-view">
+            Saved view
+            <select id="operations-health-saved-view" value={selectedSavedViewId} onChange={(event) => applySavedView(event.target.value)}>
+              <option value="">Select saved view</option>
+              {savedViews.map((view) => (
+                <option value={view.id} key={view.id}>
+                  {view.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={saveCurrentView}>
+            Save view
+          </button>
+          <button type="button" onClick={deleteSavedView} disabled={!selectedSavedViewId}>
+            Delete view
+          </button>
         </div>
         <dl className="metadata-grid">
           <div className="metadata-item">
@@ -145,7 +211,7 @@ export function OperationsHealthPanel({ error, health, loading }: OperationsHeal
             </dd>
           </div>
         </dl>
-        <p className="notice">Operations health filters organize browser-visible summaries only. They do not store preferences, call providers, dispatch workers, execute retries, fetch ESI, write to EVE, or mutate external services.</p>
+        <p className="notice">Operations health filters and saved views organize browser-visible summaries only. Saved views stay in this browser's localStorage; they do not store server preferences, call providers, dispatch workers, execute retries, fetch ESI, write to EVE, or mutate external services.</p>
       </section>
 
       <section aria-label="Command API health">
