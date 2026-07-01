@@ -28,8 +28,18 @@ export class AuthScopeError extends Error {
   }
 }
 
+export class SignedSessionRequiredError extends Error {
+  code = 'COMMANDER_SESSION_REQUIRED' as const;
+  statusCode = 401;
+  publicMessage = 'Signed EVE session is required';
+
+  constructor() {
+    super('Signed EVE session is required for command API access');
+  }
+}
+
 export function authScopeErrorResponse(error: unknown): FunctionResponse | null {
-  if (error instanceof AuthScopeError) {
+  if (error instanceof AuthScopeError || error instanceof SignedSessionRequiredError) {
     return safeErrorResponse(error.publicMessage, error.statusCode);
   }
 
@@ -58,6 +68,10 @@ export function resolveAuthScope(
       source: 'session',
       session
     };
+  }
+
+  if (requiresSignedSession(env)) {
+    throw new SignedSessionRequiredError();
   }
 
   return {
@@ -117,6 +131,10 @@ export function getSessionState(event?: FunctionEvent, env: NodeJS.ProcessEnv = 
 
 export function readSessionScope(event?: FunctionEvent, env: NodeJS.ProcessEnv = process.env): EveSessionScope | null {
   const cookieValue = readCookie(event?.headers, sessionCookieName);
+  if (!cookieValue) {
+    return null;
+  }
+
   const unsigned = readSignedCookieValue<unknown>(cookieValue, readSessionSecret(env));
   const parsed = eveSessionScopeSchema.safeParse(unsigned);
 
@@ -125,4 +143,12 @@ export function readSessionScope(event?: FunctionEvent, env: NodeJS.ProcessEnv =
   }
 
   return parsed.data;
+}
+
+function requiresSignedSession(env: NodeJS.ProcessEnv): boolean {
+  if (env.GRYYK_ALLOW_FALLBACK_SCOPE === 'true') {
+    return false;
+  }
+
+  return env.GRYYK_REQUIRE_SIGNED_SESSION === 'true' || env.NODE_ENV === 'production' || env.CONTEXT === 'production';
 }
