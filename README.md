@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: Production Evidence Filtering ready for review on `052-production-evidence-filtering`.
+Current phase: Operations Health Saved Views ready for review on `053-operations-health-saved-views`.
 
 ## Local Development
 
@@ -189,6 +189,8 @@ M44 adds class-specific worker callback secrets for worker handoffs, retry worke
 M47 adds a read-only Operations Health surface backed by `/api/operations-health`. It summarizes command API evidence, Numbers/People/Opportunity ingestion posture, retry posture, worker callback secret state, and operations warnings with browser-safe statuses only. It does not expose secret values, token material, connection strings, raw production data, dispatch targets, or execution controls, and it does not fetch ESI, write to EVE, dispatch workers, execute retries, or mutate external services.
 
 M50 adds browser-local filters to the Operations Health surface for warning severity, worker readiness status, and worker secret state. These filters organize already visible health summaries only; they do not store server preferences, call live providers, dispatch workers, execute retries, fetch ESI, write to EVE, or mutate external services.
+
+M53 adds browser-local saved views to the Operations Health filter section for warning severity, worker readiness status, and worker secret state. Saved views stay in browser localStorage only; they do not store server preferences, call live providers, dispatch workers, execute retries, fetch ESI, write to EVE, or mutate external services.
 
 M49 adds a value-free Production Evidence recorder backed by `/api/production-evidence`. It stores scoped deployment posture records with fixed validation checks, commit/deploy/rollback identifiers, safe operator attribution, and no-secret boundary text. It rejects obvious secret, token, cookie, JWT, connection string, private key, raw production record, and production export material before storage. It does not deploy, rollback, call live providers, fetch ESI, write to EVE, dispatch workers, execute retries, or mutate external services.
 
