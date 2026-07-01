@@ -39,6 +39,20 @@ Optional class-specific worker callback secrets:
 - `ESI_SYNC_WORKER_CALLBACK_SECRET`: optional server-side secret for ESI sync worker callbacks.
 - `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`: optional server-side secret for People ingestion worker callbacks.
 - `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`: optional server-side secret for Opportunity ingestion worker callbacks.
+- `BRAIN_WORKER_CALLBACK_SECRET`: optional server-side secret for OpenRouter Brain worker callbacks.
+
+Required for live Brain runs:
+
+- `OPENROUTER_API_KEY`: server-only OpenRouter API key. Never expose as `VITE_*`.
+
+Optional Brain provider overrides:
+
+- `OPENROUTER_MODEL`: model slug for Brain runs; defaults to `openai/gpt-5.2`.
+- `OPENROUTER_BASE_URL`: HTTPS API base URL override; defaults to `https://openrouter.ai/api/v1`.
+- `OPENROUTER_APP_URL`: optional OpenRouter attribution URL.
+- `OPENROUTER_APP_TITLE`: optional OpenRouter attribution title.
+- `OPENROUTER_TIMEOUT_MS`: optional provider timeout override.
+- `OPENROUTER_MAX_COMPLETION_TOKENS`: optional completion budget override.
 
 Production-required for secure sessions and token vaulting:
 
@@ -63,6 +77,7 @@ Test-only:
 - `EVE_SSO_TEST_IDENTITY_JSON`: deterministic callback identity fixture. Do not configure this in production.
 
 Do not expose any server variable as `VITE_*`. Browser responses must not include MongoDB credentials, session secrets, OAuth secrets, worker secrets, sealing keys, access tokens, refresh tokens, or token hashes.
+Brain responses must not include OpenRouter API keys, raw provider payloads, or unvalidated model output.
 
 ## Pre-Deploy Validation
 

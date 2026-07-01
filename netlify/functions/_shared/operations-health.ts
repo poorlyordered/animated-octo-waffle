@@ -46,6 +46,11 @@ const workerClasses: WorkerClassConfig[] = [
     workerClass: 'opportunity_ingestion',
     label: 'Opportunity ingestion worker callbacks',
     classSecret: 'OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET'
+  },
+  {
+    workerClass: 'brain_worker',
+    label: 'Brain worker callbacks',
+    classSecret: 'BRAIN_WORKER_CALLBACK_SECRET'
   }
 ];
 
@@ -110,9 +115,15 @@ async function commandApiSummary(
   }
 }
 
-async function countStatuses(db: Db, collection: string, corporationId: string, statuses: string[]) {
+async function countStatuses(
+  db: Db,
+  collection: string,
+  corporationId: string,
+  statuses: string[],
+  query: Record<string, unknown> = {}
+) {
   const counts = await Promise.all(
-    statuses.map(async (status) => [status, await db.collection(collection).countDocuments({ corporationId, status })] as const)
+    statuses.map(async (status) => [status, await db.collection(collection).countDocuments({ ...query, corporationId, status })] as const)
   );
 
   return Object.fromEntries(counts) as Record<string, number>;
@@ -129,16 +140,17 @@ async function ingestionSummary(
     processing: string[];
     completed: string[];
     failed: string[];
-  }
+  },
+  query: Record<string, unknown> = {}
 ): Promise<IngestionHealthSummary> {
   try {
     const statuses = [...statusMap.queued, ...statusMap.processing, ...statusMap.completed, ...statusMap.failed];
-    const counts = await countStatuses(db, collection, corporationId, statuses);
+    const counts = await countStatuses(db, collection, corporationId, statuses, query);
     const queued = statusMap.queued.reduce((total, status) => total + (counts[status] ?? 0), 0);
     const processing = statusMap.processing.reduce((total, status) => total + (counts[status] ?? 0), 0);
     const completed = statusMap.completed.reduce((total, status) => total + (counts[status] ?? 0), 0);
     const failed = statusMap.failed.reduce((total, status) => total + (counts[status] ?? 0), 0);
-    const latestAt = await latestTimestamp(db, collection, { corporationId });
+    const latestAt = await latestTimestamp(db, collection, { ...query, corporationId });
     const status: OperationsHealthStatus = failed > 0 ? 'degraded' : completed + queued + processing > 0 ? 'ready' : 'degraded';
 
     return {
@@ -230,7 +242,14 @@ export function summarizeWorkerReadiness(env: NodeJS.ProcessEnv = process.env): 
 function configurationWarnings(env: NodeJS.ProcessEnv, workerReadiness: WorkerReadinessSummary[]): OperationsHealthWarning[] {
   const warnings: OperationsHealthWarning[] = [];
 
-  for (const name of ['EVE_SESSION_SECRET', 'ESI_TOKEN_VAULT_SEALING_KEY', 'EVE_SSO_CLIENT_ID', 'EVE_SSO_CLIENT_SECRET', 'EVE_SSO_REDIRECT_URI']) {
+  for (const name of [
+    'EVE_SESSION_SECRET',
+    'ESI_TOKEN_VAULT_SEALING_KEY',
+    'EVE_SSO_CLIENT_ID',
+    'EVE_SSO_CLIENT_SECRET',
+    'EVE_SSO_REDIRECT_URI',
+    'OPENROUTER_API_KEY'
+  ]) {
     if (!env[name]) {
       warnings.push({
         key: `missing_${name.toLowerCase()}`,
@@ -306,7 +325,13 @@ export async function buildOperationsHealthResponse(
       processing: ['processing'],
       completed: ['processed'],
       failed: ['failed']
-    })
+    }, { focus: 'grykk-47-eve-official-news' }),
+    ingestionSummary(db, corporationId, 'brain', 'OpenRouter Brain', 'research_requests', {
+      queued: ['queued'],
+      processing: ['processing'],
+      completed: ['processed'],
+      failed: ['failed']
+    }, { focus: 'gryyk-47-brain' })
   ]);
   const workerReadiness = summarizeWorkerReadiness(env);
   const warnings = configurationWarnings(env, workerReadiness);

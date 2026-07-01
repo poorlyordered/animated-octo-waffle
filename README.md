@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: roadmap feature slices M1-M54 are complete. M55 is a quality follow-up slice on `055-codex-review-followups` that resolves actionable Codex review findings from PRs #30, #47, and #52.
+Current phase: M56 OpenRouter Brain is active on `056-openrouter-brain`. It adds a trusted server-side Brain worker that calls OpenRouter, validates structured model output, and stores command intelligence for the existing command brief surface.
 
 ## What Has Been Built
 
@@ -122,8 +122,21 @@ Optional class-specific worker callback secrets:
 - `ESI_SYNC_WORKER_CALLBACK_SECRET`
 - `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`
 - `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`
+- `BRAIN_WORKER_CALLBACK_SECRET`
 
 Class-specific worker secrets override the shared fallback for their worker class. See `docs/worker-policy.md`.
+
+OpenRouter Brain variables:
+
+- `OPENROUTER_API_KEY`: server-only OpenRouter API key for trusted Brain worker calls.
+- `OPENROUTER_MODEL`: optional model slug; defaults to `openai/gpt-5.2`.
+- `OPENROUTER_BASE_URL`: optional HTTPS API base URL override; defaults to `https://openrouter.ai/api/v1`.
+- `OPENROUTER_APP_URL`: optional OpenRouter app attribution URL.
+- `OPENROUTER_APP_TITLE`: optional OpenRouter app attribution title.
+- `OPENROUTER_TIMEOUT_MS`: optional provider timeout override.
+- `OPENROUTER_MAX_COMPLETION_TOKENS`: optional completion budget override.
+
+The Brain worker endpoint is trusted-worker only. Do not expose OpenRouter keys as `VITE_*`, and do not call OpenRouter directly from browser code.
 
 `EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
 
@@ -151,6 +164,7 @@ Use `MONGODB_DB` for the database the current app reads and writes at runtime. K
 Current notes:
 
 - The Command Brief MVP expects `research_briefs` and `research_requests` in `MONGODB_DB`.
+- The OpenRouter Brain writes validated command intelligence to `research_briefs` and Brain lifecycle records to `research_requests` with focus `gryyk-47-brain`.
 - The Numbers operating layer expects processed read-only `numbers_snapshots` records in `MONGODB_DB`.
 - The `gryyk47` database contains broader corporation context collections such as `corporation_context`, `strategic_decisions`, `asset_information`, and `research_briefs`.
 - There is no collection named `Gryyk-47` in the checked `gryyk47` database. Treat `Gryyk-47` as the product/corporation label unless a future data audit identifies a real database or collection with that exact name.

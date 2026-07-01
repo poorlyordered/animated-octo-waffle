@@ -15,6 +15,10 @@ describe('operations health summaries', () => {
       secretState: 'fallback',
       status: 'degraded'
     });
+    expect(readiness.find((worker) => worker.workerClass === 'brain_worker')).toMatchObject({
+      secretState: 'fallback',
+      status: 'degraded'
+    });
     expect(JSON.stringify(readiness)).not.toContain('shared-secret');
     expect(JSON.stringify(readiness)).not.toContain('handoff-secret');
   });
