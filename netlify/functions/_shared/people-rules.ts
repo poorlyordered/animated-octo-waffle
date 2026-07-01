@@ -124,13 +124,17 @@ export function assertNoUnsafePeopleFollowUpStatusFields(value: unknown): void {
 }
 
 export function assertPeopleDecisionOrigin(followUp: LeadershipFollowUp, decision: DecisionRecord): void {
-  if (
-    decision.sourceContext?.sourceType !== 'people_follow_up' ||
-    decision.sourceContext.followUpId !== followUp.id ||
-    decision.sourceContext.memberProfileId !== followUp.memberProfileId
-  ) {
+  if (!isPeopleDecisionOrigin(followUp, decision)) {
     throw new Error('Decision does not match this People follow-up');
   }
+}
+
+export function isPeopleDecisionOrigin(followUp: LeadershipFollowUp, decision: DecisionRecord | null | undefined): decision is DecisionRecord {
+  return (
+    decision?.sourceContext?.sourceType === 'people_follow_up' &&
+    decision.sourceContext.followUpId === followUp.id &&
+    decision.sourceContext.memberProfileId === followUp.memberProfileId
+  );
 }
 
 export function peopleFollowUpHandoff(
@@ -142,9 +146,10 @@ export function peopleFollowUpHandoff(
   } = {}
 ): PeopleFollowUpHandoff {
   const decision = options.decision ?? null;
-  const queueItem = options.queueItem ?? null;
-  const queueReady = decision?.status === 'approved';
-  const approvalRequired = decision?.status === 'proposed';
+  const matchingDecision = isPeopleDecisionOrigin(followUp, decision) ? decision : null;
+  const queueItem = matchingDecision ? (options.queueItem ?? null) : null;
+  const queueReady = matchingDecision?.status === 'approved';
+  const approvalRequired = matchingDecision?.status === 'proposed';
 
   const handoff: PeopleFollowUpHandoff = {
     followUpId: followUp.id,
@@ -158,11 +163,13 @@ export function peopleFollowUpHandoff(
     message: queueItem
       ? `${options.duplicate ? 'Existing queued work is linked' : 'Queued work is linked'} to approved People decision ${decision?.id ?? followUp.sourceContext.decisionId}.`
       : queueReady
-        ? `Decision ${decision.id} is approved and ready for separate queued work.`
-        : decision?.status === 'rejected'
-          ? `Decision ${decision.id} is rejected. Queued work cannot be created from this People follow-up.`
-          : decision
-            ? `Decision ${decision.id} is ${decision.status}. Approval is required before queued work can be created.`
+        ? `Decision ${matchingDecision.id} is approved and ready for separate queued work.`
+        : decision && !matchingDecision
+          ? `Decision ${decision.id} does not match this People follow-up. Queued work cannot be created from this link.`
+          : matchingDecision?.status === 'rejected'
+          ? `Decision ${matchingDecision.id} is rejected. Queued work cannot be created from this People follow-up.`
+          : matchingDecision
+            ? `Decision ${matchingDecision.id} is ${matchingDecision.status}. Approval is required before queued work can be created.`
             : 'No decision has been recorded for this People follow-up.',
     boundary: queueItem ? queueBoundary : decisionBoundary,
     missingLinkReasons: followUp.sourceContext.missingLinkReasons
@@ -171,9 +178,6 @@ export function peopleFollowUpHandoff(
   if (queueItem) {
     handoff.queueItemId = queueItem.id;
     handoff.queueStatus = queueItem.status;
-  } else if (followUp.sourceContext.queueItemId) {
-    handoff.queueItemId = followUp.sourceContext.queueItemId;
-    handoff.queueStatus = followUp.sourceContext.queueStatus;
   }
 
   return handoff;

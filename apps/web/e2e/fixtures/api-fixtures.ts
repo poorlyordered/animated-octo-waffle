@@ -42,6 +42,64 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
   let peopleQueueLinked = false;
   let peopleIngestionProvenance = commandSurfaceFixtures.people.ingestionProvenance;
 
+  function browserPeopleFollowUps() {
+    return commandSurfaceFixtures.people.followUps.map((followUp) =>
+      followUp.id === 'follow-up-browser-open' && peopleDecisionStatus !== 'none'
+        ? {
+            ...followUp,
+            sourceDecisionId: commandSurfaceFixtures.people.decision.id,
+            sourceQueueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
+            sourceContext: {
+              ...followUp.sourceContext,
+              decisionId: commandSurfaceFixtures.people.decision.id,
+              decisionStatus: peopleDecisionStatus,
+              queueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
+              queueStatus: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.status : undefined
+            }
+          }
+        : followUp
+    );
+  }
+
+  function browserPeopleHandoffs() {
+    const followUp = browserPeopleFollowUps().find((item) => item.id === 'follow-up-browser-open');
+    if (!followUp || peopleDecisionStatus === 'none') {
+      return {};
+    }
+
+    const decision =
+      peopleDecisionStatus === 'approved'
+        ? commandSurfaceFixtures.people.approvedDecision
+        : peopleDecisionStatus === 'rejected'
+          ? commandSurfaceFixtures.people.rejectedDecision
+          : commandSurfaceFixtures.people.decision;
+
+    return {
+      [followUp.id]: {
+        followUpId: followUp.id,
+        memberProfileId: followUp.memberProfileId,
+        memberDisplayName: followUp.memberDisplayName,
+        decisionId: decision.id,
+        decisionStatus: decision.status,
+        approvalRequired: decision.status === 'proposed',
+        queueReady: decision.status === 'approved',
+        queueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
+        queueStatus: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.status : undefined,
+        message: peopleQueueLinked
+          ? `Queued work is linked to approved People decision ${decision.id}.`
+          : decision.status === 'approved'
+            ? `Decision ${decision.id} is approved and ready for separate queued work.`
+            : decision.status === 'rejected'
+              ? `Decision ${decision.id} is rejected. Queued work cannot be created from this People follow-up.`
+              : `Decision ${decision.id} is proposed. Approval is required before queued work can be created.`,
+        boundary: peopleQueueLinked
+          ? 'People queued work handoff only. No worker was dispatched, no handoff was prepared, and no EVE role/access or external-service change occurred.'
+          : 'People follow-up handoff only. No queued work, worker dispatch, EVE role/access change, retry, or external execution occurred.',
+        missingLinkReasons: []
+      }
+    };
+  }
+
   await page.route('**/api/eve-session**', (route) => {
     if (route.request().method() === 'POST') {
       return json(route, {
@@ -333,8 +391,10 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
 
   await page.route('**/api/people/members/*', (route) => {
     const member = commandSurfaceFixtures.people.members[0];
+    const followUps = browserPeopleFollowUps().filter((followUp) => followUp.memberProfileId === member.id);
     return json(route, {
-      followUps: commandSurfaceFixtures.people.followUps.filter((followUp) => followUp.memberProfileId === member.id),
+      followUps,
+      handoffByFollowUpId: browserPeopleHandoffs(),
       member
     });
   });
@@ -436,22 +496,8 @@ export async function installCommandSurfaceApiFixtures(page: Page) {
     }
 
     return json(route, {
-      followUps: commandSurfaceFixtures.people.followUps.map((followUp) =>
-        followUp.id === 'follow-up-browser-open' && peopleDecisionStatus !== 'none'
-          ? {
-              ...followUp,
-              sourceDecisionId: commandSurfaceFixtures.people.decision.id,
-              sourceQueueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
-              sourceContext: {
-                ...followUp.sourceContext,
-                decisionId: commandSurfaceFixtures.people.decision.id,
-                decisionStatus: peopleDecisionStatus,
-                queueItemId: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.id : undefined,
-                queueStatus: peopleQueueLinked ? commandSurfaceFixtures.people.queueItem.status : undefined
-              }
-            }
-          : followUp
-      )
+      followUps: browserPeopleFollowUps(),
+      handoffByFollowUpId: browserPeopleHandoffs()
     });
   });
 }

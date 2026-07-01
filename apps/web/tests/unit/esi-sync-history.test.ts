@@ -73,4 +73,27 @@ describe('ESI sync history helpers', () => {
     expect(JSON.stringify(history)).not.toContain('token');
     expect(JSON.stringify(history)).not.toContain('dispatchTarget');
   });
+
+  it('includes Opportunity outcomes in browser-safe history summaries', () => {
+    const opportunitySync: EsiSyncRequestDocument = {
+      ...completedSync,
+      id: 'sync-opportunity',
+      domain: 'opportunity',
+      result: {
+        snapshotId: 'opportunity-snapshot-1',
+        sourceCount: 2,
+        summary: 'Opportunity structures read completed.',
+        sectionStatuses: [{ key: 'structures', status: 'processed' }],
+        failures: []
+      }
+    };
+
+    const history = syncHistoryItems([completedSync, opportunitySync]);
+
+    expect(history.map((item) => item.domain)).toEqual(['numbers', 'opportunity']);
+    expect(history[1].snapshotId).toBe('opportunity-snapshot-1');
+    expect(JSON.stringify(history)).not.toContain('refreshToken');
+    expect(JSON.stringify(history)).not.toContain('workerSecret');
+    expect(JSON.stringify(history)).not.toContain('rawPayload');
+  });
 });

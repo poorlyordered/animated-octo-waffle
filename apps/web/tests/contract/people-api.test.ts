@@ -21,7 +21,6 @@ import {
   completeMember,
   linkedDecisionFollowUp,
   linkedQueueFollowUp,
-  openFollowUp,
   approvedPeopleFollowUpDecisionResponse,
   peopleIngestionProvenance,
   peopleFollowUpDecisionResponse,
@@ -38,11 +37,27 @@ describe('People API contract', () => {
     });
     expect(parsed.members[0].displayName).toBe('Ari Voss');
     expect(parsed.ingestionProvenance?.history[0].status).toBe('completed');
-    expect(memberProfileDetailResponseSchema.parse({ member: completeMember, followUps: [openFollowUp] }).followUps[0].status).toBe('open');
+    expect(
+      memberProfileDetailResponseSchema.parse({
+        member: completeMember,
+        followUps: [approvedPeopleFollowUpDecisionResponse.followUp],
+        handoffByFollowUpId: {
+          [approvedPeopleFollowUpDecisionResponse.followUp.id]: approvedPeopleFollowUpDecisionResponse.handoff
+        }
+      }).handoffByFollowUpId?.[approvedPeopleFollowUpDecisionResponse.followUp.id].queueReady
+    ).toBe(true);
   });
 
   it('accepts follow-up list and create responses', () => {
-    expect(leadershipFollowUpListResponseSchema.parse({ followUps: [openFollowUp] }).followUps[0].priority).toBe('high');
+    const parsedList = leadershipFollowUpListResponseSchema.parse({
+      followUps: [approvedPeopleFollowUpDecisionResponse.followUp],
+      handoffByFollowUpId: {
+        [approvedPeopleFollowUpDecisionResponse.followUp.id]: approvedPeopleFollowUpDecisionResponse.handoff
+      }
+    });
+
+    expect(parsedList.followUps[0].priority).toBe('high');
+    expect(parsedList.handoffByFollowUpId?.[approvedPeopleFollowUpDecisionResponse.followUp.id].queueReady).toBe(true);
     expect(leadershipFollowUpResponseSchema.parse({ followUp: playerImpactingFollowUp }).followUp.approval?.approvalText).toContain(
       'approve'
     );

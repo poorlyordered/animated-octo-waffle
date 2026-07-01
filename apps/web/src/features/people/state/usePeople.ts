@@ -87,6 +87,7 @@ export function usePeople(): UsePeopleState {
           members: memberResponse.members,
           ingestionProvenance: memberResponse.ingestionProvenance ?? null,
           followUps: followUpResponse.followUps,
+          handoffByFollowUpId: followUpResponse.handoffByFollowUpId ?? {},
           selectedMember: current.selectedMember ?? selectedMember,
           selectedMemberFollowUps: current.selectedMember
             ? current.selectedMemberFollowUps
@@ -113,12 +114,16 @@ export function usePeople(): UsePeopleState {
   }, [activityFilter, followUpStatusFilter]);
 
   async function loadMember(id: string): Promise<MemberProfile> {
-    const { member, followUps } = await getMember(id);
+    const { member, followUps, handoffByFollowUpId } = await getMember(id);
     setState((current) => ({
       ...current,
       members: current.members.map((item) => (item.id === member.id ? member : item)),
       selectedMember: member,
       selectedMemberFollowUps: followUps,
+      handoffByFollowUpId: {
+        ...current.handoffByFollowUpId,
+        ...(handoffByFollowUpId ?? {})
+      },
       error: null
     }));
     return member;

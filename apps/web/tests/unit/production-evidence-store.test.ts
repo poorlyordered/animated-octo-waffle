@@ -20,6 +20,20 @@ describe('production evidence store', () => {
         checks: [{ key: 'mongodb', status: 'verified', evidence: 'mongodb+srv://user:pass@example/db' }]
       })
     ).toThrow('unsafe value');
+
+    expect(() =>
+      assertValueFreeProductionEvidence({
+        commitSha: 'abcdef1',
+        pullRequestUrl: 'https://ghp_exampletoken@github.com/poorlyordered/animated-octo-waffle/pull/49'
+      })
+    ).toThrow('unsafe value');
+
+    expect(() =>
+      assertValueFreeProductionEvidence({
+        commitSha: 'abcdef1',
+        pullRequestUrl: 'https://github.com/poorlyordered/animated-octo-waffle/pull/49'
+      })
+    ).not.toThrow();
   });
 
   it('creates scoped value-free records and lists newest records first', async () => {

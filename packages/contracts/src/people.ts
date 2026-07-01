@@ -229,10 +229,12 @@ export interface PeopleIngestionWorkerResponse {
 export interface MemberProfileDetailResponse {
   member: MemberProfile;
   followUps: LeadershipFollowUp[];
+  handoffByFollowUpId?: Record<string, PeopleFollowUpHandoff>;
 }
 
 export interface LeadershipFollowUpListResponse {
   followUps: LeadershipFollowUp[];
+  handoffByFollowUpId?: Record<string, PeopleFollowUpHandoff>;
 }
 
 export interface LeadershipFollowUpResponse {

@@ -219,11 +219,13 @@ export const peopleIngestionWorkerResponseSchema = z.object({
 
 export const memberProfileDetailResponseSchema = z.object({
   member: memberProfileSchema,
-  followUps: z.array(leadershipFollowUpSchema)
+  followUps: z.array(leadershipFollowUpSchema),
+  handoffByFollowUpId: z.record(z.string(), peopleFollowUpHandoffSchema).optional()
 });
 
 export const leadershipFollowUpListResponseSchema = z.object({
-  followUps: z.array(leadershipFollowUpSchema)
+  followUps: z.array(leadershipFollowUpSchema),
+  handoffByFollowUpId: z.record(z.string(), peopleFollowUpHandoffSchema).optional()
 });
 
 export const leadershipFollowUpResponseSchema = z.object({

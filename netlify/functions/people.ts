@@ -17,6 +17,7 @@ import {
   peopleIngestionPrepareSummary
 } from './_shared/people-ingestion-history';
 import {
+  buildPeopleFollowUpHandoffs,
   createDecisionRecordFromPeopleFollowUp,
   createLeadershipFollowUp,
   createQueueItemFromPeopleFollowUp,
@@ -114,7 +115,8 @@ export async function handler(event: FunctionEvent) {
         }
 
         const followUps = await listLeadershipFollowUps(db, corporationId, { memberProfileId: member.id });
-        return jsonResponse(200, { member, followUps });
+        const handoffByFollowUpId = await buildPeopleFollowUpHandoffs(db, corporationId, followUps);
+        return jsonResponse(200, { member, followUps, handoffByFollowUpId });
       }
 
       const activity = event.queryStringParameters?.activity;
@@ -138,8 +140,9 @@ export async function handler(event: FunctionEvent) {
         priority,
         memberProfileId: event.queryStringParameters?.memberProfileId
       });
+      const handoffByFollowUpId = await buildPeopleFollowUpHandoffs(db, corporationId, followUps);
 
-      return jsonResponse(200, { followUps });
+      return jsonResponse(200, { followUps, handoffByFollowUpId });
     }
 
     if (method === 'POST' && path.includes('/people/follow-ups')) {

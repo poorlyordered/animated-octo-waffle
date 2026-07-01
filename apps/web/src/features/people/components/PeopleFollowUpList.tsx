@@ -44,7 +44,7 @@ const peopleWorkerHandoffBoundary =
 
 function derivedHandoff(followUp: LeadershipFollowUp): PeopleFollowUpHandoff {
   const decisionStatus = followUp.sourceContext.decisionStatus;
-  const queueReady = decisionStatus === 'approved';
+  const queueReady = false;
 
   return {
     followUpId: followUp.id,
@@ -52,14 +52,10 @@ function derivedHandoff(followUp: LeadershipFollowUp): PeopleFollowUpHandoff {
     memberDisplayName: followUp.memberDisplayName,
     decisionId: followUp.sourceContext.decisionId,
     decisionStatus,
-    approvalRequired: decisionStatus === 'proposed',
+    approvalRequired: false,
     queueReady,
-    queueItemId: followUp.sourceContext.queueItemId,
-    queueStatus: followUp.sourceContext.queueStatus,
     message: followUp.sourceContext.decisionId
-      ? queueReady
-        ? `Decision ${followUp.sourceContext.decisionId} is approved and ready for separate queued work.`
-        : `Decision ${followUp.sourceContext.decisionId} is ${decisionStatus ?? 'linked'}.`
+      ? `Decision ${followUp.sourceContext.decisionId} is ${decisionStatus ?? 'linked'}, but People-origin handoff state is unavailable.`
       : 'No decision has been recorded for this People follow-up.',
     boundary:
       'People follow-up handoff only. No queued work, worker dispatch, EVE role/access change, retry, or external execution occurred.',

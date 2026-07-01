@@ -4,6 +4,7 @@ import {
   claimQueuedSyncRequest,
   completeSyncRequest,
   failSyncRequest,
+  listRecentSyncRequestsForDomains,
   listQueuedSyncRequests,
   workerSyncRequestSummary
 } from '../../../../netlify/functions/_shared/esi-sync-request-store';
@@ -15,6 +16,9 @@ function createDb(initial: Document[]) {
   const collection = {
     find: jest.fn((filter: Filter<Document>) => ({
       sort: jest.fn(() => ({
+        limit: jest.fn((limit: number) => ({
+          toArray: jest.fn(async () => documents.filter((item) => matches(item, filter)).slice(0, limit).map((item) => ({ ...item })))
+        })),
         toArray: jest.fn(async () => documents.filter((item) => matches(item, filter)).map((item) => ({ ...item })))
       }))
     })),
@@ -75,6 +79,19 @@ const queuedOpportunitySync = {
 };
 
 describe('ESI sync request store worker transitions', () => {
+  it('lists recent sync requests across selected commander-visible domains', async () => {
+    const { db } = createDb([
+      { ...queuedSync, id: 'sync-numbers-completed', status: 'completed' },
+      { ...queuedPeopleSync, id: 'sync-people-completed', status: 'completed' },
+      { ...queuedOpportunitySync, id: 'sync-opportunity-completed', status: 'completed' }
+    ]);
+
+    const recent = await listRecentSyncRequestsForDomains(db, queuedSync.corporationId, ['numbers', 'opportunity']);
+
+    expect(recent.map((item) => item.id)).toEqual(['sync-numbers-completed', 'sync-opportunity-completed']);
+    expect(recent.map((item) => item.domain)).toEqual(['numbers', 'opportunity']);
+  });
+
   it('lists queued sync requests by domain', async () => {
     const { db } = createDb([queuedSync, queuedPeopleSync, queuedOpportunitySync, { ...queuedSync, id: 'sync-2', status: 'completed' }]);
 

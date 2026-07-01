@@ -17,7 +17,12 @@ import {
   requiredScopesForDomain,
   vaultSummary
 } from './_shared/esi-token-vault';
-import { createOrFindQueuedSyncRequest, findSyncRequest, listRecentSyncRequests, syncRequestSummary } from './_shared/esi-sync-request-store';
+import {
+  createOrFindQueuedSyncRequest,
+  findSyncRequest,
+  listRecentSyncRequestsForDomains,
+  syncRequestSummary
+} from './_shared/esi-sync-request-store';
 import {
   assertNoUnsafeRetryFields,
   cancelLatestRetryRequestForTarget,
@@ -58,7 +63,7 @@ export async function handler(event: FunctionEvent) {
       const { corporationId } = getAuthScope(event);
       const db = await getMongoDb();
       const vault = await findActiveOrLatestVault(db, corporationId);
-      const history = await listRecentSyncRequests(db, corporationId, 'numbers');
+      const history = await listRecentSyncRequestsForDomains(db, corporationId, ['numbers', 'opportunity']);
       for (const item of history) {
         const retries = await listRetryRequestsForTarget(
           db,
