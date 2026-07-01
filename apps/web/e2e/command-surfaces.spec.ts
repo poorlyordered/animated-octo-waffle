@@ -272,3 +272,33 @@ test('renders operations health surface without execution controls or secrets', 
   await expect(page.getByLabel('Operations health').getByRole('button')).toHaveCount(0);
   await assertNoBrowserDiagnostics();
 });
+
+test('filters production evidence records locally without export controls', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  await expectHeading(page, 'Production evidence');
+  await expectVisibleText(page, 'Production evidence records are value-free.');
+  await expectVisibleText(page, 'Production evidence filters organize browser-visible records only.');
+  await expectVisibleText(page, '3 of 3');
+  await expectVisibleText(page, 'session:Ari Voss');
+  await expectVisibleText(page, 'session:Mara Vale');
+
+  const filters = page.getByLabel('Production evidence filters');
+  await expect(filters.locator('#production-evidence-environment-filter')).toHaveValue('all');
+  await expect(filters.locator('#production-evidence-decision-filter')).toHaveValue('all');
+  await expect(filters.locator('#production-evidence-check-filter')).toHaveValue('all');
+  await filters.locator('#production-evidence-environment-filter').selectOption('staging');
+  await filters.locator('#production-evidence-decision-filter').selectOption('no_go');
+  await filters.locator('#production-evidence-check-filter').selectOption('blocked');
+  await expectVisibleText(page, '1 of 3');
+  const recentEvidence = page.getByLabel('Recent production evidence');
+  await expect(recentEvidence.getByText('session:Mara Vale')).toBeVisible();
+  await expect(recentEvidence.getByText('session:Ari Voss')).toHaveCount(0);
+  await filters.locator('#production-evidence-check-filter').selectOption('not_applicable');
+  await expectVisibleText(page, '0 of 3');
+  await expectVisibleText(page, 'No production evidence records match the selected filters.');
+  await expect(page.getByLabel('Production evidence').getByRole('button', { name: /export|deploy|rollback/i })).toHaveCount(0);
+  await assertNoBrowserDiagnostics();
+});

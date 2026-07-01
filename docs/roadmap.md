@@ -1097,10 +1097,31 @@ Validation:
 
 Recommended next slice:
 
-- M52: Production Evidence Filtering. Add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
+### M52: Production Evidence Filtering - Complete
+
+Goal: add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
+
+Delivered capabilities:
+
+- Browser-local Production Evidence environment filter for all/production/staging/controlled staging
+- Browser-local decision filter for all/go/no-go/controlled staging
+- Browser-local check-status filter for all/verified/attention/blocked/not applicable
+- Visible/total counts for filtered evidence records
+- Explicit empty state when no production evidence records match selected filters
+- Typed production evidence filter helpers with unit coverage
+- Browser smoke coverage for filter controls and no-export/no-execution boundary
+- No production-evidence API contract change, server preference storage, production data export, live provider calls, deploy, rollback, worker dispatch, ESI fetch, EVE write, wallet/asset/contract/role/access/standing mutation, or external-service mutation
+
+Validation:
+
+- Spec: `specs/052-production-evidence-filtering`
+- Local validation covered targeted production evidence unit/contract tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
+
+Recommended next slice:
+
+- M53: Operations Health Saved Views. Add browser-local saved filter presets for operations health without server preference storage or provider calls.
 
 Recommended next-slice candidates:
 
-- M52: Production Evidence Filtering. Add browser-local filters for production evidence environment, decision, and check status without server preference storage or production data export.
 - M53: Operations Health Saved Views. Add browser-local saved filter presets for operations health without server preference storage or provider calls.
 - M54: Opportunity ESI Worker Planning. Define worker-owned Opportunity ESI sync handling after People ESI worker planning is stable.
