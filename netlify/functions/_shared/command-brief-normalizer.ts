@@ -1,5 +1,5 @@
 import type { CommandBrief, SourceReference } from '../../../packages/contracts/src/index';
-import { commandBriefSchema, defaultResearchFocus } from '../../../packages/contracts/src/index';
+import { commandBriefSchema, defaultResearchFocus, operatingLegCoverageSchema } from '../../../packages/contracts/src/index';
 import { withDerivedCoverage } from './coverage';
 
 type BriefDocument = Record<string, unknown> & {
@@ -64,8 +64,9 @@ export function normalizeCommandBriefDocument(document: BriefDocument): CommandB
     typeof sourceCountValue === 'number' ? sourceCountValue : Math.max(sourceRefs.length, 0);
   const confidenceValue = document.confidence ?? nestedBrief.confidence;
   const confidence = typeof confidenceValue === 'number' ? Math.min(Math.max(confidenceValue, 0), 1) : 0;
+  const storedCoverage = operatingLegCoverageSchema.safeParse(document.coverage ?? nestedBrief.coverage);
 
-  const brief = withDerivedCoverage({
+  const brief = {
     id: document.id ?? document._id?.toString() ?? 'unknown',
     corporationId: String(document.corporationId ?? ''),
     focus: String(document.focus ?? defaultResearchFocus),
@@ -80,8 +81,9 @@ export function normalizeCommandBriefDocument(document: BriefDocument): CommandB
     strategicImpacts: stringArray(nestedBrief.strategicImpacts ?? document.strategicImpacts),
     recommendedActions: stringArray(nestedBrief.recommendedActions ?? document.recommendedActions),
     watchlist: stringArray(nestedBrief.watchlist ?? document.watchlist),
-    memory: stringArray(nestedBrief.memory ?? document.memory)
-  });
+    memory: stringArray(nestedBrief.memory ?? document.memory),
+    ...(storedCoverage.success ? { coverage: storedCoverage.data } : {})
+  };
 
-  return commandBriefSchema.parse(brief);
+  return commandBriefSchema.parse(storedCoverage.success ? brief : withDerivedCoverage(brief));
 }

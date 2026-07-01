@@ -11,6 +11,16 @@ export interface EsiTokenVaultEnv {
   sealingKey: string;
 }
 
+export interface OpenRouterEnv {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+  appUrl?: string;
+  appTitle?: string;
+  timeoutMs: number;
+  maxCompletionTokens: number;
+}
+
 export function readServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
   const mongodbUri = env.MONGODB_URI;
   const mongodbDb = env.MONGODB_DB;
@@ -48,4 +58,39 @@ export function readEsiTokenVaultEnv(env: NodeJS.ProcessEnv = process.env): EsiT
   }
 
   return { sealingKey: 'local-development-esi-token-vault-key' };
+}
+
+export function readOpenRouterEnv(env: NodeJS.ProcessEnv = process.env): OpenRouterEnv {
+  const apiKey = env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY is required');
+  }
+
+  const baseUrl = env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
+  if (!baseUrl.startsWith('https://')) {
+    throw new Error('OPENROUTER_BASE_URL must start with https://');
+  }
+
+  return {
+    apiKey,
+    model: env.OPENROUTER_MODEL ?? 'openai/gpt-5.2',
+    baseUrl: baseUrl.replace(/\/$/, ''),
+    appUrl: env.OPENROUTER_APP_URL,
+    appTitle: env.OPENROUTER_APP_TITLE,
+    timeoutMs: positiveInteger(env.OPENROUTER_TIMEOUT_MS, 45_000, 5_000, 55_000),
+    maxCompletionTokens: positiveInteger(env.OPENROUTER_MAX_COMPLETION_TOKENS, 1_800, 256, 4_000)
+  };
+}
+
+function positiveInteger(value: string | undefined, fallback: number, min: number, max: number): number {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+    return fallback;
+  }
+
+  return parsed;
 }

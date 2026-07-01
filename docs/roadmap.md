@@ -1179,6 +1179,24 @@ Validation:
 - Spec: `specs/055-codex-review-followups`
 - Local validation covered targeted People, production evidence, and ESI sync tests, typecheck, lint, full Jest tests, full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene
 
-Recommended next-slice candidates:
+Recommended next slice:
 
-- None. Roadmap feature slices M1-M54 are complete, and M55 resolved the actionable Codex review follow-up slice.
+### M56: OpenRouter Brain - In Progress
+
+Goal: build the first real Gryyk-47 Brain using trusted server-side OpenRouter calls and durable command intelligence storage.
+
+Delivered capabilities in this slice:
+
+- Brain worker contract for trusted `POST /api/brain-worker/run` execution
+- OpenRouter provider adapter using server-only API key configuration
+- Strict structured model output validation before storage
+- Brain-generated command intelligence persisted as command brief compatible `research_briefs`
+- Brain run lifecycle records in `research_requests` with focus `gryyk-47-brain`
+- Operations health readiness for Brain worker secrets and OpenRouter configuration
+- Regression coverage for malformed model output, unsafe execution fields, provider request shape, command brief compatibility, and operations health readiness
+- No browser OpenRouter calls, browser worker dispatch, EVE write, role/access/standing mutation, wallet/asset/contract mutation, token exposure, raw provider payload exposure, or unapproved external-service mutation
+
+Validation:
+
+- Spec: `specs/056-openrouter-brain`
+- Focused validation currently covers Brain, command brief normalization, and operations health tests. Full quality gate pending.

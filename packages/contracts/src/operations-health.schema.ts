@@ -14,14 +14,15 @@ export const operationsCommandApiKeySchema = z.enum([
   'esi_sync'
 ]);
 
-export const operationsIngestionKeySchema = z.enum(['numbers_esi_sync', 'people_ingestion', 'opportunity_ingestion']);
+export const operationsIngestionKeySchema = z.enum(['numbers_esi_sync', 'people_ingestion', 'opportunity_ingestion', 'brain']);
 
 export const operationsWorkerClassSchema = z.enum([
   'worker_handoff',
   'retry_worker',
   'esi_sync',
   'people_ingestion',
-  'opportunity_ingestion'
+  'opportunity_ingestion',
+  'brain_worker'
 ]);
 
 export const commandApiHealthSummarySchema = z.object({

@@ -15,6 +15,10 @@ describe('operations health summaries', () => {
       secretState: 'fallback',
       status: 'degraded'
     });
+    expect(readiness.find((worker) => worker.workerClass === 'brain_worker')).toMatchObject({
+      secretState: 'fallback',
+      status: 'degraded'
+    });
     expect(JSON.stringify(readiness)).not.toContain('shared-secret');
     expect(JSON.stringify(readiness)).not.toContain('handoff-secret');
   });
@@ -30,6 +34,31 @@ describe('operations health summaries', () => {
             key: 'test_identity_configured',
             severity: 'critical',
             message: 'Test identity is configured.'
+          }
+        ]
+      )
+    ).toBe('blocked');
+  });
+
+  it('treats missing OpenRouter configuration as blocking for Brain readiness', () => {
+    const brainWorker = summarizeWorkerReadiness({
+      BRAIN_WORKER_CALLBACK_SECRET: 'brain-secret'
+    }).find((worker) => worker.workerClass === 'brain_worker');
+
+    expect(brainWorker).toMatchObject({
+      secretState: 'configured',
+      status: 'ready'
+    });
+    expect(
+      deriveOverallStatus(
+        [],
+        [],
+        [brainWorker!],
+        [
+          {
+            key: 'missing_openrouter_api_key',
+            severity: 'critical',
+            message: 'OPENROUTER_API_KEY is not configured in this runtime; Brain worker runs are blocked.'
           }
         ]
       )

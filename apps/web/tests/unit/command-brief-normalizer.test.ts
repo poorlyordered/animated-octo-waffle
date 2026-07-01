@@ -26,4 +26,36 @@ describe('normalizeCommandBriefDocument', () => {
     expect(normalized.coverage.opportunity).toBe('present');
     expect(normalized.coverage.numbers).toBe('missing');
   });
+
+  it('normalizes Brain-generated command intelligence records', () => {
+    const normalized = normalizeCommandBriefDocument({
+      _id: { toString: () => 'brain-brief-1' },
+      id: 'brain-brief-1',
+      corporationId: '917701062',
+      focus: 'gryyk-47-brain',
+      createdAt: new Date('2026-07-01T12:00:00.000Z'),
+      model: 'openai/gpt-5.2',
+      promptVersion: 'brain-command-v1',
+      sourceCount: 2,
+      sourceReferences: [{ title: 'Numbers snapshot', sourceId: 'numbers-1' }],
+      confidence: 0.77,
+      executiveSummary: 'Brain summary',
+      briefMarkdown: '## Brain',
+      strategicImpacts: ['Numbers stable'],
+      recommendedActions: ['Prepare draft order for review'],
+      watchlist: ['Opportunity context'],
+      memory: ['Missing data: fresh people ingestion'],
+      coverage: {
+        numbers: 'present',
+        opportunity: 'stale',
+        people: 'present',
+        missingReasons: ['Opportunity context stale']
+      }
+    });
+
+    expect(normalized.id).toBe('brain-brief-1');
+    expect(normalized.focus).toBe('gryyk-47-brain');
+    expect(normalized.model).toBe('openai/gpt-5.2');
+    expect(normalized.coverage.people).toBe('present');
+  });
 });

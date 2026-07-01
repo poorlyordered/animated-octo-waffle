@@ -29,10 +29,13 @@ Verify in the Netlify project settings before deploy:
 - `EVE_SESSION_SECRET` is configured; `GRYYK_SESSION_SECRET` should remain legacy-only.
 - `ESI_TOKEN_VAULT_SEALING_KEY` is configured for production token vault sealing.
 - `WORKER_CALLBACK_SECRET` is configured as fallback while worker classes migrate.
-- Class-specific worker secrets are configured for each production worker class that will call back: `WORKER_HANDOFF_CALLBACK_SECRET`, `RETRY_WORKER_CALLBACK_SECRET`, `ESI_SYNC_WORKER_CALLBACK_SECRET`, `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`, and `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`.
+- Class-specific worker secrets are configured for each production worker class that will call back: `WORKER_HANDOFF_CALLBACK_SECRET`, `RETRY_WORKER_CALLBACK_SECRET`, `ESI_SYNC_WORKER_CALLBACK_SECRET`, `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`, `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`, and `BRAIN_WORKER_CALLBACK_SECRET`.
+- `OPENROUTER_API_KEY` is configured server-side for trusted Brain worker calls.
+- Optional Brain provider values are configured only when needed: `OPENROUTER_MODEL`, `OPENROUTER_BASE_URL`, `OPENROUTER_APP_URL`, `OPENROUTER_APP_TITLE`, `OPENROUTER_TIMEOUT_MS`, and `OPENROUTER_MAX_COMPLETION_TOKENS`.
 - `EVE_SSO_CLIENT_ID`, `EVE_SSO_CLIENT_SECRET`, and `EVE_SSO_REDIRECT_URI` are configured for live EVE SSO.
 - `EVE_SSO_TEST_IDENTITY_JSON` is absent from production.
 - No server-only variable is exposed as `VITE_*`.
+- No OpenRouter key, raw provider payload, prompt containing secrets, or unvalidated model output is stored in deploy evidence.
 
 Evidence to keep: variable names present or absent, target environment name, reviewer, timestamp, and any provider check URL that does not expose values.
 

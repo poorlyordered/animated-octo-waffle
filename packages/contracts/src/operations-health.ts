@@ -16,14 +16,15 @@ export type OperationsCommandApiKey =
   | 'automation_queue'
   | 'esi_sync';
 
-export type OperationsIngestionKey = 'numbers_esi_sync' | 'people_ingestion' | 'opportunity_ingestion';
+export type OperationsIngestionKey = 'numbers_esi_sync' | 'people_ingestion' | 'opportunity_ingestion' | 'brain';
 
 export type OperationsWorkerClass =
   | 'worker_handoff'
   | 'retry_worker'
   | 'esi_sync'
   | 'people_ingestion'
-  | 'opportunity_ingestion';
+  | 'opportunity_ingestion'
+  | 'brain_worker';
 
 export interface CommandApiHealthSummary {
   key: OperationsCommandApiKey;
