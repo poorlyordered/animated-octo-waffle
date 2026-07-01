@@ -55,6 +55,7 @@ import {
   startEsiSyncConsentResponse
 } from '../../tests/fixtures/esiSync';
 import { operationsHealthResponse } from '../../tests/fixtures/operationsHealth';
+import { productionEvidenceListResponse } from '../../tests/fixtures/productionEvidence';
 
 export const commandSurfaceFixtures = {
   commandBrief: {
@@ -276,5 +277,6 @@ export const commandSurfaceFixtures = {
     esiSyncCancel: esiSyncRetryCancelResponse,
     esiSyncReschedule: esiSyncRetryRescheduleResponse
   },
-  operationsHealth: operationsHealthResponse
+  operationsHealth: operationsHealthResponse,
+  productionEvidence: productionEvidenceListResponse
 };

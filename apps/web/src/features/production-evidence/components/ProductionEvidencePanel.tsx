@@ -9,6 +9,15 @@ import type {
   ProductionEvidenceListResponse
 } from '@gryyk/contracts';
 import { productionEvidenceCheckKeys } from '@gryyk/contracts';
+import {
+  defaultProductionEvidenceFilters,
+  filterProductionEvidenceRecords,
+  productionEvidenceFilterCounts,
+  type ProductionEvidenceCheckStatusFilter,
+  type ProductionEvidenceDecisionFilter,
+  type ProductionEvidenceEnvironmentFilter,
+  type ProductionEvidenceFilters
+} from '../services/productionEvidenceFilters';
 
 interface ProductionEvidencePanelProps {
   error: string | null;
@@ -46,6 +55,7 @@ function statusClass(decision: ProductionEvidenceDecision): string {
 export function ProductionEvidencePanel({ error, evidence, loading, onCreate, saving }: ProductionEvidencePanelProps) {
   const [environment, setEnvironment] = useState<ProductionEvidenceEnvironment>('production');
   const [decision, setDecision] = useState<ProductionEvidenceDecision>('controlled_staging');
+  const [filters, setFilters] = useState<ProductionEvidenceFilters>(defaultProductionEvidenceFilters);
   const [commitSha, setCommitSha] = useState('');
   const [pullRequestUrl, setPullRequestUrl] = useState('');
   const [deployId, setDeployId] = useState('');
@@ -73,6 +83,9 @@ export function ProductionEvidencePanel({ error, evidence, loading, onCreate, sa
     return <main className="command-brief">Loading production evidence...</main>;
   }
 
+  const visibleRecords = evidence ? filterProductionEvidenceRecords(evidence.records, filters) : [];
+  const counts = evidence ? productionEvidenceFilterCounts(evidence.records, visibleRecords) : { totalRecords: 0, visibleRecords: 0 };
+
   return (
     <main className="command-brief" aria-label="Production evidence">
       <header className="brief-header">
@@ -85,6 +98,76 @@ export function ProductionEvidencePanel({ error, evidence, loading, onCreate, sa
 
       {error ? <p className="form-error">{error}</p> : null}
       {evidence ? <p className="notice">{evidence.boundary}</p> : null}
+
+      <section className="summary" aria-label="Production evidence filters">
+        <h2>Evidence filters</h2>
+        <div className="form-actions">
+          <label htmlFor="production-evidence-environment-filter">
+            Environment
+            <select
+              id="production-evidence-environment-filter"
+              value={filters.environment}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  environment: event.target.value as ProductionEvidenceEnvironmentFilter
+                }))
+              }
+            >
+              <option value="all">All environments</option>
+              <option value="production">Production</option>
+              <option value="staging">Staging</option>
+              <option value="controlled_staging">Controlled staging</option>
+            </select>
+          </label>
+          <label htmlFor="production-evidence-decision-filter">
+            Decision
+            <select
+              id="production-evidence-decision-filter"
+              value={filters.decision}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  decision: event.target.value as ProductionEvidenceDecisionFilter
+                }))
+              }
+            >
+              <option value="all">All decisions</option>
+              <option value="go">Go</option>
+              <option value="no_go">No go</option>
+              <option value="controlled_staging">Controlled staging</option>
+            </select>
+          </label>
+          <label htmlFor="production-evidence-check-filter">
+            Check status
+            <select
+              id="production-evidence-check-filter"
+              value={filters.checkStatus}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  checkStatus: event.target.value as ProductionEvidenceCheckStatusFilter
+                }))
+              }
+            >
+              <option value="all">All check statuses</option>
+              <option value="verified">Verified</option>
+              <option value="attention">Attention</option>
+              <option value="blocked">Blocked</option>
+              <option value="not_applicable">Not applicable</option>
+            </select>
+          </label>
+        </div>
+        <dl className="metadata-grid">
+          <div className="metadata-item">
+            <dt>Visible records</dt>
+            <dd>
+              {counts.visibleRecords} of {counts.totalRecords}
+            </dd>
+          </div>
+        </dl>
+        <p className="notice">Production evidence filters organize browser-visible records only. They do not store preferences, call providers, export production data, deploy, rollback, dispatch workers, fetch ESI, write to EVE, or mutate external services.</p>
+      </section>
 
       <section className="summary" aria-label="Record production evidence">
         <h2>Record evidence</h2>
@@ -154,9 +237,9 @@ export function ProductionEvidencePanel({ error, evidence, loading, onCreate, sa
 
       <section aria-label="Recent production evidence">
         <h2>Recent evidence</h2>
-        {evidence && evidence.records.length > 0 ? (
+        {evidence && visibleRecords.length > 0 ? (
           <div className="coverage-grid">
-            {evidence.records.map((record) => (
+            {visibleRecords.map((record) => (
               <article className="coverage-item" key={record.id}>
                 <span>{record.environment}</span>
                 <strong className={statusClass(record.decision)}>{record.decision}</strong>
@@ -176,7 +259,7 @@ export function ProductionEvidencePanel({ error, evidence, loading, onCreate, sa
             ))}
           </div>
         ) : (
-          <p>No production evidence recorded.</p>
+          <p>{evidence && evidence.records.length > 0 ? 'No production evidence records match the selected filters.' : 'No production evidence recorded.'}</p>
         )}
       </section>
     </main>
