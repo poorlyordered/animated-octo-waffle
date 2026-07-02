@@ -27,6 +27,7 @@ Required for command API reads and writes:
 - `MONGODB_URI`: server-side MongoDB connection string. Must start with `mongodb://` or `mongodb+srv://`.
 - `MONGODB_DB`: runtime database name.
 - `EVEONLINE_CORPORATION_ID`: local/test fallback corporation scope when no signed EVE session exists.
+- `EVEONLINE_AUTHORIZED_CORPORATION_IDS`: optional comma-separated additional signed-session corporation IDs authorized for command access.
 
 Required for trusted worker callbacks:
 

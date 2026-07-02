@@ -25,7 +25,8 @@ Verify in the Netlify project settings before deploy:
 
 - `MONGODB_URI` is configured server-side and starts with `mongodb://` or `mongodb+srv://`.
 - `MONGODB_DB` names the intended production database.
-- `EVEONLINE_CORPORATION_ID` matches the corporation scope intended for command APIs.
+- `EVEONLINE_CORPORATION_ID` matches the fallback/default corporation scope intended for command APIs.
+- `EVEONLINE_AUTHORIZED_CORPORATION_IDS` includes any additional EVE corporation IDs allowed to sign in through EVE SSO.
 - `EVE_SESSION_SECRET` is configured; `GRYYK_SESSION_SECRET` should remain legacy-only.
 - `ESI_TOKEN_VAULT_SEALING_KEY` is configured for production token vault sealing.
 - `WORKER_CALLBACK_SECRET` is configured as fallback while worker classes migrate.

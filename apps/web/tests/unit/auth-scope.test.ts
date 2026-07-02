@@ -29,7 +29,22 @@ function sessionCookie(corporationId = '917701062') {
 
 describe('readScopeEnv', () => {
   it('reads corporation scope from server-owned environment', () => {
-    expect(readScopeEnv({ EVEONLINE_CORPORATION_ID: '917701062' }).corporationId).toBe('917701062');
+    expect(readScopeEnv({ EVEONLINE_CORPORATION_ID: '917701062' })).toEqual({
+      corporationId: '917701062',
+      authorizedCorporationIds: ['917701062']
+    });
+  });
+
+  it('reads additional authorized corporation ids from server-owned environment', () => {
+    expect(
+      readScopeEnv({
+        EVEONLINE_CORPORATION_ID: '917701062',
+        EVEONLINE_AUTHORIZED_CORPORATION_IDS: '123456789, 987654321,123456789'
+      })
+    ).toEqual({
+      corporationId: '917701062',
+      authorizedCorporationIds: ['917701062', '123456789', '987654321']
+    });
   });
 
   it('rejects missing server-owned corporation scope', () => {
@@ -59,6 +74,21 @@ describe('getAuthScope', () => {
 
   it('rejects signed session scope from another corporation without falling back', () => {
     expect(() => getAuthScope({ headers: cookieHeader(sessionCookie('123456789')) }, env)).toThrow(AuthScopeError);
+  });
+
+  it('allows signed session scope from an additional authorized corporation', () => {
+    const scope = getAuthScope(
+      { headers: cookieHeader(sessionCookie('123456789')) },
+      {
+        ...env,
+        EVEONLINE_AUTHORIZED_CORPORATION_IDS: '123456789'
+      }
+    );
+
+    expect(scope).toMatchObject({
+      corporationId: '123456789',
+      source: 'session'
+    });
   });
 
   it('falls back to server-owned environment when no session exists', () => {
@@ -157,6 +187,26 @@ describe('getAuthScope', () => {
       corporationId: '123456789',
       corporationName: 'Session Corp',
       reason: 'Signed EVE session is not authorized for this corporation'
+    });
+  });
+
+  it('reports signed-in state for a listed authorized corporation', () => {
+    expect(
+      getSessionState(
+        { headers: cookieHeader(sessionCookie('123456789')) },
+        {
+          ...env,
+          EVEONLINE_AUTHORIZED_CORPORATION_IDS: '123456789'
+        }
+      )
+    ).toEqual({
+      signedIn: true,
+      scopeSource: 'session',
+      characterId: '2110000001',
+      characterName: 'Ari Voss',
+      corporationId: '123456789',
+      corporationName: 'Session Corp',
+      expiresAt: '2099-06-02T00:00:00.000Z'
     });
   });
 });

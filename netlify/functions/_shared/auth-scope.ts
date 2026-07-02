@@ -59,7 +59,7 @@ export function resolveAuthScope(
   const fallback = readScopeEnv(env);
 
   if (session) {
-    if (session.corporationId !== fallback.corporationId) {
+    if (!fallback.authorizedCorporationIds.includes(session.corporationId)) {
       throw new AuthScopeError();
     }
 
@@ -86,7 +86,7 @@ export function getSessionState(event?: FunctionEvent, env: NodeJS.ProcessEnv = 
   if (session) {
     try {
       const fallback = readScopeEnv(env);
-      if (session.corporationId !== fallback.corporationId) {
+      if (!fallback.authorizedCorporationIds.includes(session.corporationId)) {
         return {
           signedIn: false,
           scopeSource: 'unauthorized',

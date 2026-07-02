@@ -857,13 +857,13 @@ Validation:
 
 ### M41: Commander Authorization Policy - Complete
 
-Goal: ensure signed EVE sessions can access command APIs only when their corporation matches the server-owned command corporation.
+Goal: ensure signed EVE sessions can access command APIs only when their corporation is authorized by server-owned configuration.
 
 Delivered capabilities:
 
-- Command scope resolution now verifies signed session corporation id against `EVEONLINE_CORPORATION_ID`
-- Valid signed sessions for the configured corporation continue to resolve as session scope
-- Signed sessions from another corporation receive safe unauthorized command API responses
+- Command scope resolution now verifies signed session corporation id against `EVEONLINE_CORPORATION_ID` plus optional `EVEONLINE_AUTHORIZED_CORPORATION_IDS`
+- Valid signed sessions for authorized corporations continue to resolve as session scope
+- Signed sessions from unlisted corporations receive safe unauthorized command API responses
 - Mismatched signed sessions no longer fall back to configured corporation data
 - No-session fallback scope remains available for local development and deterministic tests
 - Session state contract now includes an unauthorized state with display-safe character/corporation identity and reason text
