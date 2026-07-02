@@ -9,12 +9,13 @@ export interface EveSsoConfig {
   clientId: string;
   redirectUri: string;
   scopes: string;
+  metadataUrl: string;
+  authorizationUrl?: string;
 }
 
 export interface EveSsoLiveConfig extends EveSsoConfig {
   clientSecret: string;
-  metadataUrl: string;
-  tokenUrl: string;
+  tokenUrl?: string;
   esiBaseUrl: string;
 }
 
@@ -36,7 +37,9 @@ export function readEveSsoConfig(env: NodeJS.ProcessEnv = process.env): EveSsoCo
   return {
     clientId,
     redirectUri,
-    scopes: env.EVE_SSO_SCOPES ?? defaultScopes
+    scopes: env.EVE_SSO_SCOPES ?? defaultScopes,
+    metadataUrl: env.EVE_SSO_METADATA_URL ?? 'https://login.eveonline.com/.well-known/oauth-authorization-server',
+    authorizationUrl: env.EVE_SSO_AUTHORIZATION_URL
   };
 }
 
@@ -51,8 +54,7 @@ export function readEveSsoLiveConfig(env: NodeJS.ProcessEnv = process.env): EveS
   return {
     ...config,
     clientSecret,
-    metadataUrl: env.EVE_SSO_METADATA_URL ?? 'https://login.eveonline.com/.well-known/oauth-authorization-server',
-    tokenUrl: env.EVE_SSO_TOKEN_URL ?? 'https://login.eveonline.com/v2/oauth/token',
+    tokenUrl: env.EVE_SSO_TOKEN_URL,
     esiBaseUrl: env.EVE_ESI_BASE_URL ?? 'https://esi.evetech.net/latest'
   };
 }
@@ -77,8 +79,12 @@ export function createEveSsoState(
   });
 }
 
-export function buildEveSsoAuthorizationUrl(config: EveSsoConfig, state: string): string {
-  const url = new URL('https://login.eveonline.com/v2/oauth/authorize/');
+export function buildEveSsoAuthorizationUrl(
+  config: EveSsoConfig,
+  state: string,
+  authorizationEndpoint = config.authorizationUrl ?? 'https://login.eveonline.com/v2/oauth/authorize/'
+): string {
+  const url = new URL(authorizationEndpoint);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('redirect_uri', config.redirectUri);
   url.searchParams.set('client_id', config.clientId);

@@ -39,6 +39,7 @@ import {
   readEveSsoConfig
 } from './_shared/eve-sso';
 import { isProductionRuntime } from './_shared/env';
+import { resolveEveSsoAuthorizationEndpoint } from './_shared/eve-sso-live';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import {
   createSignedCookieValue,
@@ -107,6 +108,7 @@ export async function handler(event: FunctionEvent) {
         ...readEveSsoConfig(),
         scopes: allRequiredReadOnlyScopes().join(' ')
       };
+      const authorizationEndpoint = await resolveEveSsoAuthorizationEndpoint(config);
       const state = createEveSsoState(request.returnTo ?? '/', new Date(), 'esi-sync-consent');
       const stateCookie = serializeCookie(
         ssoStateCookieName,
@@ -116,7 +118,7 @@ export async function handler(event: FunctionEvent) {
 
       return {
         ...jsonResponse(200, {
-          authorizationUrl: buildEveSsoAuthorizationUrl(config, state.state),
+          authorizationUrl: buildEveSsoAuthorizationUrl(config, state.state, authorizationEndpoint),
           requestedScopes: allRequiredReadOnlyScopes(),
           stateExpiresAt: state.expiresAt,
           boundary: 'No token has been stored. Vaulting occurs only after a valid EVE callback.'

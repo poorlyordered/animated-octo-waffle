@@ -69,7 +69,8 @@ Optional live-provider overrides:
 
 - `EVE_SSO_SCOPES`: defaults to `publicData` for session sign-in; ESI consent flows request their own read scopes.
 - `EVE_SSO_METADATA_URL`: defaults to the EVE SSO metadata endpoint.
-- `EVE_SSO_TOKEN_URL`: defaults to the EVE SSO token endpoint.
+- `EVE_SSO_AUTHORIZATION_URL`: optional authorization endpoint override; normal runtime discovers this from metadata.
+- `EVE_SSO_TOKEN_URL`: optional token endpoint override; normal runtime discovers this from metadata.
 - `EVE_ESI_BASE_URL`: defaults to the ESI latest base URL.
 
 Test-only:

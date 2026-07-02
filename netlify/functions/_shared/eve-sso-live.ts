@@ -5,8 +5,15 @@ import { readEveSsoLiveConfig } from './eve-sso';
 type Fetch = typeof fetch;
 
 interface EveSsoMetadata {
+  authorization_endpoint?: string;
   jwks_uri?: string;
   token_endpoint?: string;
+}
+
+export interface ResolvedEveSsoMetadata {
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  jwksUri: string;
 }
 
 export interface Jwk extends JsonWebKey {
@@ -30,6 +37,7 @@ interface EveJwtClaims {
   exp?: number;
   iss?: string;
   name?: string;
+  scp?: string | string[];
   sub?: string;
 }
 
@@ -53,9 +61,15 @@ export interface ValidatedEveJwt {
   characterId: string;
   characterName: string;
   expiresAt: string;
+  grantedScopes: string[];
 }
 
 const acceptedIssuers = new Set(['login.eveonline.com', 'https://login.eveonline.com', 'https://login.eveonline.com/']);
+const metadataCacheTtlMs = 5 * 60 * 1000;
+const defaultAuthorizationEndpoint = 'https://login.eveonline.com/v2/oauth/authorize/';
+const defaultTokenEndpoint = 'https://login.eveonline.com/v2/oauth/token';
+
+const metadataCache = new Map<string, { expiresAt: number; metadata: ResolvedEveSsoMetadata }>();
 
 export async function resolveLiveEveSsoIdentity(
   code: string,
@@ -63,7 +77,8 @@ export async function resolveLiveEveSsoIdentity(
   fetchImpl: Fetch = fetch
 ): Promise<EveSsoIdentity> {
   const config = readEveSsoLiveConfig(env);
-  const token = await exchangeAuthorizationCode(code, config, fetchImpl);
+  const metadata = await fetchEveSsoMetadata(config, fetchImpl);
+  const token = await exchangeAuthorizationCode(code, config, fetchImpl, metadata);
   const jwks = await fetchJwks(config, fetchImpl);
   const claims = await validateEveAccessToken(token.accessToken, jwks, config);
   const corporation = await resolveCorporationIdentity(claims.characterId, token.accessToken, config, fetchImpl);
@@ -92,7 +107,8 @@ export async function resolveLiveEveSsoVaultConsent(
   fetchImpl: Fetch = fetch
 ): Promise<ResolvedLiveEveSsoVaultConsent> {
   const config = readEveSsoLiveConfig(env);
-  const token = await exchangeAuthorizationCode(code, config, fetchImpl);
+  const metadata = await fetchEveSsoMetadata(config, fetchImpl);
+  const token = await exchangeAuthorizationCode(code, config, fetchImpl, metadata);
   const jwks = await fetchJwks(config, fetchImpl);
   const claims = await validateEveAccessToken(token.accessToken, jwks, config);
   const corporation = await resolveCorporationIdentity(claims.characterId, token.accessToken, config, fetchImpl);
@@ -112,7 +128,7 @@ export async function resolveLiveEveSsoVaultConsent(
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
       accessTokenExpiresAt: token.accessTokenExpiresAt,
-      grantedScopes: token.grantedScopes
+      grantedScopes: claims.grantedScopes
     }
   };
 }
@@ -120,15 +136,17 @@ export async function resolveLiveEveSsoVaultConsent(
 export async function exchangeAuthorizationCode(
   code: string,
   config: EveSsoLiveConfig,
-  fetchImpl: Fetch = fetch
+  fetchImpl: Fetch = fetch,
+  metadata?: ResolvedEveSsoMetadata
 ): Promise<{ accessToken: string; refreshToken?: string; accessTokenExpiresAt: string; grantedScopes: string[] }> {
+  const tokenUrl = config.tokenUrl ?? metadata?.tokenEndpoint ?? (await fetchEveSsoMetadata(config, fetchImpl)).tokenEndpoint;
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
     redirect_uri: config.redirectUri
   });
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`, 'utf8').toString('base64');
-  const response = await fetchImpl(config.tokenUrl, {
+  const response = await fetchImpl(tokenUrl, {
     method: 'POST',
     headers: {
       authorization: `Basic ${credentials}`,
@@ -154,7 +172,18 @@ export async function exchangeAuthorizationCode(
   };
 }
 
-export async function fetchJwks(config: EveSsoLiveConfig, fetchImpl: Fetch = fetch): Promise<Jwks> {
+export async function fetchEveSsoMetadata(
+  config: Pick<EveSsoLiveConfig, 'metadataUrl' | 'authorizationUrl' | 'tokenUrl'>,
+  fetchImpl: Fetch = fetch,
+  options: { forceRefresh?: boolean; now?: Date } = {}
+): Promise<ResolvedEveSsoMetadata> {
+  const now = options.now?.getTime() ?? Date.now();
+  const cacheKey = metadataCacheKey(config);
+  const cached = metadataCache.get(cacheKey);
+  if (!options.forceRefresh && cached && cached.expiresAt > now) {
+    return cached.metadata;
+  }
+
   const metadataResponse = await fetchImpl(config.metadataUrl);
   if (!metadataResponse.ok) {
     throw new Error('EVE SSO metadata lookup failed');
@@ -165,7 +194,34 @@ export async function fetchJwks(config: EveSsoLiveConfig, fetchImpl: Fetch = fet
     throw new Error('EVE SSO metadata lookup failed');
   }
 
-  const jwksResponse = await fetchImpl(metadata.jwks_uri);
+  const resolved = {
+    authorizationEndpoint: config.authorizationUrl ?? metadata.authorization_endpoint ?? defaultAuthorizationEndpoint,
+    tokenEndpoint: config.tokenUrl ?? metadata.token_endpoint ?? defaultTokenEndpoint,
+    jwksUri: metadata.jwks_uri
+  };
+
+  metadataCache.set(cacheKey, {
+    expiresAt: now + metadataCacheTtlMs,
+    metadata: resolved
+  });
+
+  return resolved;
+}
+
+export async function resolveEveSsoAuthorizationEndpoint(
+  config: Pick<EveSsoLiveConfig, 'metadataUrl' | 'authorizationUrl' | 'tokenUrl'>,
+  fetchImpl: Fetch = fetch
+): Promise<string> {
+  try {
+    return (await fetchEveSsoMetadata(config, fetchImpl)).authorizationEndpoint;
+  } catch {
+    return config.authorizationUrl ?? defaultAuthorizationEndpoint;
+  }
+}
+
+export async function fetchJwks(config: EveSsoLiveConfig, fetchImpl: Fetch = fetch): Promise<Jwks> {
+  const metadata = await fetchEveSsoMetadata(config, fetchImpl);
+  const jwksResponse = await fetchImpl(metadata.jwksUri);
   if (!jwksResponse.ok) {
     throw new Error('EVE SSO JWKS lookup failed');
   }
@@ -210,7 +266,8 @@ export async function validateEveAccessToken(
   return {
     characterId: extractCharacterId(claims.sub),
     characterName: claims.name ?? '',
-    expiresAt: new Date((claims.exp ?? 0) * 1000).toISOString()
+    expiresAt: new Date((claims.exp ?? 0) * 1000).toISOString(),
+    grantedScopes: normalizeGrantedScopes(claims.scp)
   };
 }
 
@@ -269,6 +326,22 @@ function validateClaims(claims: EveJwtClaims, clientId: string, now: Date) {
   if (!claims.name || !claims.sub || !extractCharacterId(claims.sub)) {
     throw new Error('EVE SSO access token is invalid');
   }
+}
+
+function normalizeGrantedScopes(scopes: string | string[] | undefined): string[] {
+  if (typeof scopes === 'string') {
+    return scopes.split(/\s+/).filter(Boolean);
+  }
+
+  return Array.isArray(scopes) ? scopes.filter((scope) => typeof scope === 'string' && scope.length > 0) : [];
+}
+
+function metadataCacheKey(config: Pick<EveSsoLiveConfig, 'metadataUrl' | 'authorizationUrl' | 'tokenUrl'>): string {
+  return JSON.stringify({
+    metadataUrl: config.metadataUrl,
+    authorizationUrl: config.authorizationUrl ?? null,
+    tokenUrl: config.tokenUrl ?? null
+  });
 }
 
 function extractCharacterId(subject: string | undefined): string {

@@ -112,6 +112,24 @@ function createLiveFetchMock(accessToken: string, publicJwk: JsonWebKey) {
   }) as jest.MockedFunction<typeof fetch>;
 }
 
+function createMetadataFetchMock(authorizationEndpoint = 'https://sso.test/oauth/authorize') {
+  return jest.fn(async (input: RequestInfo | URL) => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (url === 'https://sso.test/metadata') {
+      return new Response(
+        JSON.stringify({
+          authorization_endpoint: authorizationEndpoint,
+          token_endpoint: 'https://sso.test/token',
+          jwks_uri: 'https://sso.test/jwks'
+        }),
+        { status: 200 }
+      );
+    }
+
+    return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+  }) as jest.MockedFunction<typeof fetch>;
+}
+
 function sessionCookieValue(response: Awaited<ReturnType<typeof callbackHandler>>) {
   const sessionCookie = response.multiValueHeaders?.['set-cookie']?.find((cookie) =>
     cookie.startsWith(`${sessionCookieName}=`)
@@ -127,10 +145,33 @@ describe('EVE SSO API contract', () => {
   });
 
   it('redirects to EVE SSO with a signed state cookie', async () => {
+    global.fetch = createMetadataFetchMock();
     setEnv({
       EVE_SESSION_SECRET: 'test-secret',
       EVE_SSO_CLIENT_ID: 'client-id',
-      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback'
+      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback',
+      EVE_SSO_METADATA_URL: 'https://sso.test/metadata'
+    });
+
+    const response = await startHandler({
+      headers: {},
+      httpMethod: 'GET',
+      queryStringParameters: { returnTo: '/command' }
+    });
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers?.location).toContain('https://sso.test/oauth/authorize');
+    expect(response.headers?.location).toContain('client_id=client-id');
+    expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain(`${ssoStateCookieName}=`);
+  });
+
+  it('falls back to the default authorization endpoint when metadata lookup fails during sign-in start', async () => {
+    global.fetch = jest.fn(async () => new Response(JSON.stringify({ error: 'unavailable' }), { status: 503 })) as jest.MockedFunction<typeof fetch>;
+    setEnv({
+      EVE_SESSION_SECRET: 'test-secret',
+      EVE_SSO_CLIENT_ID: 'client-id',
+      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback',
+      EVE_SSO_METADATA_URL: 'https://sso-unavailable.test/metadata'
     });
 
     const response = await startHandler({
@@ -141,7 +182,25 @@ describe('EVE SSO API contract', () => {
 
     expect(response.statusCode).toBe(302);
     expect(response.headers?.location).toContain('https://login.eveonline.com/v2/oauth/authorize/');
-    expect(response.headers?.location).toContain('client_id=client-id');
+    expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain(`${ssoStateCookieName}=`);
+  });
+
+  it('falls back to the default authorization endpoint when metadata lookup fails during ESI consent start', async () => {
+    global.fetch = jest.fn(async () => new Response(JSON.stringify({ error: 'unavailable' }), { status: 503 })) as jest.MockedFunction<typeof fetch>;
+    setLiveEnv({
+      EVEONLINE_CORPORATION_ID: '123456789',
+      EVE_SSO_METADATA_URL: 'https://sso-consent-unavailable.test/metadata'
+    });
+
+    const response = await esiSyncHandler({
+      headers: { cookie: signedSessionCookie('123456789') },
+      httpMethod: 'POST',
+      path: '/api/esi-sync/consent/start',
+      body: JSON.stringify({ returnTo: '/esi-sync' })
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('https://login.eveonline.com/v2/oauth/authorize/');
     expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain(`${ssoStateCookieName}=`);
   });
 
@@ -356,11 +415,13 @@ describe('EVE SSO API contract', () => {
   });
 
   it('sets Secure on SSO cookies when Netlify CONTEXT is production', async () => {
+    global.fetch = createMetadataFetchMock();
     setEnv({
       CONTEXT: 'production',
       EVE_SESSION_SECRET: 'test-secret',
       EVE_SSO_CLIENT_ID: 'client-id',
-      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback'
+      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback',
+      EVE_SSO_METADATA_URL: 'https://sso.test/metadata'
     });
 
     const response = await startHandler({
