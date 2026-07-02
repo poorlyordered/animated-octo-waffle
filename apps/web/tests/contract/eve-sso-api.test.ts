@@ -165,6 +165,45 @@ describe('EVE SSO API contract', () => {
     expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain(`${ssoStateCookieName}=`);
   });
 
+  it('falls back to the default authorization endpoint when metadata lookup fails during sign-in start', async () => {
+    global.fetch = jest.fn(async () => new Response(JSON.stringify({ error: 'unavailable' }), { status: 503 })) as jest.MockedFunction<typeof fetch>;
+    setEnv({
+      EVE_SESSION_SECRET: 'test-secret',
+      EVE_SSO_CLIENT_ID: 'client-id',
+      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback',
+      EVE_SSO_METADATA_URL: 'https://sso-unavailable.test/metadata'
+    });
+
+    const response = await startHandler({
+      headers: {},
+      httpMethod: 'GET',
+      queryStringParameters: { returnTo: '/command' }
+    });
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers?.location).toContain('https://login.eveonline.com/v2/oauth/authorize/');
+    expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain(`${ssoStateCookieName}=`);
+  });
+
+  it('falls back to the default authorization endpoint when metadata lookup fails during ESI consent start', async () => {
+    global.fetch = jest.fn(async () => new Response(JSON.stringify({ error: 'unavailable' }), { status: 503 })) as jest.MockedFunction<typeof fetch>;
+    setLiveEnv({
+      EVEONLINE_CORPORATION_ID: '123456789',
+      EVE_SSO_METADATA_URL: 'https://sso-consent-unavailable.test/metadata'
+    });
+
+    const response = await esiSyncHandler({
+      headers: { cookie: signedSessionCookie('123456789') },
+      httpMethod: 'POST',
+      path: '/api/esi-sync/consent/start',
+      body: JSON.stringify({ returnTo: '/esi-sync' })
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('https://login.eveonline.com/v2/oauth/authorize/');
+    expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain(`${ssoStateCookieName}=`);
+  });
+
   it('rejects external return paths', async () => {
     setEnv({
       EVE_SESSION_SECRET: 'test-secret',

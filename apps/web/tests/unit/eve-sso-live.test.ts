@@ -32,6 +32,15 @@ describe('live EVE SSO adapter', () => {
     });
   });
 
+  it('normalizes a single string scp claim as one granted scope', async () => {
+    const fixture = createEveTokenFixture();
+    const token = signEveToken(fixture, { scp: 'esi-wallet.read_corporation_wallets.v1' });
+
+    await expect(validateEveAccessToken(token, { keys: [fixture.publicJwk] }, config)).resolves.toMatchObject({
+      grantedScopes: ['esi-wallet.read_corporation_wallets.v1']
+    });
+  });
+
   it.each([
     ['issuer', { iss: 'https://attacker.test' }],
     ['audience', { aud: ['client-id'] }],
@@ -109,6 +118,37 @@ describe('live EVE SSO adapter', () => {
     });
   });
 
+  it('keeps metadata cache entries isolated by endpoint overrides', async () => {
+    const fetchMock = jest.fn(async () => {
+      return new Response(
+        JSON.stringify({
+          authorization_endpoint: 'https://sso.test/oauth/authorize',
+          token_endpoint: 'https://sso.test/oauth/token',
+          jwks_uri: 'https://sso.test/oauth/jwks'
+        }),
+        { status: 200 }
+      );
+    });
+
+    await expect(
+      fetchEveSsoMetadata({ metadataUrl: 'https://sso-cache.test/metadata' }, fetchMock, { forceRefresh: true })
+    ).resolves.toMatchObject({
+      tokenEndpoint: 'https://sso.test/oauth/token'
+    });
+
+    await expect(
+      fetchEveSsoMetadata(
+        {
+          metadataUrl: 'https://sso-cache.test/metadata',
+          tokenUrl: 'https://sso-cache.test/token-override'
+        },
+        fetchMock
+      )
+    ).resolves.toMatchObject({
+      tokenEndpoint: 'https://sso-cache.test/token-override'
+    });
+  });
+
   it('resolves corporation identity from read-only ESI lookups', async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
       const url = input instanceof Request ? input.url : String(input);
@@ -128,7 +168,7 @@ describe('live EVE SSO adapter', () => {
   it('uses validated JWT scp claim as vault consent granted scopes', async () => {
     const fixture = createEveTokenFixture();
     const token = signEveToken(fixture, {
-      scp: ['esi-wallet.read_corporation_wallets.v1']
+      scp: 'esi-wallet.read_corporation_wallets.v1'
     });
     const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
       const url = input instanceof Request ? input.url : String(input);

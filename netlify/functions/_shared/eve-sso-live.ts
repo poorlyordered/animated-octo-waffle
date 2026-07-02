@@ -37,7 +37,7 @@ interface EveJwtClaims {
   exp?: number;
   iss?: string;
   name?: string;
-  scp?: string[];
+  scp?: string | string[];
   sub?: string;
 }
 
@@ -178,7 +178,8 @@ export async function fetchEveSsoMetadata(
   options: { forceRefresh?: boolean; now?: Date } = {}
 ): Promise<ResolvedEveSsoMetadata> {
   const now = options.now?.getTime() ?? Date.now();
-  const cached = metadataCache.get(config.metadataUrl);
+  const cacheKey = metadataCacheKey(config);
+  const cached = metadataCache.get(cacheKey);
   if (!options.forceRefresh && cached && cached.expiresAt > now) {
     return cached.metadata;
   }
@@ -199,12 +200,23 @@ export async function fetchEveSsoMetadata(
     jwksUri: metadata.jwks_uri
   };
 
-  metadataCache.set(config.metadataUrl, {
+  metadataCache.set(cacheKey, {
     expiresAt: now + metadataCacheTtlMs,
     metadata: resolved
   });
 
   return resolved;
+}
+
+export async function resolveEveSsoAuthorizationEndpoint(
+  config: Pick<EveSsoLiveConfig, 'metadataUrl' | 'authorizationUrl' | 'tokenUrl'>,
+  fetchImpl: Fetch = fetch
+): Promise<string> {
+  try {
+    return (await fetchEveSsoMetadata(config, fetchImpl)).authorizationEndpoint;
+  } catch {
+    return config.authorizationUrl ?? defaultAuthorizationEndpoint;
+  }
 }
 
 export async function fetchJwks(config: EveSsoLiveConfig, fetchImpl: Fetch = fetch): Promise<Jwks> {
@@ -316,8 +328,20 @@ function validateClaims(claims: EveJwtClaims, clientId: string, now: Date) {
   }
 }
 
-function normalizeGrantedScopes(scopes: string[] | undefined): string[] {
+function normalizeGrantedScopes(scopes: string | string[] | undefined): string[] {
+  if (typeof scopes === 'string') {
+    return scopes.split(/\s+/).filter(Boolean);
+  }
+
   return Array.isArray(scopes) ? scopes.filter((scope) => typeof scope === 'string' && scope.length > 0) : [];
+}
+
+function metadataCacheKey(config: Pick<EveSsoLiveConfig, 'metadataUrl' | 'authorizationUrl' | 'tokenUrl'>): string {
+  return JSON.stringify({
+    metadataUrl: config.metadataUrl,
+    authorizationUrl: config.authorizationUrl ?? null,
+    tokenUrl: config.tokenUrl ?? null
+  });
 }
 
 function extractCharacterId(subject: string | undefined): string {
