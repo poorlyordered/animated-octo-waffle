@@ -21,6 +21,10 @@ export interface OpenRouterEnv {
   maxCompletionTokens: number;
 }
 
+export function isProductionRuntime(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.NODE_ENV === 'production' || env.CONTEXT === 'production';
+}
+
 export function readServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
   const mongodbUri = env.MONGODB_URI;
   const mongodbDb = env.MONGODB_DB;
@@ -53,7 +57,7 @@ export function readEsiTokenVaultEnv(env: NodeJS.ProcessEnv = process.env): EsiT
     return { sealingKey };
   }
 
-  if (env.NODE_ENV === 'production') {
+  if (isProductionRuntime(env)) {
     throw new Error('ESI_TOKEN_VAULT_SEALING_KEY is required');
   }
 

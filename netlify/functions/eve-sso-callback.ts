@@ -1,6 +1,7 @@
 import { createSessionScope, readDeterministicIdentity } from './_shared/eve-sso';
 import { resolveLiveEveSsoIdentity, resolveLiveEveSsoVaultConsent } from './_shared/eve-sso-live';
-import type { FunctionEvent } from './_shared/auth-scope';
+import { AuthScopeError, SignedSessionRequiredError, authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
+import { isProductionRuntime } from './_shared/env';
 import { redirectResponse, safeErrorResponse } from './_shared/http';
 import { getMongoDb } from './_shared/mongo';
 import {
@@ -41,6 +42,11 @@ export async function handler(event: FunctionEvent) {
     }
 
     if (parsedState.data.purpose === 'esi-sync-consent') {
+      const authScope = getAuthScope(event);
+      if (authScope.source !== 'session') {
+        throw new SignedSessionRequiredError();
+      }
+
       const deterministicIdentity = readDeterministicIdentity();
       const resolved = deterministicIdentity
         ? {
@@ -54,6 +60,10 @@ export async function handler(event: FunctionEvent) {
           }
         : await resolveLiveEveSsoVaultConsent(code);
 
+      if (resolved.identity.corporationId !== authScope.corporationId) {
+        throw new AuthScopeError();
+      }
+
       const db = await getMongoDb();
       await upsertActiveVault(db, resolved.identity.corporationId, resolved.identity, resolved.token);
 
@@ -66,11 +76,19 @@ export async function handler(event: FunctionEvent) {
     const sessionCookie = serializeCookie(
       sessionCookieName,
       createSignedCookieValue(session, secret),
-      { maxAge: 12 * 60 * 60, secure: process.env.NODE_ENV === 'production' }
+      { maxAge: 12 * 60 * 60, secure: isProductionRuntime() }
     );
 
     return redirectResponse(parsedState.data.returnTo, [sessionCookie, clearCookie(ssoStateCookieName)]);
-  } catch {
+  } catch (error) {
+    const authError = authScopeErrorResponse(error);
+    if (authError) {
+      return {
+        ...authError,
+        multiValueHeaders: { 'set-cookie': [clearCookie(ssoStateCookieName)] }
+      };
+    }
+
     return {
       ...safeErrorResponse('Unable to complete EVE SSO sign-in'),
       multiValueHeaders: { 'set-cookie': [clearCookie(ssoStateCookieName)] }

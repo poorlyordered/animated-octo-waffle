@@ -56,8 +56,8 @@ Optional Brain provider overrides:
 
 Production-required for secure sessions and token vaulting:
 
-- `EVE_SESSION_SECRET`: production session-cookie signing secret. `GRYYK_SESSION_SECRET` is accepted by code as a legacy fallback, but production should prefer `EVE_SESSION_SECRET`.
-- `ESI_TOKEN_VAULT_SEALING_KEY`: production sealing key for persisted ESI token material.
+- `EVE_SESSION_SECRET`: production session-cookie signing secret. `GRYYK_SESSION_SECRET` is accepted by code as a legacy fallback, but production should prefer `EVE_SESSION_SECRET`. The app treats `NODE_ENV=production` or Netlify `CONTEXT=production` as production and will not use development fallback secrets in either case.
+- `ESI_TOKEN_VAULT_SEALING_KEY`: production sealing key for persisted ESI token material. The app treats `NODE_ENV=production` or Netlify `CONTEXT=production` as production and will not use the development fallback key in either case.
 
 Required for live EVE SSO session and ESI consent flows:
 
@@ -74,7 +74,7 @@ Optional live-provider overrides:
 
 Test-only:
 
-- `EVE_SSO_TEST_IDENTITY_JSON`: deterministic callback identity fixture. Do not configure this in production.
+- `EVE_SSO_TEST_IDENTITY_JSON`: deterministic callback identity fixture. It is ignored by production runtime checks and should not be configured in production.
 
 Do not expose any server variable as `VITE_*`. Browser responses must not include MongoDB credentials, session secrets, OAuth secrets, worker secrets, sealing keys, access tokens, refresh tokens, or token hashes.
 Brain responses must not include OpenRouter API keys, raw provider payloads, or unvalidated model output.

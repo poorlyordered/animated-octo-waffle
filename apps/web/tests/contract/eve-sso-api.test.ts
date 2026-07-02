@@ -1,12 +1,13 @@
 import { jest } from '@jest/globals';
 import { handler as callbackHandler } from '../../../../netlify/functions/eve-sso-callback';
+import { handler as esiSyncHandler } from '../../../../netlify/functions/esi-sync';
 import { handler as startHandler } from '../../../../netlify/functions/eve-sso-start';
 import { signEveToken, createEveTokenFixture, type EveTokenClaims } from '../helpers/eve-sso-token';
 import {
   createSignedCookieValue,
   readSignedCookieValue,
-  ssoStateCookieName,
-  sessionCookieName
+  sessionCookieName,
+  ssoStateCookieName
 } from '../../../../netlify/functions/_shared/session-cookie';
 
 const originalEnv = process.env;
@@ -42,6 +43,39 @@ function signedStateCookie() {
     cookie: `${ssoStateCookieName}=${encodeURIComponent(signedState)}`,
     state: statePayload.state
   };
+}
+
+function signedStateCookieWithPurpose(purpose: 'session' | 'esi-sync-consent' = 'session') {
+  const statePayload = {
+    state: 'state-value-with-enough-length',
+    returnTo: '/esi-sync',
+    issuedAt: '2026-06-01T00:00:00.000Z',
+    expiresAt: '2099-06-01T00:00:00.000Z',
+    purpose
+  };
+  const signedState = createSignedCookieValue(statePayload, 'test-secret');
+
+  return {
+    cookie: `${ssoStateCookieName}=${encodeURIComponent(signedState)}`,
+    state: statePayload.state
+  };
+}
+
+function signedSessionCookie(corporationId = '123456789') {
+  const session = createSignedCookieValue(
+    {
+      characterId: '2110000001',
+      characterName: 'Ari Voss',
+      corporationId,
+      corporationName: 'Session Corp',
+      issuedAt: '2026-06-01T00:00:00.000Z',
+      expiresAt: '2099-06-01T00:00:00.000Z',
+      source: 'eve-sso'
+    },
+    'test-secret'
+  );
+
+  return `${sessionCookieName}=${encodeURIComponent(session)}`;
 }
 
 function createLiveFetchMock(accessToken: string, publicJwk: JsonWebKey) {
@@ -291,6 +325,108 @@ describe('EVE SSO API contract', () => {
 
     expect(response.statusCode).toBe(302);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('ignores deterministic identity in production and requires live EVE SSO validation', async () => {
+    const state = signedStateCookie();
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    setLiveEnv({
+      CONTEXT: 'production',
+      EVE_SSO_TEST_IDENTITY_JSON: JSON.stringify({
+        characterId: '2110000001',
+        characterName: 'Ari Voss',
+        corporationId: '123456789',
+        corporationName: 'Session Corp'
+      })
+    });
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.multiValueHeaders?.['set-cookie']?.join('\n')).not.toContain(`${sessionCookieName}=`);
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it('sets Secure on SSO cookies when Netlify CONTEXT is production', async () => {
+    setEnv({
+      CONTEXT: 'production',
+      EVE_SESSION_SECRET: 'test-secret',
+      EVE_SSO_CLIENT_ID: 'client-id',
+      EVE_SSO_REDIRECT_URI: 'http://localhost:8888/api/eve-sso-callback'
+    });
+
+    const response = await startHandler({
+      headers: {},
+      httpMethod: 'GET',
+      queryStringParameters: { returnTo: '/command' }
+    });
+
+    expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain('Secure');
+  });
+
+  it('requires an authorized signed session before storing ESI sync consent', async () => {
+    const state = signedStateCookieWithPurpose('esi-sync-consent');
+    setLiveEnv({
+      EVEONLINE_CORPORATION_ID: '123456789'
+    });
+
+    const response = await callbackHandler({
+      headers: { cookie: state.cookie },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).toContain('Signed EVE session is required');
+  });
+
+  it('requires a signed session before starting ESI sync consent', async () => {
+    setLiveEnv({
+      EVEONLINE_CORPORATION_ID: '123456789'
+    });
+
+    const response = await esiSyncHandler({
+      headers: {},
+      httpMethod: 'POST',
+      path: '/api/esi-sync/consent/start',
+      body: JSON.stringify({ returnTo: '/esi-sync' })
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).toContain('Signed EVE session is required');
+  });
+
+  it('rejects ESI sync consent for a mismatched corporation before storing a vault', async () => {
+    const fixture = createEveTokenFixture();
+    const token = signEveToken(fixture);
+    global.fetch = createLiveFetchMock(token, fixture.publicJwk);
+    setLiveEnv({
+      EVEONLINE_CORPORATION_ID: '917701062'
+    });
+    const state = signedStateCookieWithPurpose('esi-sync-consent');
+
+    const response = await callbackHandler({
+      headers: { cookie: `${state.cookie}; ${signedSessionCookie('917701062')}` },
+      httpMethod: 'GET',
+      queryStringParameters: {
+        code: 'callback-code',
+        state: state.state
+      }
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.body).toContain('Signed EVE session is not authorized for this corporation');
   });
 
   it('rejects invalid callback state safely', async () => {

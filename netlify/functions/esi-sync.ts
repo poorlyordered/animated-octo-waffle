@@ -38,6 +38,7 @@ import {
   isLocalReturnPath,
   readEveSsoConfig
 } from './_shared/eve-sso';
+import { isProductionRuntime } from './_shared/env';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import {
   createSignedCookieValue,
@@ -92,6 +93,11 @@ export async function handler(event: FunctionEvent) {
     assertNoUnsafeEsiSyncFields(body);
 
     if (path.endsWith('/consent/start')) {
+      const authScope = getAuthScope(event);
+      if (authScope.source !== 'session') {
+        return safeErrorResponse('Signed EVE session is required', 401);
+      }
+
       const request = startEsiSyncConsentRequestSchema.parse(body);
       if (request.returnTo && !isLocalReturnPath(request.returnTo)) {
         return safeErrorResponse('Invalid return path', 400);
@@ -105,7 +111,7 @@ export async function handler(event: FunctionEvent) {
       const stateCookie = serializeCookie(
         ssoStateCookieName,
         createSignedCookieValue(state, readSessionSecret()),
-        { maxAge: 10 * 60, secure: process.env.NODE_ENV === 'production' }
+        { maxAge: 10 * 60, secure: isProductionRuntime() }
       );
 
       return {
