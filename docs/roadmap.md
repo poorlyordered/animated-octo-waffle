@@ -1222,3 +1222,22 @@ Validation:
 
 - Spec: `specs/057-auth-landing-gate`
 - Local validation covered focused auth-scope, command brief, numbers API, app gate unit tests, auth-gate Playwright smoke, command-brief signed-session smoke, full Jest tests, typecheck, lint, full Playwright browser smoke tests, production build, and diff hygiene.
+
+### M58: Production Auth Hardening - Complete
+
+Goal: close production-hardening gaps found during external review of session, ESI token vault, EVE SSO, and Mongo connection behavior.
+
+Delivered capabilities:
+
+- Production runtime detection is shared across session secrets, ESI token vault sealing, signed-session requirements, and Secure cookie flags using `NODE_ENV=production` or Netlify `CONTEXT=production`
+- Development fallback session and vault secrets are unavailable in production runtime contexts
+- Deterministic EVE SSO identity fixtures are ignored in production runtime contexts
+- ESI read-sync consent start and callback require an authorized signed session and reject mismatched consent corporations before vault storage
+- MongoDB client caching now happens only after a successful connection, allowing retry after transient cold-start connection failures
+- Decision-record callbacks are memoized consistently with the existing load callback
+- Production readiness docs call out production runtime secret behavior and deterministic identity limits
+- Regression coverage verifies production secret requirements, deterministic identity production gating, Secure cookies, consent authorization, corporation mismatch rejection, and Mongo retry behavior
+
+Validation:
+
+- Local validation covered focused auth-scope, EVE SSO, and Mongo client tests, full Jest tests, typecheck, lint, full Playwright browser smoke tests, production build, and diff hygiene.

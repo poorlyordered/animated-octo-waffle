@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { isProductionRuntime } from './env';
 
 export const sessionCookieName = 'gryyk_eve_session';
 export const ssoStateCookieName = 'gryyk_eve_sso_state';
@@ -18,7 +19,7 @@ export function readSessionSecret(env: NodeJS.ProcessEnv = process.env): string 
     return configured;
   }
 
-  if (env.NODE_ENV === 'production') {
+  if (isProductionRuntime(env)) {
     throw new Error('EVE_SESSION_SECRET is required');
   }
 

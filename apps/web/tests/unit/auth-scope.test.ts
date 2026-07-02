@@ -1,4 +1,5 @@
-import { createSignedCookieValue, sessionCookieName } from '../../../../netlify/functions/_shared/session-cookie';
+import { readEsiTokenVaultEnv } from '../../../../netlify/functions/_shared/env';
+import { createSignedCookieValue, readSessionSecret, sessionCookieName } from '../../../../netlify/functions/_shared/session-cookie';
 import { AuthScopeError, SignedSessionRequiredError, getAuthScope, getSessionState } from '../../../../netlify/functions/_shared/auth-scope';
 import { readScopeEnv } from '../../../../netlify/functions/_shared/env';
 
@@ -33,6 +34,16 @@ describe('readScopeEnv', () => {
 
   it('rejects missing server-owned corporation scope', () => {
     expect(() => readScopeEnv({})).toThrow('EVEONLINE_CORPORATION_ID is required');
+  });
+});
+
+describe('production secret configuration', () => {
+  it('requires an EVE session secret when Netlify CONTEXT is production', () => {
+    expect(() => readSessionSecret({ CONTEXT: 'production' })).toThrow('EVE_SESSION_SECRET is required');
+  });
+
+  it('requires an ESI vault sealing key when Netlify CONTEXT is production', () => {
+    expect(() => readEsiTokenVaultEnv({ CONTEXT: 'production' })).toThrow('ESI_TOKEN_VAULT_SEALING_KEY is required');
   });
 });
 

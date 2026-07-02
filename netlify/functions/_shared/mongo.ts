@@ -9,9 +9,10 @@ export async function getMongoClient(): Promise<MongoClient> {
   }
 
   const { mongodbUri } = readServerEnv();
-  cachedClient = new MongoClient(mongodbUri);
-  await cachedClient.connect();
-  return cachedClient;
+  const client = new MongoClient(mongodbUri);
+  await client.connect();
+  cachedClient = client;
+  return client;
 }
 
 export async function getMongoDb() {

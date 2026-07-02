@@ -1,5 +1,6 @@
 import type { EveSessionScope, EveSsoState } from '../../../packages/contracts/src/index';
 import { eveSessionScopeSchema, eveSsoStateSchema } from '../../../packages/contracts/src/index';
+import { isProductionRuntime } from './env';
 import { randomState } from './session-cookie';
 
 const defaultScopes = 'publicData';
@@ -87,6 +88,10 @@ export function buildEveSsoAuthorizationUrl(config: EveSsoConfig, state: string)
 }
 
 export function readDeterministicIdentity(env: NodeJS.ProcessEnv = process.env): EveSsoIdentity | null {
+  if (isProductionRuntime(env)) {
+    return null;
+  }
+
   const raw = env.EVE_SSO_TEST_IDENTITY_JSON;
   if (!raw) {
     return null;

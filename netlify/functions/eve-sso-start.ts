@@ -1,5 +1,6 @@
 import { createEveSsoState, buildEveSsoAuthorizationUrl, isLocalReturnPath, readEveSsoConfig } from './_shared/eve-sso';
 import type { FunctionEvent } from './_shared/auth-scope';
+import { isProductionRuntime } from './_shared/env';
 import { redirectResponse, safeErrorResponse } from './_shared/http';
 import {
   createSignedCookieValue,
@@ -20,7 +21,7 @@ export async function handler(event: FunctionEvent) {
     const stateCookie = serializeCookie(
       ssoStateCookieName,
       createSignedCookieValue(state, readSessionSecret()),
-      { maxAge: 10 * 60, secure: process.env.NODE_ENV === 'production' }
+      { maxAge: 10 * 60, secure: isProductionRuntime() }
     );
 
     return redirectResponse(buildEveSsoAuthorizationUrl(config, state.state), [stateCookie]);

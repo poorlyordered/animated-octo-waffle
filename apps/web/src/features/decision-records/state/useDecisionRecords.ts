@@ -69,7 +69,7 @@ export function useDecisionRecords(): UseDecisionRecordsState {
     void loadDecisions();
   }, [loadDecisions]);
 
-  async function createDecision(request: CreateDecisionRecordRequest): Promise<DecisionRecord> {
+  const createDecision = useCallback(async (request: CreateDecisionRecordRequest): Promise<DecisionRecord> => {
     const { decision } = await createDecisionRecord(request);
 
     setState((current) => ({
@@ -86,9 +86,9 @@ export function useDecisionRecords(): UseDecisionRecordsState {
     }));
 
     return decision;
-  }
+  }, []);
 
-  async function updateStatus(decisionId: string, request: UpdateDecisionStatusRequest): Promise<DecisionRecord> {
+  const updateStatus = useCallback(async (decisionId: string, request: UpdateDecisionStatusRequest): Promise<DecisionRecord> => {
     const { decision } = await updateDecisionStatus(decisionId, request);
 
     setState((current) => ({
@@ -99,13 +99,17 @@ export function useDecisionRecords(): UseDecisionRecordsState {
     }));
 
     return decision;
-  }
+  }, []);
+
+  const selectDecision = useCallback((decision: DecisionRecord | null) => {
+    setState((current) => ({ ...current, selectedDecision: decision }));
+  }, []);
 
   return {
     ...state,
     createDecision,
     loadDecisions,
     updateStatus,
-    selectDecision: (decision) => setState((current) => ({ ...current, selectedDecision: decision }))
+    selectDecision
   };
 }

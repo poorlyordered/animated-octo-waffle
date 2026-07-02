@@ -138,11 +138,11 @@ OpenRouter Brain variables:
 
 The Brain worker endpoint is trusted-worker only. Do not expose OpenRouter keys as `VITE_*`, and do not call OpenRouter directly from browser code.
 
-`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. In production command API reads and writes require a signed EVE session unless `GRYYK_ALLOW_FALLBACK_SCOPE=true` is deliberately configured for a controlled exception. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
+`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Production is detected from `NODE_ENV=production` or Netlify `CONTEXT=production`; production command API reads and writes require a signed EVE session unless `GRYYK_ALLOW_FALLBACK_SCOPE=true` is deliberately configured for a controlled exception. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
 
 Optional EVE SSO/session variables:
 
-- `EVE_SESSION_SECRET`: signs session and SSO state cookies. Production must configure this server-side.
+- `EVE_SESSION_SECRET`: signs session and SSO state cookies. Production must configure this server-side; no development fallback is used when `NODE_ENV=production` or `CONTEXT=production`.
 - `EVE_SSO_CLIENT_ID`: EVE SSO application client ID.
 - `EVE_SSO_CLIENT_SECRET`: server-only EVE SSO application secret used by the live callback token exchange.
 - `EVE_SSO_REDIRECT_URI`: server callback URL for `/api/eve-sso-callback`.
@@ -150,8 +150,8 @@ Optional EVE SSO/session variables:
 - `EVE_SSO_METADATA_URL`: optional override for the EVE SSO metadata endpoint.
 - `EVE_SSO_TOKEN_URL`: optional override for the EVE SSO token endpoint.
 - `EVE_ESI_BASE_URL`: optional override for the ESI base URL used by read-only identity lookup.
-- `EVE_SSO_TEST_IDENTITY_JSON`: deterministic local/test callback identity fixture. Do not use this for production identity validation.
-- `ESI_TOKEN_VAULT_SEALING_KEY`: server-only sealing key for durable ESI token vault records. Production must configure this server-side.
+- `EVE_SSO_TEST_IDENTITY_JSON`: deterministic local/test callback identity fixture. It is ignored when `NODE_ENV=production` or `CONTEXT=production`; do not configure it in production.
+- `ESI_TOKEN_VAULT_SEALING_KEY`: server-only sealing key for durable ESI token vault records. Production must configure this server-side; no development fallback is used when `NODE_ENV=production` or `CONTEXT=production`.
 
 The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
 

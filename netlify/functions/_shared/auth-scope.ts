@@ -1,6 +1,6 @@
 import type { EveSessionScope, ScopeResolutionResult, SessionStateResponse } from '../../../packages/contracts/src/index';
 import { eveSessionScopeSchema } from '../../../packages/contracts/src/index';
-import { readScopeEnv } from './env';
+import { isProductionRuntime, readScopeEnv } from './env';
 import { safeErrorResponse, type FunctionResponse } from './http';
 import { isExpired, readCookie, readSessionSecret, readSignedCookieValue, sessionCookieName } from './session-cookie';
 
@@ -146,9 +146,10 @@ export function readSessionScope(event?: FunctionEvent, env: NodeJS.ProcessEnv =
 }
 
 function requiresSignedSession(env: NodeJS.ProcessEnv): boolean {
+  // Emergency/local override only: in production this re-enables fallback command scope.
   if (env.GRYYK_ALLOW_FALLBACK_SCOPE === 'true') {
     return false;
   }
 
-  return env.GRYYK_REQUIRE_SIGNED_SESSION === 'true' || env.NODE_ENV === 'production' || env.CONTEXT === 'production';
+  return env.GRYYK_REQUIRE_SIGNED_SESSION === 'true' || isProductionRuntime(env);
 }
