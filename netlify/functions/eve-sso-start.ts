@@ -1,4 +1,5 @@
 import { createEveSsoState, buildEveSsoAuthorizationUrl, isLocalReturnPath, readEveSsoConfig } from './_shared/eve-sso';
+import { fetchEveSsoMetadata } from './_shared/eve-sso-live';
 import type { FunctionEvent } from './_shared/auth-scope';
 import { isProductionRuntime } from './_shared/env';
 import { redirectResponse, safeErrorResponse } from './_shared/http';
@@ -17,6 +18,7 @@ export async function handler(event: FunctionEvent) {
     }
 
     const config = readEveSsoConfig();
+    const metadata = await fetchEveSsoMetadata(config);
     const state = createEveSsoState(returnTo);
     const stateCookie = serializeCookie(
       ssoStateCookieName,
@@ -24,7 +26,7 @@ export async function handler(event: FunctionEvent) {
       { maxAge: 10 * 60, secure: isProductionRuntime() }
     );
 
-    return redirectResponse(buildEveSsoAuthorizationUrl(config, state.state), [stateCookie]);
+    return redirectResponse(buildEveSsoAuthorizationUrl(config, state.state, metadata.authorizationEndpoint), [stateCookie]);
   } catch (error) {
     if (error instanceof Error && error.message === 'EVE SSO configuration is required') {
       return safeErrorResponse('EVE SSO is not configured', 500);

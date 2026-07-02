@@ -148,12 +148,13 @@ Optional EVE SSO/session variables:
 - `EVE_SSO_REDIRECT_URI`: server callback URL for `/api/eve-sso-callback`.
 - `EVE_SSO_SCOPES`: optional SSO scopes; defaults to `publicData`.
 - `EVE_SSO_METADATA_URL`: optional override for the EVE SSO metadata endpoint.
+- `EVE_SSO_AUTHORIZATION_URL`: optional override for the EVE SSO authorization endpoint; normal runtime discovers this from metadata.
 - `EVE_SSO_TOKEN_URL`: optional override for the EVE SSO token endpoint.
 - `EVE_ESI_BASE_URL`: optional override for the ESI base URL used by read-only identity lookup.
 - `EVE_SSO_TEST_IDENTITY_JSON`: deterministic local/test callback identity fixture. It is ignored when `NODE_ENV=production` or `CONTEXT=production`; do not configure it in production.
 - `ESI_TOKEN_VAULT_SEALING_KEY`: server-only sealing key for durable ESI token vault records. Production must configure this server-side; no development fallback is used when `NODE_ENV=production` or `CONTEXT=production`.
 
-The live EVE SSO callback exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
+The live EVE SSO flow discovers authorization, token, and JWKS endpoints from EVE SSO metadata, exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
 
 Signed EVE sessions are authorized for command APIs only when the session corporation matches server-owned `EVEONLINE_CORPORATION_ID`. A signed session from another corporation receives a safe unauthorized response and does not fall back to the configured corporation. No-session local fallback remains available for development and deterministic tests; production no-session command API access receives a safe signed-session-required response.
 

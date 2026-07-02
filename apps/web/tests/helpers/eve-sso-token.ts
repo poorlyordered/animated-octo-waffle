@@ -10,6 +10,7 @@ export interface EveTokenClaims {
   exp?: number;
   iss?: string;
   name?: string;
+  scp?: string[];
   sub?: string;
 }
 
