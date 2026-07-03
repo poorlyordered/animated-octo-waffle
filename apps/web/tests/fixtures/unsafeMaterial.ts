@@ -16,3 +16,20 @@ export const unsafeRefreshPayloads = [
   { rawPayload: { prompt: 'secret' } },
   { nested: { refreshToken: 'nested-token' } }
 ];
+
+export const unsafeCommanderChatPayloads = [
+  { accessToken: 'token-value' },
+  { refreshToken: 'token-value' },
+  { clientSecret: 'client-secret' },
+  { authorization: 'Bearer eyJunsafe' },
+  { dispatchTarget: 'worker://run-now' },
+  { executeNow: true },
+  { eveWriteIntent: 'set-standing' },
+  { walletMove: 'transfer' },
+  { assetMove: 'move' },
+  { contractMove: 'accept' },
+  { roleChange: 'grant-director' },
+  { rollbackTarget: 'production' },
+  { rawProviderPayload: { choices: [] } },
+  { nested: { privateKey: 'BEGIN PRIVATE KEY' } }
+];

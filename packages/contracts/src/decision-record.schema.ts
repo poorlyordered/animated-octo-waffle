@@ -32,11 +32,14 @@ export const approvalRecordSchema = z.object({
 });
 
 export const decisionSourceContextSchema = z.object({
-  sourceType: z.enum(['research_brief', 'numbers_follow_up', 'people_follow_up']),
+  sourceType: z.enum(['research_brief', 'numbers_follow_up', 'people_follow_up', 'commander_chat']),
   snapshotId: z.string().min(1).optional(),
   candidateId: z.string().min(1).optional(),
   followUpId: z.string().min(1).optional(),
   memberProfileId: z.string().min(1).optional(),
+  chatSessionId: z.string().min(1).optional(),
+  chatMessageId: z.string().min(1).optional(),
+  draftDecisionId: z.string().min(1).optional(),
   relatedSection: z.string().min(1).optional(),
   suggestedPath: z.string().min(1).optional()
 });

@@ -6,6 +6,7 @@ import { AutomationQueueRoute } from './routes/AutomationQueueRoute';
 import { PeopleRoute } from './routes/PeopleRoute';
 import { EsiSyncRoute } from './routes/EsiSyncRoute';
 import { IntelligenceRefreshRoute } from './routes/IntelligenceRefreshRoute';
+import { CommanderChatRoute } from './routes/CommanderChatRoute';
 import { OperationsHealthRoute } from './routes/OperationsHealthRoute';
 import { ProductionEvidenceRoute } from './routes/ProductionEvidenceRoute';
 import { LoginGate } from './features/session/components/LoginGate';
@@ -26,6 +27,7 @@ function CommandShell() {
       <PeopleRoute />
       <EsiSyncRoute />
       <IntelligenceRefreshRoute />
+      <CommanderChatRoute />
       <OperationsHealthRoute />
       <ProductionEvidenceRoute />
     </>

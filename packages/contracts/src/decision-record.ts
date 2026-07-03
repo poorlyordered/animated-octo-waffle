@@ -36,11 +36,14 @@ export interface ApprovalRecord {
 }
 
 export interface DecisionSourceContext {
-  sourceType: 'research_brief' | 'numbers_follow_up' | 'people_follow_up';
+  sourceType: 'research_brief' | 'numbers_follow_up' | 'people_follow_up' | 'commander_chat';
   snapshotId?: string;
   candidateId?: string;
   followUpId?: string;
   memberProfileId?: string;
+  chatSessionId?: string;
+  chatMessageId?: string;
+  draftDecisionId?: string;
   relatedSection?: string;
   suggestedPath?: string;
 }

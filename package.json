@@ -19,7 +19,10 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.221",
+    "@openrouter/ai-sdk-provider": "^2.10.0",
     "@vitejs/plugin-react": "^5.1.1",
+    "ai": "^6.0.219",
     "mongodb": "^7.0.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

@@ -1181,7 +1181,7 @@ Validation:
 
 Recommended next slice:
 
-### M56: OpenRouter Brain - In Progress
+### M56: OpenRouter Brain - Complete
 
 Goal: build the first real Gryyk-47 Brain using trusted server-side OpenRouter calls and durable command intelligence storage.
 
@@ -1199,7 +1199,7 @@ Delivered capabilities in this slice:
 Validation:
 
 - Spec: `specs/056-openrouter-brain`
-- Focused validation currently covers Brain, command brief normalization, and operations health tests. Full quality gate pending.
+- Local validation covered targeted Brain tests, typecheck, lint, full Jest tests, production build, and diff hygiene.
 
 Recommended next slice:
 
@@ -1262,3 +1262,27 @@ Validation:
 
 - Spec: `specs/059-intelligence-refresh-runs`
 - Local validation covered targeted refresh Jest tests, refresh Playwright browser smoke, typecheck, and will be finalized with the full quality gate before merge.
+
+Recommended next slice:
+
+### M60: Commander Chat Interface - Complete
+
+Goal: add a durable commander chat surface that uses Vercel AI SDK Core and AI SDK UI to ask questions over Gryyk-47 command state, cite existing Numbers/Opportunity/People evidence, and draft decision records without executing player-impacting actions.
+
+Delivered capabilities:
+
+- Durable `commander_chat_sessions` and `commander_chat_messages` storage scoped by authorized corporation and signed commander session
+- React command-center chat surface using AI SDK UI `useChat` with AI SDK `DefaultChatTransport` integration status
+- Server-side Netlify chat API using AI SDK Core `streamText` with the OpenRouter AI SDK provider
+- Configurable commander-chat prompt settings, including a separate `commander-chat/v1` prompt version distinct from Brain prompt versions
+- Bounded command context assembly from command briefs, Intelligence Refresh Runs, Numbers, Opportunity, People, Decision Records, Automation Queue, Operations Health, and Production Evidence summaries
+- Structured assistant metadata for citations, confidence, missing-data notes, no-execution boundaries, and proposed next steps
+- Draft Decision Record output that the commander can explicitly review and create through a separate approval action
+- Unsafe input/output rejection for token material, raw provider payloads, executable instructions, browser-selected corporation scope, dispatch handles, and player-impacting mutation fields
+- Contract, unit, and browser smoke coverage for durable chat persistence, signed-session authorization, prompt versioning, cited answers, draft decisions, and no-execution guarantees
+- No browser OpenRouter calls, direct ESI fetches, worker dispatch, queue creation from assistant text, EVE writes, role/access/standing mutation, wallet/asset/contract movement, deploy/rollback action, or external-service mutation
+
+Validation:
+
+- Spec: `specs/060-commander-chat-interface`
+- Local validation covered targeted commander-chat contract/unit tests, typecheck, lint, full Jest tests, Playwright browser smoke tests, production build, and diff hygiene.

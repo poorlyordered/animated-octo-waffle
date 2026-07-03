@@ -24,3 +24,5 @@ export * from './brain.js';
 export * from './brain.schema.js';
 export * from './intelligence-refresh.js';
 export * from './intelligence-refresh.schema.js';
+export * from './commander-chat.js';
+export * from './commander-chat.schema.js';
