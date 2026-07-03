@@ -56,6 +56,7 @@ export async function installCommandSurfaceApiFixtures(page: Page, options: Comm
   let peopleDecisionStatus: 'none' | 'proposed' | 'approved' | 'rejected' = 'none';
   let peopleQueueLinked = false;
   let peopleIngestionProvenance = commandSurfaceFixtures.people.ingestionProvenance;
+  let intelligenceRefreshRuns = [commandSurfaceFixtures.intelligenceRefresh.completed];
 
   function browserPeopleFollowUps() {
     return commandSurfaceFixtures.people.followUps.map((followUp) =>
@@ -147,6 +148,31 @@ export async function installCommandSurfaceApiFixtures(page: Page, options: Comm
   await page.route('**/api/research-status**', (route) => json(route, commandSurfaceFixtures.researchStatus));
   await page.route('**/api/operations-health**', (route) => json(route, commandSurfaceFixtures.operationsHealth));
   await page.route('**/api/production-evidence**', (route) => json(route, commandSurfaceFixtures.productionEvidence));
+  await page.route('**/api/intelligence-refresh**', (route) => {
+    const url = new URL(route.request().url());
+    const detailMatch = url.pathname.match(/\/api\/intelligence-refresh\/([^/]+)$/);
+
+    if (route.request().method() === 'POST') {
+      const created = {
+        ...commandSurfaceFixtures.intelligenceRefresh.queued,
+        id: 'refresh-browser-created',
+        createdAt: '2026-07-03T00:10:00.000Z',
+        updatedAt: '2026-07-03T00:10:00.000Z',
+        requestedBy: 'session:Browser Smoke Commander'
+      };
+      intelligenceRefreshRuns = [created, ...intelligenceRefreshRuns];
+      return json(route, { run: created, duplicate: false });
+    }
+
+    if (detailMatch) {
+      const run =
+        intelligenceRefreshRuns.find((item) => item.id === decodeURIComponent(detailMatch[1])) ??
+        commandSurfaceFixtures.intelligenceRefresh.completed;
+      return json(route, { run });
+    }
+
+    return json(route, { runs: intelligenceRefreshRuns });
+  });
   await page.route('**/api/numbers**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/decision/status')) {

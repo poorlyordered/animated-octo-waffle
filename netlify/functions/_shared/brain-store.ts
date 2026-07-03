@@ -18,6 +18,7 @@ export function brainRunSummary(document: Record<string, unknown>): BrainRunSumm
     provider: 'openrouter',
     model: stringValue(document.model, 'unknown'),
     promptVersion: stringValue(document.promptVersion, brainPromptVersion),
+    refreshRunId: typeof document.refreshRunId === 'string' ? document.refreshRunId : undefined,
     createdAt: dateValue(document.createdAt),
     updatedAt: dateValue(document.updatedAt),
     completedAt: optionalDateValue(document.completedAt),
@@ -28,7 +29,7 @@ export function brainRunSummary(document: Record<string, unknown>): BrainRunSumm
 
 export async function createBrainRun(
   db: Db,
-  input: { corporationId: string; focus?: string; workerId: string; reason?: string; now?: Date }
+  input: { corporationId: string; focus?: string; workerId: string; reason?: string; refreshRunId?: string; now?: Date }
 ) {
   const now = input.now ?? new Date();
   const id = new ObjectId();
@@ -44,6 +45,7 @@ export async function createBrainRun(
     requestedBy: input.workerId,
     workerId: input.workerId,
     reason: input.reason,
+    refreshRunId: input.refreshRunId,
     createdAt: now,
     updatedAt: now,
     claimedAt: now

@@ -1241,3 +1241,24 @@ Delivered capabilities:
 Validation:
 
 - Local validation covered focused auth-scope, EVE SSO, and Mongo client tests, full Jest tests, typecheck, lint, full Playwright browser smoke tests, production build, and diff hygiene.
+
+### M59: Intelligence Refresh Runs - Complete
+
+Goal: give commanders a durable way to request a Numbers/Opportunity/People intelligence refresh, let trusted workers report collection outcomes, and link Brain evaluation back to auditable refresh state.
+
+Delivered capabilities:
+
+- Shared refresh run contracts and schemas for commander APIs, worker callbacks, domain steps, evaluation status, and browser-safe summaries
+- MongoDB-backed `intelligence_refresh_runs` store with active-run dedupe, domain preparation links, step transitions, partial evaluation readiness, and safe failure state
+- Signed-session commander API for create/list/detail at `/api/intelligence-refresh`
+- Worker-only callback API for listing claimable steps, claiming, completing, failing, and evaluating refresh runs at `/api/intelligence-refresh-worker`
+- Numbers preparation links eligible ESI sync requests; People and Opportunity preparation links existing ingestion request helpers
+- Brain runs and generated command briefs persist `refreshRunId` and refresh source-summary provenance
+- Command-center Intelligence Refresh Runs surface with create controls, latest run status, domain step status, failures, warnings, and Brain/brief linkage
+- Contract, unit, and browser smoke coverage for refresh schemas, rules, store transitions, UI view models, and browser-safe rendering
+- No browser worker dispatch, request-path long-running collection, raw ESI payload exposure, token exposure, EVE write, role/access/standing mutation, wallet/asset/contract movement, or unapproved external-service mutation
+
+Validation:
+
+- Spec: `specs/059-intelligence-refresh-runs`
+- Local validation covered targeted refresh Jest tests, refresh Playwright browser smoke, typecheck, and will be finalized with the full quality gate before merge.

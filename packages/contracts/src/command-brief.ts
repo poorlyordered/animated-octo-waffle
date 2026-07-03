@@ -86,6 +86,8 @@ export interface CommandBrief {
   createdAt: string;
   model: string;
   promptVersion: string;
+  refreshRunId?: string;
+  refreshSourceSummary?: string[];
   sourceCount: number;
   sourceReferences: SourceReference[];
   confidence: number;

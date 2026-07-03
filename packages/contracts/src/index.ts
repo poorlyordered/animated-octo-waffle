@@ -22,3 +22,5 @@ export * from './production-evidence.js';
 export * from './production-evidence.schema.js';
 export * from './brain.js';
 export * from './brain.schema.js';
+export * from './intelligence-refresh.js';
+export * from './intelligence-refresh.schema.js';
