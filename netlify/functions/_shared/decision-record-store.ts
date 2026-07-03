@@ -1,6 +1,8 @@
 import { ObjectId, type Db } from 'mongodb';
 import type {
   ApprovalRecord,
+  CommanderChatDraftDecision,
+  CommanderChatMessage,
   CreateDecisionRecordRequest,
   DecisionRecord,
   DecisionRecordListResponse,
@@ -235,6 +237,87 @@ export async function createDecisionRecordFromNumbersFollowUp(
 
   const result = await db.collection(collectionName).insertOne(document);
   return normalizeDecisionRecordDocument({ ...document, _id: result.insertedId } as DecisionDocument);
+}
+
+export async function createDecisionRecordFromCommanderChatDraft(
+  db: Db,
+  corporationId: string,
+  sessionId: string,
+  assistantMessage: CommanderChatMessage,
+  draft: CommanderChatDraftDecision,
+  commanderNote?: string
+): Promise<{ decision: DecisionRecord; duplicate: boolean }> {
+  const duplicate = await db.collection(collectionName).findOne({
+    corporationId,
+    'sourceContext.sourceType': 'commander_chat',
+    'sourceContext.chatSessionId': sessionId,
+    'sourceContext.chatMessageId': assistantMessage.id,
+    'sourceContext.draftDecisionId': draft.id
+  });
+
+  if (duplicate) {
+    return {
+      decision: normalizeDecisionRecordDocument(duplicate as DecisionDocument),
+      duplicate: true
+    };
+  }
+
+  const now = new Date().toISOString();
+  const citations = assistantMessage.metadata?.citations ?? [];
+  const document = {
+    corporationId,
+    sourceBriefId: assistantMessage.id,
+    researchBriefId: assistantMessage.id,
+    sourceRecommendation: draft.title,
+    sourceContext: {
+      sourceType: 'commander_chat' as const,
+      chatSessionId: sessionId,
+      chatMessageId: assistantMessage.id,
+      draftDecisionId: draft.id,
+      relatedSection: 'commander-chat'
+    },
+    sourceProvenance: {
+      briefId: assistantMessage.id,
+      briefCreatedAt: assistantMessage.createdAt,
+      focus: 'commander-chat',
+      model: assistantMessage.metadata?.model ?? 'unknown',
+      promptVersion: assistantMessage.metadata?.promptVersion ?? 'commander-chat/v1',
+      confidence: assistantMessage.metadata?.confidence ?? 0,
+      sourceCount: citations.length,
+      sourceReferences: citations.map((citation) => ({
+        title: citation.label,
+        sourceId: citation.sourceId
+      })),
+      coverage: {
+        numbers: citations.some((citation) => citation.sourceType === 'numbers_snapshot') ? 'present' : 'missing',
+        opportunity: citations.some((citation) => citation.sourceType === 'opportunity' || citation.sourceType === 'command_brief')
+          ? 'present'
+          : 'missing',
+        people: citations.some((citation) => citation.sourceType === 'people') ? 'present' : 'missing',
+        missingReasons: assistantMessage.metadata?.missingData ?? []
+      }
+    },
+    status: 'proposed' satisfies DecisionStatus,
+    rationale: commanderNote?.trim() ? `${draft.rationale}\n\nCommander note: ${commanderNote.trim()}` : draft.rationale,
+    expectedResult: draft.expectedResult,
+    isPlayerImpacting: draft.playerImpacting,
+    approval: null,
+    statusHistory: [
+      {
+        toStatus: 'proposed' satisfies DecisionStatus,
+        changedAt: now,
+        note: 'Created explicitly from Commander Chat draft decision.'
+      }
+    ],
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const result = await db.collection(collectionName).insertOne(document);
+  return {
+    decision: normalizeDecisionRecordDocument({ ...document, _id: result.insertedId } as DecisionDocument),
+    duplicate: false
+  };
 }
 
 export async function updateDecisionStatus(

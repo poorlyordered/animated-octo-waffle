@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: M59 Intelligence Refresh Runs is complete on `059-intelligence-refresh-runs`. It adds durable refresh orchestration for Numbers, Opportunity, and People, worker-owned step transitions, Brain evaluation linkage, and a browser-visible refresh status surface.
+Current phase: M60 Commander Chat Interface is complete on `060-commander-chat-interface`. It adds durable commander chat sessions/messages, cited command-state answers, AI SDK Core/UI integration, a separate commander-chat prompt version, and explicit draft Decision Record creation.
 
 ## What Has Been Built
 
@@ -26,6 +26,7 @@ Gryyk-47 now has the core command-center loop in place:
 - People: member profiles, ingestion provenance, leadership follow-ups, People-origin decisions, approved queued work, worker handoff preparation, and retry controls.
 - ESI Token Vault Sync: explicit consent, sealed server-side token vault records, read-sync request preparation for Numbers/People/Opportunity, worker-owned sync completion/failure, and read-only sync history.
 - Intelligence Refresh Runs: signed commanders can create durable Numbers/Opportunity/People refresh runs, trusted workers can report domain step outcomes, and Brain evaluation can link command briefs back to the refresh run.
+- Commander Chat: signed commanders can ask cited questions over command state, continue durable chat sessions, and create proposed Decision Records from review-only chat drafts through an explicit action.
 - Operations Health: read-only health summary for command APIs, ingestion posture, retries, worker secret configuration, filters, and browser-local saved views.
 - Production Evidence: value-free deployment evidence recorder with local filters and unsafe secret/token/credential rejection.
 
@@ -80,8 +81,9 @@ Then open the local Netlify URL, usually:
 7. Use Automation Queue and Worker Handoffs to inspect queued work and worker lifecycle state. Preparing a handoff creates durable metadata only; it does not dispatch or execute work.
 8. Use ESI Token Vault to start explicit read-sync consent, inspect vault status, revoke consent, and prepare duplicate-safe read-sync requests for available domains. Tokens stay server-side and sealed.
 9. Use Intelligence Refresh Runs to start a durable refresh across Numbers, Opportunity, and People, then inspect prepared domain steps, failures, warnings, and Brain/command-brief evaluation linkage.
-10. Use Operations Health to inspect command API evidence, ingestion posture, retry posture, worker callback secret state, and warnings.
-11. Use Production Evidence to record value-free deployment posture after validation. Do not paste secrets, tokenized URLs, raw production records, connection strings, JWTs, cookies, or private keys; unsafe material is rejected before storage.
+10. Use Commander Chat to ask cited questions over command state and draft proposed Decision Records. Drafts are review-only until you explicitly create a proposed decision.
+11. Use Operations Health to inspect command API evidence, ingestion posture, retry posture, worker callback secret state, and warnings.
+12. Use Production Evidence to record value-free deployment posture after validation. Do not paste secrets, tokenized URLs, raw production records, connection strings, JWTs, cookies, or private keys; unsafe material is rejected before storage.
 
 The expected operating pattern is: inspect evidence, record a decision, approve or reject explicitly, create queued work only after approval, prepare handoffs for workers when appropriate, and review safe outcomes/retries later.
 
@@ -139,6 +141,16 @@ OpenRouter Brain variables:
 - `OPENROUTER_TIMEOUT_MS`: optional provider timeout override.
 - `OPENROUTER_MAX_COMPLETION_TOKENS`: optional completion budget override.
 
+Commander Chat variables:
+
+- `COMMANDER_CHAT_PROMPT_VERSION`: optional chat prompt version; defaults to `commander-chat/v1`.
+- `COMMANDER_CHAT_SYSTEM_PROMPT`: optional server-side system prompt override.
+- `COMMANDER_CHAT_MODEL`: optional chat model override; falls back to `OPENROUTER_MODEL`.
+- `COMMANDER_CHAT_TIMEOUT_MS`: optional provider timeout override.
+- `COMMANDER_CHAT_MAX_COMPLETION_TOKENS`: optional chat completion budget override.
+- `COMMANDER_CHAT_MAX_CONTEXT_CHARS`: optional bounded command-context size override.
+- `COMMANDER_CHAT_MAX_HISTORY_MESSAGES`: optional bounded chat history window override.
+
 The Brain worker endpoint is trusted-worker only. Do not expose OpenRouter keys as `VITE_*`, and do not call OpenRouter directly from browser code.
 
 `EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists and is always included in the authorized corporation list. Set optional `EVEONLINE_AUTHORIZED_CORPORATION_IDS` to a comma-separated list of additional EVE corporation IDs allowed to use the command site. Production is detected from `NODE_ENV=production` or Netlify `CONTEXT=production`; production command API reads and writes require a signed EVE session unless `GRYYK_ALLOW_FALLBACK_SCOPE=true` is deliberately configured for a controlled exception. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
@@ -171,6 +183,7 @@ Current notes:
 - The Command Brief MVP expects `research_briefs` and `research_requests` in `MONGODB_DB`.
 - The OpenRouter Brain writes validated command intelligence to `research_briefs` and Brain lifecycle records to `research_requests` with focus `gryyk-47-brain`.
 - Intelligence Refresh Runs store orchestration state in `intelligence_refresh_runs`; evaluation-linked Brain runs and command briefs include `refreshRunId` provenance.
+- Commander Chat stores durable conversations in `commander_chat_sessions` and `commander_chat_messages`; proposed decisions created from chat drafts are stored in `strategic_decisions` with `commander_chat` source context.
 - The Numbers operating layer expects processed read-only `numbers_snapshots` records in `MONGODB_DB`.
 - The `gryyk47` database contains broader corporation context collections such as `corporation_context`, `strategic_decisions`, `asset_information`, and `research_briefs`.
 - There is no collection named `Gryyk-47` in the checked `gryyk47` database. Treat `Gryyk-47` as the product/corporation label unless a future data audit identifies a real database or collection with that exact name.
