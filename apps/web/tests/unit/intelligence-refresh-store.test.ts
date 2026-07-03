@@ -29,6 +29,7 @@ function createDb(initial: Collections) {
         })
       }),
       findOne: async (filter: Filter<Document>) => clone(documents.find((item) => matches(item, filter)) ?? null),
+      createIndex: async () => 'mock-index',
       insertOne: async (document: Document) => {
         const insertedId = new ObjectId();
         documents.push({ ...document, _id: insertedId });
@@ -40,7 +41,11 @@ function createDb(initial: Collections) {
         return { matchedCount: document ? 1 : 0, modifiedCount: document ? 1 : 0 };
       },
       findOneAndUpdate: async (filter: Filter<Document>, update: UpdateFilter<Document>) => {
-        const document = documents.find((item) => matches(item, filter));
+        let document = documents.find((item) => matches(item, filter));
+        if (!document && update.$setOnInsert) {
+          document = { ...update.$setOnInsert };
+          documents.push(document);
+        }
         if (!document) return null;
         applyUpdate(document, update);
         return clone(document);
@@ -51,11 +56,14 @@ function createDb(initial: Collections) {
   return { db: { collection } as unknown as Db, collections };
 }
 
-function matches(document: Document, filter: Filter<Document>) {
+function matches(document: Document, filter: Filter<Document>): boolean {
   return Object.entries(filter).every(([key, expected]) => {
     const actual = document[key];
     if (expected && typeof expected === 'object' && '$in' in expected) {
       return (expected.$in as unknown[]).includes(actual);
+    }
+    if (expected && typeof expected === 'object' && '$elemMatch' in expected && Array.isArray(actual)) {
+      return actual.some((item) => matches(item as Document, expected.$elemMatch as Filter<Document>));
     }
     if (actual instanceof ObjectId && expected instanceof ObjectId) {
       return actual.toHexString() === expected.toHexString();
@@ -67,6 +75,9 @@ function matches(document: Document, filter: Filter<Document>) {
 function applyUpdate(document: Document, update: UpdateFilter<Document>) {
   if (update.$set) {
     Object.assign(document, update.$set);
+  }
+  if (update.$setOnInsert) {
+    Object.assign(document, { ...update.$setOnInsert, ...document });
   }
   if (update.$unset) {
     for (const key of Object.keys(update.$unset)) {
@@ -185,6 +196,29 @@ describe('intelligence refresh store', () => {
     expect(wrongWorker).toBeNull();
     expect(completed?.steps[0]).toMatchObject({ status: 'completed', sourceCount: 3 });
     expect(completed?.status).toBe('waiting_for_evaluation');
+  });
+
+  it('promotes preparation warnings to the run summary', async () => {
+    const { db } = createDb({
+      esi_token_vaults: [],
+      esi_sync_requests: [],
+      people_ingestion_requests: [],
+      research_requests: [],
+      intelligence_refresh_runs: []
+    });
+
+    const created = await createOrFindActiveRefreshRun(db, {
+      corporationId,
+      requestedBy: commander,
+      domains: ['numbers'],
+      reason: 'Refresh numbers.'
+    });
+
+    expect(created.run.steps[0]).toMatchObject({
+      status: 'blocked',
+      warnings: ['Numbers preparation blocked until ESI consent is active.']
+    });
+    expect(created.run.warnings).toContain('Numbers preparation blocked until ESI consent is active.');
   });
 
   it('records worker step failures and makes partial evaluation ready when useful data exists', async () => {

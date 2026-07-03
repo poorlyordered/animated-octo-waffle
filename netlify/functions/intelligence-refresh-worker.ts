@@ -133,13 +133,14 @@ export async function handler(event: FunctionEvent) {
         briefDocument,
         now: createdAt
       });
+      const confidence = Number(briefDocument.confidence);
       const completedRefreshRun = await completeRefreshEvaluation(db, runningRun.id, {
         brainRunId: brainRun.id,
         commandBriefId: String(briefDocument.id),
         model: providerResult.model,
         provider: providerResult.provider,
         promptVersion: String(briefDocument.promptVersion),
-        confidence: Number(briefDocument.confidence)
+        confidence: Number.isFinite(confidence) ? confidence : undefined
       });
 
       return jsonResponse(201, {

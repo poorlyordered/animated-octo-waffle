@@ -30,8 +30,10 @@ const defaultAllowPartialEvaluation = true;
 export interface IntelligenceRefreshRunDocument extends Omit<IntelligenceRefreshRunSummary, 'id'> {
   _id?: { toString(): string };
   id?: string;
+  activeRunKey?: string;
   domainSetKey: string;
   reason?: string;
+  creationToken?: string;
 }
 
 export interface CreateRefreshRunInput {
@@ -107,17 +109,16 @@ export async function createOrFindActiveRefreshRun(
   }
 
   const domainSetKey = refreshDomainSetKey(domains);
-  const existing = await db.collection(collectionName).findOne({
-    corporationId: input.corporationId,
-    domainSetKey,
-    status: { $in: activeRefreshRunStatuses }
-  });
-
+  const activeRunKey = `${input.corporationId}:${domainSetKey}`;
+  await ensureRefreshRunIndexes(db);
+  const existing = await db.collection(collectionName).findOne({ activeRunKey });
   if (existing) {
     return { run: refreshRunSummary(existing as unknown as IntelligenceRefreshRunDocument), duplicate: true };
   }
 
   const now = new Date().toISOString();
+  const id = new ObjectId();
+  const creationToken = new ObjectId().toHexString();
   const prepared = await prepareRefreshSteps(db, {
     corporationId: input.corporationId,
     requestedBy: input.requestedBy,
@@ -125,7 +126,10 @@ export async function createOrFindActiveRefreshRun(
     reason: input.reason
   });
   const status = deriveRefreshRunStatus(prepared.steps);
-  const document: Omit<IntelligenceRefreshRunDocument, '_id' | 'id'> = {
+  const document: IntelligenceRefreshRunDocument = {
+    _id: id,
+    id: id.toHexString(),
+    activeRunKey,
     corporationId: input.corporationId,
     requestedBy: input.requestedBy,
     requestedDomains: domains,
@@ -141,13 +145,16 @@ export async function createOrFindActiveRefreshRun(
     createdAt: now,
     updatedAt: now,
     warnings: prepared.warnings,
+    creationToken,
     boundary: intelligenceRefreshBoundary
   };
 
-  const result = await db.collection(collectionName).insertOne(document);
+  const result = await upsertActiveRefreshRun(db, activeRunKey, document);
+  const run = refreshRunSummary(result as unknown as IntelligenceRefreshRunDocument);
+
   return {
-    run: refreshRunSummary({ ...document, _id: result.insertedId } as IntelligenceRefreshRunDocument),
-    duplicate: false
+    run,
+    duplicate: (result as unknown as IntelligenceRefreshRunDocument).creationToken !== creationToken
   };
 }
 
@@ -227,6 +234,8 @@ export async function claimRefreshStep(
     status: deriveRefreshRunStatus(steps),
     evaluation: evaluationForSteps(steps, run.evaluation),
     updatedAt: now
+  }, {
+    steps: { $elemMatch: { id: stepId, status: { $in: ['queued', 'prepared'] } } }
   });
 }
 
@@ -265,6 +274,8 @@ export async function completeRefreshStep(
     status: deriveRefreshRunStatus(steps),
     evaluation: evaluationForSteps(steps, run.evaluation),
     updatedAt: now
+  }, {
+    steps: { $elemMatch: { id: stepId, status: 'running', claimedBy: workerId } }
   });
 }
 
@@ -300,6 +311,8 @@ export async function failRefreshStep(
     status: deriveRefreshRunStatus(steps),
     evaluation: evaluationForSteps(steps, run.evaluation),
     updatedAt: now
+  }, {
+    steps: { $elemMatch: { id: stepId, status: 'running', claimedBy: workerId } }
   });
 }
 
@@ -336,6 +349,8 @@ export async function skipRefreshStep(
     status: deriveRefreshRunStatus(steps),
     evaluation: evaluationForSteps(steps, run.evaluation),
     updatedAt: now
+  }, {
+    steps: { $elemMatch: { id: stepId, status: 'running', claimedBy: workerId } }
   });
 }
 
@@ -362,6 +377,8 @@ export async function markRefreshEvaluationRunning(
     },
     updatedAt: now,
     warnings: reason ? [...run.warnings, `Evaluation requested by ${workerId}: ${reason}`] : run.warnings
+  }, {
+    status: run.status
   });
 }
 
@@ -428,34 +445,40 @@ async function prepareRefreshSteps(
     if (domain === 'numbers') {
       const vault = await findActiveOrLatestVault(db, input.corporationId);
       if (!vault || vault.status !== 'active') {
+        const stepWarnings = ['Numbers preparation blocked until ESI consent is active.'];
         steps.push({
           ...step,
           status: 'blocked',
           failure: { reason: 'Explicit active ESI read-sync consent is required for Numbers.', failedAt: new Date().toISOString() },
-          warnings: ['Numbers preparation blocked until ESI consent is active.']
+          warnings: stepWarnings
         });
+        warnings.push(...stepWarnings);
         continue;
       }
 
       const requiredScopes = requiredScopesForDomain('numbers');
       const missing = missingScopes(vault.grantedScopes, requiredScopes);
       if (missing.length > 0) {
+        const stepWarnings = [`Missing scopes: ${missing.join(', ')}`];
         steps.push({
           ...step,
           status: 'blocked',
           failure: { reason: 'Numbers ESI consent is missing required read scopes.', failedAt: new Date().toISOString() },
-          warnings: [`Missing scopes: ${missing.join(', ')}`]
+          warnings: stepWarnings
         });
+        warnings.push(...stepWarnings);
         continue;
       }
 
       const { syncRequest, duplicate } = await createOrFindQueuedSyncRequest(db, vault, 'numbers', requiredScopes);
+      const stepWarnings = duplicate ? ['Existing active Numbers ESI sync request linked.'] : [];
       steps.push({
         ...step,
         status: 'prepared',
         preparedRequest: { type: 'esi_sync_request', id: syncRequest.id ?? syncRequest._id?.toString() ?? 'unknown' },
-        warnings: duplicate ? ['Existing active Numbers ESI sync request linked.'] : []
+        warnings: stepWarnings
       });
+      warnings.push(...stepWarnings);
       continue;
     }
 
@@ -466,12 +489,14 @@ async function prepareRefreshSteps(
         input.requestedBy,
         input.reason
       );
+      const stepWarnings = duplicate ? ['Existing active People ingestion request linked.'] : [];
       steps.push({
         ...step,
         status: 'prepared',
         preparedRequest: { type: 'people_ingestion_request', id: request.id ?? request._id?.toString() ?? 'unknown' },
-        warnings: duplicate ? ['Existing active People ingestion request linked.'] : []
+        warnings: stepWarnings
       });
+      warnings.push(...stepWarnings);
       continue;
     }
 
@@ -482,12 +507,14 @@ async function prepareRefreshSteps(
       input.requestedBy,
       input.reason
     );
+    const stepWarnings = duplicate ? ['Existing active Opportunity ingestion request linked.'] : [];
     steps.push({
       ...step,
       status: 'prepared',
       preparedRequest: { type: 'opportunity_ingestion_request', id: request.id ?? request._id?.toString() ?? 'unknown' },
-      warnings: duplicate ? ['Existing active Opportunity ingestion request linked.'] : []
+      warnings: stepWarnings
     });
+    warnings.push(...stepWarnings);
   }
 
   return { steps, warnings };
@@ -522,16 +549,59 @@ async function loadRefreshRunForTransition(db: Db, runId: string): Promise<Intel
 async function replaceRunState(
   db: Db,
   runId: string,
-  set: Partial<IntelligenceRefreshRunSummary>
+  set: Partial<IntelligenceRefreshRunSummary>,
+  precondition: Record<string, unknown> = {}
 ): Promise<IntelligenceRefreshRunSummary | null> {
   const update: Partial<IntelligenceRefreshRunSummary> & { status?: IntelligenceRefreshRunStatus } = set;
+  const unset = update.status && !activeRefreshRunStatuses.includes(update.status) ? { activeRunKey: '' } : undefined;
   const result = await db.collection(collectionName).findOneAndUpdate(
-    refreshRunIdFilter(runId),
-    { $set: update },
+    {
+      ...refreshRunIdFilter(runId),
+      ...precondition
+    },
+    unset ? { $set: update, $unset: unset } : { $set: update },
     { returnDocument: 'after' }
   );
 
   return result ? refreshRunSummary(result as unknown as IntelligenceRefreshRunDocument) : null;
+}
+
+async function ensureRefreshRunIndexes(db: Db): Promise<void> {
+  await db.collection(collectionName).createIndex(
+    { activeRunKey: 1 },
+    {
+      name: 'unique_active_intelligence_refresh_run',
+      unique: true,
+      partialFilterExpression: { activeRunKey: { $exists: true } }
+    }
+  );
+}
+
+async function upsertActiveRefreshRun(
+  db: Db,
+  activeRunKey: string,
+  document: IntelligenceRefreshRunDocument
+): Promise<unknown> {
+  try {
+    return await db.collection(collectionName).findOneAndUpdate(
+      { activeRunKey },
+      { $setOnInsert: document },
+      { upsert: true, returnDocument: 'after' }
+    );
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      const existing = await db.collection(collectionName).findOne({ activeRunKey });
+      if (existing) {
+        return existing;
+      }
+    }
+
+    throw error;
+  }
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 11000);
 }
 
 function dateString(value: unknown): string {
