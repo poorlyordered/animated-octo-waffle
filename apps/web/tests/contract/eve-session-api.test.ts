@@ -92,6 +92,28 @@ describe('EVE session API contract', () => {
     expect(response.body).not.toContain('token');
   });
 
+  it('returns signed-in state for a signed session in an additional authorized corporation', async () => {
+    setEnv({
+      EVEONLINE_CORPORATION_ID: '917701062',
+      EVEONLINE_AUTHORIZED_CORPORATION_IDS: '123456789',
+      EVE_SESSION_SECRET: 'test-secret'
+    });
+
+    const response = await handler({
+      headers: { cookie: activeSessionCookie('123456789') },
+      httpMethod: 'GET'
+    });
+
+    expect(sessionStateResponseSchema.parse(JSON.parse(response.body))).toMatchObject({
+      signedIn: true,
+      scopeSource: 'session',
+      characterName: 'Ari Voss',
+      corporationId: '123456789'
+    });
+    expect(response.body).not.toContain('secret');
+    expect(response.body).not.toContain('token');
+  });
+
   it('clears session cookie on idempotent sign-out', async () => {
     setEnv({ EVEONLINE_CORPORATION_ID: '917701062', EVE_SESSION_SECRET: 'test-secret' });
 

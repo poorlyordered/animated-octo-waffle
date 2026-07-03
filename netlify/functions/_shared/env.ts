@@ -5,6 +5,7 @@ export interface ServerEnv {
 
 export interface ScopeEnv {
   corporationId: string;
+  authorizedCorporationIds: string[];
 }
 
 export interface EsiTokenVaultEnv {
@@ -47,7 +48,12 @@ export function readScopeEnv(env: NodeJS.ProcessEnv = process.env): ScopeEnv {
     throw new Error('EVEONLINE_CORPORATION_ID is required');
   }
 
-  return { corporationId };
+  const authorizedCorporationIds = uniqueNonEmpty([
+    corporationId,
+    ...csvValues(env.EVEONLINE_AUTHORIZED_CORPORATION_IDS)
+  ]);
+
+  return { corporationId, authorizedCorporationIds };
 }
 
 export function readEsiTokenVaultEnv(env: NodeJS.ProcessEnv = process.env): EsiTokenVaultEnv {
@@ -97,4 +103,12 @@ function positiveInteger(value: string | undefined, fallback: number, min: numbe
   }
 
   return parsed;
+}
+
+function csvValues(value: string | undefined): string[] {
+  return value?.split(',').map((item) => item.trim()).filter(Boolean) ?? [];
+}
+
+function uniqueNonEmpty(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
 }

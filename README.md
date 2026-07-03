@@ -138,11 +138,12 @@ OpenRouter Brain variables:
 
 The Brain worker endpoint is trusted-worker only. Do not expose OpenRouter keys as `VITE_*`, and do not call OpenRouter directly from browser code.
 
-`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists. Production is detected from `NODE_ENV=production` or Netlify `CONTEXT=production`; production command API reads and writes require a signed EVE session unless `GRYYK_ALLOW_FALLBACK_SCOPE=true` is deliberately configured for a controlled exception. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
+`EVEONLINE_CORPORATION_ID` remains the local/test fallback scope when no authenticated session exists and is always included in the authorized corporation list. Set optional `EVEONLINE_AUTHORIZED_CORPORATION_IDS` to a comma-separated list of additional EVE corporation IDs allowed to use the command site. Production is detected from `NODE_ENV=production` or Netlify `CONTEXT=production`; production command API reads and writes require a signed EVE session unless `GRYYK_ALLOW_FALLBACK_SCOPE=true` is deliberately configured for a controlled exception. Authenticated sessions use a signed HTTP-only cookie and take precedence over the fallback scope. The browser does not send or choose corporation identity through headers, query values, request bodies, or local storage.
 
 Optional EVE SSO/session variables:
 
 - `EVE_SESSION_SECRET`: signs session and SSO state cookies. Production must configure this server-side; no development fallback is used when `NODE_ENV=production` or `CONTEXT=production`.
+- `EVEONLINE_AUTHORIZED_CORPORATION_IDS`: comma-separated additional corporation IDs authorized for signed-session command access. Keep this server-side and do not use it for browser-selected scope.
 - `EVE_SSO_CLIENT_ID`: EVE SSO application client ID.
 - `EVE_SSO_CLIENT_SECRET`: server-only EVE SSO application secret used by the live callback token exchange.
 - `EVE_SSO_REDIRECT_URI`: server callback URL for `/api/eve-sso-callback`.
@@ -156,7 +157,7 @@ Optional EVE SSO/session variables:
 
 The live EVE SSO flow discovers authorization, token, and JWKS endpoints from EVE SSO metadata, exchanges authorization codes server-side, validates the EVE access-token JWT against EVE SSO metadata/JWKS, and resolves character corporation identity through read-only ESI lookup. Normal sign-in stores only browser-safe command session identity. Explicit ESI read-sync consent can store sealed token material in the server-side vault, but browser responses never include access tokens, refresh tokens, token hashes, sealing keys, OAuth secrets, MongoDB credentials, or worker secrets.
 
-Signed EVE sessions are authorized for command APIs only when the session corporation matches server-owned `EVEONLINE_CORPORATION_ID`. A signed session from another corporation receives a safe unauthorized response and does not fall back to the configured corporation. No-session local fallback remains available for development and deterministic tests; production no-session command API access receives a safe signed-session-required response.
+Signed EVE sessions are authorized for command APIs only when the session corporation is listed in server-owned `EVEONLINE_CORPORATION_ID` or `EVEONLINE_AUTHORIZED_CORPORATION_IDS`. A signed session from an unlisted corporation receives a safe unauthorized response and does not fall back to a configured corporation. Authorized signed sessions are scoped to their own corporation ID. No-session local fallback remains available for development and deterministic tests; production no-session command API access receives a safe signed-session-required response.
 
 ## MongoDB Data Sources
 
