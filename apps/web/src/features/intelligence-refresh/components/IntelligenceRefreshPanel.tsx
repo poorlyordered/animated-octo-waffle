@@ -1,31 +1,102 @@
 import { useState } from 'react';
-import type { IntelligenceRefreshDomain, IntelligenceRefreshRunSummary } from '@gryyk/contracts';
-import { deriveRefreshRunViewModel, newestRefreshRun } from '../services/intelligenceRefreshSurface';
+import type {
+  IntelligenceRefreshDomain,
+  IntelligenceRefreshMode,
+  IntelligenceRefreshReadinessResponse,
+  IntelligenceRefreshRunDetailResponse,
+  IntelligenceRefreshRunSummary,
+  IntelligenceRefreshTimelineItem
+} from '@gryyk/contracts';
+import { deriveRefreshRunViewModel, deriveTimelineItem, newestRefreshRun } from '../services/intelligenceRefreshSurface';
 
 interface IntelligenceRefreshPanelProps {
   error: string | null;
   loading: boolean;
+  readiness: IntelligenceRefreshReadinessResponse | null;
   runs: IntelligenceRefreshRunSummary[];
-  onCreateRun: (domains: IntelligenceRefreshDomain[], reason?: string) => Promise<unknown>;
+  selectedRun: IntelligenceRefreshRunDetailResponse | null;
+  onCreateRun: (domains: IntelligenceRefreshDomain[], mode?: IntelligenceRefreshMode, reason?: string) => Promise<unknown>;
+  onLoadRun: (runId: string) => Promise<unknown>;
   onRefresh: () => Promise<unknown>;
+  onRetryStep: (runId: string, stepId: string, reason: string) => Promise<unknown>;
+  onSkipStep: (runId: string, stepId: string, reason: string) => Promise<unknown>;
 }
 
 const fullRefreshDomains: IntelligenceRefreshDomain[] = ['numbers', 'opportunity', 'people'];
+const refreshModes: Array<{ value: IntelligenceRefreshMode; label: string }> = [
+  { value: 'full_refresh', label: 'Full refresh' },
+  { value: 'prepare_sources', label: 'Prepare fresh sources' },
+  { value: 'evaluate_existing', label: 'Evaluate existing data' }
+];
+const domainOptions: Array<{ value: IntelligenceRefreshDomain; label: string }> = [
+  { value: 'numbers', label: 'Numbers' },
+  { value: 'opportunity', label: 'Opportunity' },
+  { value: 'people', label: 'People' }
+];
 
-export function IntelligenceRefreshPanel({ error, loading, runs, onCreateRun, onRefresh }: IntelligenceRefreshPanelProps) {
+export function IntelligenceRefreshPanel({
+  error,
+  loading,
+  readiness,
+  runs,
+  selectedRun,
+  onCreateRun,
+  onLoadRun,
+  onRefresh,
+  onRetryStep,
+  onSkipStep
+}: IntelligenceRefreshPanelProps) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [selectedDomains, setSelectedDomains] = useState<IntelligenceRefreshDomain[]>(fullRefreshDomains);
+  const [selectedMode, setSelectedMode] = useState<IntelligenceRefreshMode>('full_refresh');
   const latest = newestRefreshRun(runs);
   const latestView = latest ? deriveRefreshRunViewModel(latest) : null;
 
-  async function handleCreate(domains: IntelligenceRefreshDomain[], label: string) {
+  async function handleCreate(domains: IntelligenceRefreshDomain[], mode: IntelligenceRefreshMode, label: string) {
     setBusyAction(label);
     try {
-      const response = await onCreateRun(domains, `Commander requested ${label} intelligence refresh.`);
+      const response = await onCreateRun(domains, mode, `Commander requested ${label} intelligence refresh.`);
       const duplicate = Boolean(response && typeof response === 'object' && 'duplicate' in response && response.duplicate);
       setActionStatus(duplicate ? 'Active matching refresh run is already queued.' : 'Intelligence refresh run created.');
     } catch (actionError) {
       setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to create intelligence refresh run.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleLoadRun(runId: string) {
+    setBusyAction(`load-${runId}`);
+    try {
+      await onLoadRun(runId);
+      setActionStatus('Refresh run detail loaded.');
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to load refresh run detail.');
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleStepIntent(action: 'retry' | 'skip', item: IntelligenceRefreshTimelineItem) {
+    const detail = selectedRun;
+    if (!detail) return;
+
+    setBusyAction(`${action}-${item.stepId}`);
+    try {
+      const reason =
+        action === 'retry'
+          ? `Commander requested retry intent for ${item.domain} after reviewing the refresh console.`
+          : `Commander skipped ${item.domain} after reviewing missing output consequences.`;
+      if (action === 'retry') {
+        await onRetryStep(detail.run.id, item.stepId, reason);
+        setActionStatus('Retry intent recorded. No worker was dispatched and no external service was executed.');
+      } else {
+        await onSkipStep(detail.run.id, item.stepId, reason);
+        setActionStatus('Skip intent recorded. Missing outputs remain visible for review.');
+      }
+    } catch (actionError) {
+      setActionStatus(actionError instanceof Error ? actionError.message : `Unable to record ${action} intent.`);
     } finally {
       setBusyAction(null);
     }
@@ -57,20 +128,80 @@ export function IntelligenceRefreshPanel({ error, loading, runs, onCreateRun, on
         <div>
           <p className="eyebrow">Gryyk-47 Intelligence</p>
           <h1>Refresh runs</h1>
+          {latestView ? <p>{latestView.statusExplanation.reason}</p> : null}
         </div>
-        <span className={`status-pill status-${latest?.status ?? 'empty'}`}>{latestView?.statusLabel ?? 'none'}</span>
+        <span className={`status-pill status-${latestView?.statusExplanation.tone ?? 'empty'}`}>
+          {latestView?.statusExplanation.label ?? 'none'}
+        </span>
       </header>
 
       <section className="summary" aria-label="Refresh run controls">
-        <h2>Run controls</h2>
+        <h2>Refresh Console</h2>
+        {readiness ? (
+          <div className="refresh-readiness" aria-label="Refresh readiness checklist">
+            <div className={`status-pill status-${readiness.overallStatus}`}>Readiness: {readiness.overallStatus}</div>
+            <div className="coverage-grid">
+              {readiness.items.map((item) => (
+                <article className={`coverage-item coverage-item-${item.status === 'ready' ? 'present' : 'missing'}`} key={item.key}>
+                  <span>{item.label}</span>
+                  <strong>{item.status}</strong>
+                  <p>{item.reason}</p>
+                  {item.requiredAction ? <p className="missing-reasons">{item.requiredAction}</p> : null}
+                  {item.safeDetails.length > 0 ? <p>{item.safeDetails.join(' ')}</p> : null}
+                </article>
+              ))}
+            </div>
+            <p className="notice">{readiness.boundary}</p>
+          </div>
+        ) : null}
+
+        <fieldset className="refresh-console-controls">
+          <legend>Refresh mode</legend>
+          <select value={selectedMode} onChange={(event) => setSelectedMode(event.target.value as IntelligenceRefreshMode)}>
+            {refreshModes.map((mode) => (
+              <option key={mode.value} value={mode.value}>
+                {mode.label}
+              </option>
+            ))}
+          </select>
+        </fieldset>
+
+        <fieldset className="refresh-console-controls">
+          <legend>Domains</legend>
+          <div className="button-row" role="group" aria-label="Refresh domains">
+            {domainOptions.map((domain) => (
+              <label className="checkbox-row" key={domain.value}>
+                <input
+                  checked={selectedDomains.includes(domain.value)}
+                  onChange={(event) => {
+                    setSelectedDomains((current) =>
+                      event.target.checked
+                        ? [...new Set([...current, domain.value])]
+                        : current.filter((item) => item !== domain.value)
+                    );
+                  }}
+                  type="checkbox"
+                />
+                {domain.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="form-actions">
-          <button type="button" onClick={() => void handleCreate(fullRefreshDomains, 'full')} disabled={Boolean(busyAction)}>
+          <button
+            type="button"
+            onClick={() => void handleCreate(selectedDomains, selectedMode, selectedMode)}
+            disabled={Boolean(busyAction) || selectedDomains.length === 0}
+          >
+            {busyAction === selectedMode ? 'Creating...' : 'Create refresh run'}
+          </button>
+          <button type="button" className="secondary" onClick={() => void handleCreate(fullRefreshDomains, 'full_refresh', 'full')} disabled={Boolean(busyAction)}>
             {busyAction === 'full' ? 'Creating...' : 'Start full refresh'}
           </button>
-          <button type="button" onClick={() => void handleCreate(['numbers'], 'numbers')} disabled={Boolean(busyAction)}>
+          <button type="button" className="secondary" onClick={() => void handleCreate(['numbers'], 'full_refresh', 'numbers')} disabled={Boolean(busyAction)}>
             {busyAction === 'numbers' ? 'Creating...' : 'Start Numbers'}
           </button>
-          <button type="button" onClick={() => void handleCreate(['opportunity', 'people'], 'operations')} disabled={Boolean(busyAction)}>
+          <button type="button" className="secondary" onClick={() => void handleCreate(['opportunity', 'people'], 'full_refresh', 'operations')} disabled={Boolean(busyAction)}>
             {busyAction === 'operations' ? 'Creating...' : 'Start Ops'}
           </button>
           <button type="button" className="secondary" onClick={() => void handleRefresh()} disabled={Boolean(busyAction)}>
@@ -113,6 +244,13 @@ export function IntelligenceRefreshPanel({ error, loading, runs, onCreateRun, on
           </dl>
           {latestView.run.evaluation.brainRunId ? <p>Brain run: {latestView.run.evaluation.brainRunId}</p> : null}
           {latestView.run.evaluation.commandBriefId ? <p>Command brief: {latestView.run.evaluation.commandBriefId}</p> : null}
+          <p>
+            Board status: <strong>{latestView.statusExplanation.label}</strong>. {latestView.statusExplanation.reason}
+          </p>
+          {latestView.statusExplanation.nextAction ? <p>{latestView.statusExplanation.nextAction}</p> : null}
+          <button type="button" className="secondary" onClick={() => void handleLoadRun(latestView.run.id)} disabled={Boolean(busyAction)}>
+            {busyAction === `load-${latestView.run.id}` ? 'Loading...' : 'Inspect latest run'}
+          </button>
           <p className="notice">{latestView.run.boundary}</p>
         </section>
       ) : (
@@ -121,6 +259,69 @@ export function IntelligenceRefreshPanel({ error, loading, runs, onCreateRun, on
           <p>No intelligence refresh runs are available.</p>
         </section>
       )}
+
+      {selectedRun ? (
+        <section className="summary" aria-label="Selected refresh run detail">
+          <h2>Run detail</h2>
+          <p>
+            {selectedRun.run.id} · {selectedRun.run.mode.replaceAll('_', ' ')} · {selectedRun.run.status.replaceAll('_', ' ')}
+          </p>
+          <div className="coverage-grid" aria-label="Refresh timeline">
+            {selectedRun.timeline.map((item) => (
+              <article className={`coverage-item coverage-item-${item.statusTone === 'complete' ? 'present' : 'missing'}`} key={item.stepId}>
+                <span>{item.domain}</span>
+                <strong>{item.statusLabel}</strong>
+                {item.owner ? <p>Owner: {item.owner}</p> : null}
+                {item.nextAction ? <p>{item.nextAction}</p> : null}
+                {item.failure ? <p className="missing-reasons">{item.failure}</p> : null}
+                {item.blocker ? <p className="missing-reasons">{item.blocker}</p> : null}
+                {item.artifactLinks.length > 0 ? (
+                  <p>Artifacts: {item.artifactLinks.map((link) => `${link.label} ${link.id}`).join(', ')}</p>
+                ) : null}
+                <div className="button-row">
+                  {item.canRetry ? (
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={Boolean(busyAction)}
+                      onClick={() => void handleStepIntent('retry', item)}
+                    >
+                      {busyAction === `retry-${item.stepId}` ? 'Recording...' : 'Record retry intent'}
+                    </button>
+                  ) : null}
+                  {item.canSkip ? (
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={Boolean(busyAction)}
+                      onClick={() => void handleStepIntent('skip', item)}
+                    >
+                      {busyAction === `skip-${item.stepId}` ? 'Recording...' : 'Skip step'}
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <h2>Event log</h2>
+          {selectedRun.events.length > 0 ? (
+            <ol className="refresh-run-list">
+              {selectedRun.events.map((event) => (
+                <li className="refresh-run-item" key={event.id}>
+                  <strong>{event.message}</strong>
+                  <p>
+                    {event.eventType.replaceAll('_', ' ')} by {event.actor} at {new Date(event.createdAt).toLocaleString()}
+                  </p>
+                  {event.safeDetails.length > 0 ? <p>{event.safeDetails.join(' ')}</p> : null}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>No run events are available.</p>
+          )}
+        </section>
+      ) : null}
 
       <section aria-label="Recent intelligence refresh runs">
         <h2>Recent runs</h2>
@@ -133,16 +334,34 @@ export function IntelligenceRefreshPanel({ error, loading, runs, onCreateRun, on
                   <article className="refresh-run-item">
                     <header>
                       <strong>{view.title}</strong>
-                      <span className={`status-pill status-${run.status}`}>{view.statusLabel}</span>
+                      <span className={`status-pill status-${view.statusExplanation.tone}`}>{view.statusExplanation.label}</span>
                     </header>
                     <p>
                       Requested by {run.requestedBy} at {new Date(run.createdAt).toLocaleString()}
                     </p>
+                    <p>Mode: {run.mode.replaceAll('_', ' ')}</p>
+                    <p>{view.statusExplanation.reason}</p>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={Boolean(busyAction)}
+                      onClick={() => void handleLoadRun(run.id)}
+                    >
+                      {busyAction === `load-${run.id}` ? 'Loading...' : 'Inspect run'}
+                    </button>
                     <div className="coverage-grid" aria-label={`${run.id} domain steps`}>
                       {run.steps.map((step) => (
                         <div className={`coverage-item coverage-item-${step.status === 'completed' ? 'present' : 'missing'}`} key={step.id}>
-                          <span>{step.domain}</span>
-                          <strong>{step.status}</strong>
+                          {(() => {
+                            const timelineItem = deriveTimelineItem(step, run.policy.allowPartialEvaluation);
+                            return (
+                              <>
+                                <span>{step.domain}</span>
+                                <strong>{timelineItem.statusLabel}</strong>
+                                {timelineItem.nextAction ? <p>{timelineItem.nextAction}</p> : null}
+                              </>
+                            );
+                          })()}
                           {step.preparedRequest ? <p>{step.preparedRequest.type}: {step.preparedRequest.id}</p> : null}
                           {step.claimedBy ? <p>Worker: {step.claimedBy}</p> : null}
                           {step.sourceCount !== undefined ? <p>Sources: {step.sourceCount}</p> : null}

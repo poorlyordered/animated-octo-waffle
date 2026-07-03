@@ -22,6 +22,21 @@ test('renders command brief surface with operating leg coverage', async ({ page 
   await assertNoBrowserDiagnostics();
 });
 
+test('renders actionable refresh-derived board status labels with run detail access', async ({ page }, testInfo) => {
+  const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
+
+  await page.goto('/');
+
+  await page.getByLabel('Command surfaces').getByRole('link', { exact: true, name: 'Refresh' }).click();
+  await expectHeading(page, 'Refresh runs');
+  await expectVisibleText(page, 'Completed with missing or stale outputs');
+  await expectVisibleText(page, 'Partial evaluation is available because at least one domain completed.');
+  await page.getByRole('button', { name: 'Inspect latest run' }).click();
+  await expectVisibleText(page, 'Run detail');
+  await expectVisibleText(page, 'Failed: People ESI worker unavailable.');
+  await assertNoBrowserDiagnostics();
+});
+
 test('renders dedicated opportunity surface with provenance and read-only boundaries', async ({ page }, testInfo) => {
   const assertNoBrowserDiagnostics = installBrowserDiagnostics(page, testInfo);
 

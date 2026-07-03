@@ -8,9 +8,14 @@ export function IntelligenceRefreshRoute() {
     <IntelligenceRefreshPanel
       error={intelligenceRefresh.error}
       loading={intelligenceRefresh.loading}
+      readiness={intelligenceRefresh.readiness}
       runs={intelligenceRefresh.runs}
+      selectedRun={intelligenceRefresh.selectedRun}
       onCreateRun={intelligenceRefresh.createRun}
+      onLoadRun={intelligenceRefresh.loadRun}
       onRefresh={intelligenceRefresh.refresh}
+      onRetryStep={intelligenceRefresh.retryStep}
+      onSkipStep={intelligenceRefresh.skipStep}
     />
   );
 }

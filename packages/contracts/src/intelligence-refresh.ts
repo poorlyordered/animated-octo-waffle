@@ -3,6 +3,9 @@ import type { EsiSyncDomain } from './esi-sync.js';
 export const intelligenceRefreshDomains = ['numbers', 'opportunity', 'people'] as const;
 export type IntelligenceRefreshDomain = (typeof intelligenceRefreshDomains)[number];
 
+export const intelligenceRefreshModes = ['evaluate_existing', 'prepare_sources', 'full_refresh'] as const;
+export type IntelligenceRefreshMode = (typeof intelligenceRefreshModes)[number];
+
 export const intelligenceRefreshRunStatuses = [
   'queued',
   'running',
@@ -87,10 +90,78 @@ export interface IntelligenceRefreshPolicySummary {
   boundary: string;
 }
 
+export interface IntelligenceRefreshReadinessItem {
+  key: string;
+  label: string;
+  status: 'ready' | 'blocked' | 'warning' | 'unknown';
+  reason: string;
+  requiredAction?: string;
+  safeDetails: string[];
+}
+
+export interface IntelligenceRefreshReadinessResponse {
+  overallStatus: 'ready' | 'blocked' | 'degraded';
+  items: IntelligenceRefreshReadinessItem[];
+  boundary: string;
+  createdAt: string;
+}
+
+export interface IntelligenceRefreshArtifactLink {
+  label: string;
+  type: IntelligenceRefreshPreparedRequestType | 'command_brief' | 'brain_run';
+  id: string;
+}
+
+export interface IntelligenceRefreshTimelineItem {
+  stepId: string;
+  domain: IntelligenceRefreshDomain;
+  technicalStatus: IntelligenceRefreshStepStatus;
+  statusLabel: string;
+  statusTone: 'ready' | 'processing' | 'warning' | 'blocked' | 'failed' | 'complete';
+  owner?: string;
+  startedAt?: string;
+  completedAt?: string;
+  failedAt?: string;
+  skippedAt?: string;
+  blocker?: string;
+  failure?: string;
+  warnings: string[];
+  artifactLinks: IntelligenceRefreshArtifactLink[];
+  canRetry: boolean;
+  canSkip: boolean;
+  nextAction?: string;
+}
+
+export interface IntelligenceRefreshRunEvent {
+  id: string;
+  runId: string;
+  corporationId: string;
+  eventType:
+    | 'run_created'
+    | 'readiness_checked'
+    | 'step_prepared'
+    | 'step_claimed'
+    | 'step_completed'
+    | 'step_failed'
+    | 'step_retry_requested'
+    | 'step_skipped'
+    | 'evaluation_started'
+    | 'evaluation_completed'
+    | 'evaluation_failed';
+  actor: string;
+  stepId?: string;
+  domain?: IntelligenceRefreshDomain;
+  message: string;
+  safeDetails: string[];
+  artifactLinks: IntelligenceRefreshArtifactLink[];
+  createdAt: string;
+}
+
 export interface IntelligenceRefreshRunSummary {
   id: string;
   corporationId: string;
   requestedBy: string;
+  mode: IntelligenceRefreshMode;
   requestedDomains: IntelligenceRefreshDomain[];
   status: IntelligenceRefreshRunStatus;
   steps: IntelligenceRefreshDomainStep[];
@@ -109,11 +180,18 @@ export interface IntelligenceRefreshRunSummary {
 
 export interface CreateIntelligenceRefreshRunRequest {
   domains: IntelligenceRefreshDomain[];
+  mode?: IntelligenceRefreshMode;
   reason?: string;
 }
 
 export interface IntelligenceRefreshRunResponse {
   run: IntelligenceRefreshRunSummary;
+}
+
+export interface IntelligenceRefreshRunDetailResponse extends IntelligenceRefreshRunResponse {
+  timeline: IntelligenceRefreshTimelineItem[];
+  events: IntelligenceRefreshRunEvent[];
+  boundary: string;
 }
 
 export interface CreateIntelligenceRefreshRunResponse extends IntelligenceRefreshRunResponse {
@@ -122,6 +200,24 @@ export interface CreateIntelligenceRefreshRunResponse extends IntelligenceRefres
 
 export interface IntelligenceRefreshRunListResponse {
   runs: IntelligenceRefreshRunSummary[];
+}
+
+export interface IntelligenceRefreshStepRetryRequest {
+  reason: string;
+}
+
+export interface IntelligenceRefreshStepRetryResponse extends IntelligenceRefreshRunResponse {
+  event: IntelligenceRefreshRunEvent;
+  boundary: string;
+}
+
+export interface IntelligenceRefreshStepSkipRequest {
+  reason: string;
+}
+
+export interface IntelligenceRefreshStepSkipResponse extends IntelligenceRefreshRunResponse {
+  event: IntelligenceRefreshRunEvent;
+  boundary: string;
 }
 
 export interface IntelligenceRefreshWorkerListResponse {

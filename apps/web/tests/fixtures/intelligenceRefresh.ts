@@ -7,6 +7,7 @@ export const queuedRefreshRun: IntelligenceRefreshRunSummary = {
   id: 'refresh-queued',
   corporationId: '917701062',
   requestedBy: 'session:Ari Voss',
+  mode: 'full_refresh',
   requestedDomains: ['numbers', 'opportunity', 'people'],
   status: 'queued',
   steps: [
@@ -40,6 +41,91 @@ export const queuedRefreshRun: IntelligenceRefreshRunSummary = {
   warnings: [],
   boundary: refreshBoundary
 };
+
+export const refreshReadiness = {
+  overallStatus: 'ready',
+  createdAt: '2026-07-03T00:00:00.000Z',
+  boundary: refreshBoundary,
+  items: [
+    {
+      key: 'session',
+      label: 'Signed session',
+      status: 'ready',
+      reason: 'Signed EVE session is active.',
+      safeDetails: ['Commander scope resolved from server session.']
+    },
+    {
+      key: 'esi_vault',
+      label: 'ESI consent',
+      status: 'ready',
+      reason: 'Active read-only ESI consent is available for Numbers preparation.',
+      safeDetails: ['Numbers scopes available.']
+    },
+    {
+      key: 'model_provider',
+      label: 'Brain provider',
+      status: 'ready',
+      reason: 'Brain provider configuration is available.',
+      safeDetails: ['OpenRouter configuration present.']
+    }
+  ]
+} as const;
+
+export const refreshTimeline = [
+  {
+    stepId: 'step-numbers',
+    domain: 'numbers',
+    technicalStatus: 'completed',
+    statusLabel: 'Completed source capture',
+    statusTone: 'complete',
+    completedAt: '2026-07-03T00:02:00.000Z',
+    warnings: [],
+    artifactLinks: [{ label: 'Numbers sync', type: 'esi_sync_request', id: 'sync-numbers' }],
+    canRetry: false,
+    canSkip: false
+  },
+  {
+    stepId: 'step-people',
+    domain: 'people',
+    technicalStatus: 'failed',
+    statusLabel: 'Failed: People ESI worker unavailable.',
+    statusTone: 'failed',
+    failedAt: '2026-07-03T00:03:00.000Z',
+    failure: 'People ESI worker unavailable.',
+    warnings: [],
+    artifactLinks: [],
+    canRetry: true,
+    canSkip: true,
+    nextAction: 'Record retry intent or skip with missing People outputs.'
+  }
+] as const;
+
+export const refreshEvents = [
+  {
+    id: 'event-refresh-created',
+    runId: 'refresh-partial',
+    corporationId: '917701062',
+    eventType: 'run_created',
+    actor: 'session:Ari Voss',
+    message: 'Commander created full refresh run.',
+    safeDetails: ['Domains: numbers, opportunity, people'],
+    artifactLinks: [],
+    createdAt: '2026-07-03T00:00:00.000Z'
+  },
+  {
+    id: 'event-people-failed',
+    runId: 'refresh-partial',
+    corporationId: '917701062',
+    eventType: 'step_failed',
+    actor: 'worker:people-worker',
+    stepId: 'step-people',
+    domain: 'people',
+    message: 'People step failed.',
+    safeDetails: ['People ESI worker unavailable.'],
+    artifactLinks: [],
+    createdAt: '2026-07-03T00:03:00.000Z'
+  }
+] as const;
 
 export const partialRefreshRun: IntelligenceRefreshRunSummary = {
   ...queuedRefreshRun,

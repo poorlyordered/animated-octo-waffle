@@ -151,11 +151,55 @@ export async function installCommandSurfaceApiFixtures(page: Page, options: Comm
   await page.route('**/api/intelligence-refresh**', (route) => {
     const url = new URL(route.request().url());
     const detailMatch = url.pathname.match(/\/api\/intelligence-refresh\/([^/]+)$/);
+    const retryMatch = url.pathname.match(/\/api\/intelligence-refresh\/([^/]+)\/steps\/([^/]+)\/retry$/);
+    const skipMatch = url.pathname.match(/\/api\/intelligence-refresh\/([^/]+)\/steps\/([^/]+)\/skip$/);
+
+    if (url.pathname.endsWith('/readiness')) {
+      return json(route, commandSurfaceFixtures.intelligenceRefresh.readiness);
+    }
+
+    if (retryMatch) {
+      const run =
+        intelligenceRefreshRuns.find((item) => item.id === decodeURIComponent(retryMatch[1])) ??
+        commandSurfaceFixtures.intelligenceRefresh.completed;
+      return json(route, {
+        run,
+        event: {
+          ...commandSurfaceFixtures.intelligenceRefresh.events[1],
+          id: 'event-browser-retry',
+          runId: run.id,
+          eventType: 'step_retry_requested',
+          actor: 'session:Browser Smoke Commander',
+          message: 'Commander recorded retry intent.'
+        },
+        boundary: run.boundary
+      });
+    }
+
+    if (skipMatch) {
+      const run =
+        intelligenceRefreshRuns.find((item) => item.id === decodeURIComponent(skipMatch[1])) ??
+        commandSurfaceFixtures.intelligenceRefresh.completed;
+      return json(route, {
+        run,
+        event: {
+          ...commandSurfaceFixtures.intelligenceRefresh.events[1],
+          id: 'event-browser-skip',
+          runId: run.id,
+          eventType: 'step_skipped',
+          actor: 'session:Browser Smoke Commander',
+          message: 'Commander skipped step.'
+        },
+        boundary: run.boundary
+      });
+    }
 
     if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as { mode?: string } | null;
       const created = {
         ...commandSurfaceFixtures.intelligenceRefresh.queued,
         id: 'refresh-browser-created',
+        mode: body?.mode ?? 'full_refresh',
         createdAt: '2026-07-03T00:10:00.000Z',
         updatedAt: '2026-07-03T00:10:00.000Z',
         requestedBy: 'session:Browser Smoke Commander'
@@ -168,7 +212,12 @@ export async function installCommandSurfaceApiFixtures(page: Page, options: Comm
       const run =
         intelligenceRefreshRuns.find((item) => item.id === decodeURIComponent(detailMatch[1])) ??
         commandSurfaceFixtures.intelligenceRefresh.completed;
-      return json(route, { run });
+      return json(route, {
+        run,
+        timeline: commandSurfaceFixtures.intelligenceRefresh.timeline,
+        events: commandSurfaceFixtures.intelligenceRefresh.events.map((event) => ({ ...event, runId: run.id })),
+        boundary: run.boundary
+      });
     }
 
     return json(route, { runs: intelligenceRefreshRuns });

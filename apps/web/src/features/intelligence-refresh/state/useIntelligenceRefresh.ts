@@ -2,38 +2,59 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   CreateIntelligenceRefreshRunResponse,
   IntelligenceRefreshDomain,
+  IntelligenceRefreshMode,
+  IntelligenceRefreshReadinessResponse,
+  IntelligenceRefreshRunDetailResponse,
   IntelligenceRefreshRunSummary
 } from '@gryyk/contracts';
-import { createIntelligenceRefreshRun, listIntelligenceRefreshRuns } from '../services/intelligenceRefreshClient';
+import {
+  createIntelligenceRefreshRun,
+  getIntelligenceRefreshReadiness,
+  getIntelligenceRefreshRun,
+  listIntelligenceRefreshRuns,
+  retryIntelligenceRefreshStep,
+  skipIntelligenceRefreshStep
+} from '../services/intelligenceRefreshClient';
 
 interface IntelligenceRefreshState {
   error: string | null;
   loading: boolean;
+  readiness: IntelligenceRefreshReadinessResponse | null;
   runs: IntelligenceRefreshRunSummary[];
-  createRun: (domains: IntelligenceRefreshDomain[], reason?: string) => Promise<CreateIntelligenceRefreshRunResponse>;
+  selectedRun: IntelligenceRefreshRunDetailResponse | null;
+  createRun: (
+    domains: IntelligenceRefreshDomain[],
+    mode?: IntelligenceRefreshMode,
+    reason?: string
+  ) => Promise<CreateIntelligenceRefreshRunResponse>;
+  loadRun: (runId: string) => Promise<IntelligenceRefreshRunDetailResponse>;
   refresh: () => Promise<IntelligenceRefreshRunSummary[]>;
+  retryStep: (runId: string, stepId: string, reason: string) => Promise<void>;
+  skipStep: (runId: string, stepId: string, reason: string) => Promise<void>;
 }
 
 export function useIntelligenceRefresh(): IntelligenceRefreshState {
-  const [state, setState] = useState<Omit<IntelligenceRefreshState, 'createRun' | 'refresh'>>({
+  const [state, setState] = useState<Omit<IntelligenceRefreshState, 'createRun' | 'loadRun' | 'refresh' | 'retryStep' | 'skipStep'>>({
     error: null,
     loading: true,
+    readiness: null,
+    selectedRun: null,
     runs: []
   });
 
   const refresh = useCallback(async () => {
-    const response = await listIntelligenceRefreshRuns();
-    setState({ error: null, loading: false, runs: response.runs });
+    const [readiness, response] = await Promise.all([getIntelligenceRefreshReadiness(), listIntelligenceRefreshRuns()]);
+    setState((current) => ({ ...current, error: null, loading: false, readiness, runs: response.runs }));
     return response.runs;
   }, []);
 
   useEffect(() => {
     let active = true;
 
-    listIntelligenceRefreshRuns()
-      .then((response) => {
+    Promise.all([getIntelligenceRefreshReadiness(), listIntelligenceRefreshRuns()])
+      .then(([readiness, response]) => {
         if (active) {
-          setState({ error: null, loading: false, runs: response.runs });
+          setState({ error: null, loading: false, readiness, selectedRun: null, runs: response.runs });
         }
       })
       .catch((error: unknown) => {
@@ -41,6 +62,8 @@ export function useIntelligenceRefresh(): IntelligenceRefreshState {
           setState({
             error: error instanceof Error ? error.message : 'Unable to load intelligence refresh runs.',
             loading: false,
+            readiness: null,
+            selectedRun: null,
             runs: []
           });
         }
@@ -54,10 +77,27 @@ export function useIntelligenceRefresh(): IntelligenceRefreshState {
   return {
     ...state,
     refresh,
-    createRun: async (domains, reason) => {
-      const response = await createIntelligenceRefreshRun({ domains, reason });
+    loadRun: async (runId) => {
+      const detail = await getIntelligenceRefreshRun(runId);
+      setState((current) => ({ ...current, selectedRun: detail }));
+      return detail;
+    },
+    createRun: async (domains, mode = 'full_refresh', reason) => {
+      const response = await createIntelligenceRefreshRun({ domains, mode, reason });
       await refresh();
       return response;
+    },
+    retryStep: async (runId, stepId, reason) => {
+      await retryIntelligenceRefreshStep(runId, stepId, { reason });
+      const detail = await getIntelligenceRefreshRun(runId);
+      setState((current) => ({ ...current, selectedRun: detail }));
+      await refresh();
+    },
+    skipStep: async (runId, stepId, reason) => {
+      await skipIntelligenceRefreshStep(runId, stepId, { reason });
+      const detail = await getIntelligenceRefreshRun(runId);
+      setState((current) => ({ ...current, selectedRun: detail }));
+      await refresh();
     }
   };
 }
