@@ -1,7 +1,6 @@
 import { createSessionScope, readDeterministicIdentity } from './_shared/eve-sso';
 import { resolveLiveEveSsoIdentity, resolveLiveEveSsoVaultConsent } from './_shared/eve-sso-live';
 import { AuthScopeError, SignedSessionRequiredError, authScopeErrorResponse, getAuthScope, type FunctionEvent } from './_shared/auth-scope';
-import { isProductionRuntime } from './_shared/env';
 import { redirectResponse, safeErrorResponse } from './_shared/http';
 import { getMongoDb } from './_shared/mongo';
 import {
@@ -12,6 +11,7 @@ import {
   readSessionSecret,
   readSignedCookieValue,
   serializeCookie,
+  shouldUseSecureCookies,
   sessionCookieName,
   ssoStateCookieName
 } from './_shared/session-cookie';
@@ -35,10 +35,7 @@ export async function handler(event: FunctionEvent) {
     const parsedState = eveSsoStateSchema.safeParse(readSignedCookieValue<unknown>(stateCookie, secret));
 
     if (!parsedState.success || parsedState.data.state !== state || isExpired(parsedState.data.expiresAt)) {
-      return {
-        ...safeErrorResponse('Invalid EVE SSO state', 400),
-        multiValueHeaders: { 'set-cookie': [clearCookie(ssoStateCookieName)] }
-      };
+      return redirectResponse('/?auth_error=invalid_sso_state', [clearCookie(ssoStateCookieName)]);
     }
 
     if (parsedState.data.purpose === 'esi-sync-consent') {
@@ -76,7 +73,7 @@ export async function handler(event: FunctionEvent) {
     const sessionCookie = serializeCookie(
       sessionCookieName,
       createSignedCookieValue(session, secret),
-      { maxAge: 12 * 60 * 60, secure: isProductionRuntime() }
+      { maxAge: 12 * 60 * 60, secure: shouldUseSecureCookies(event) }
     );
 
     return redirectResponse(parsedState.data.returnTo, [sessionCookie, clearCookie(ssoStateCookieName)]);

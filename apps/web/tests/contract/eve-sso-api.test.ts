@@ -433,6 +433,24 @@ describe('EVE SSO API contract', () => {
     expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain('Secure');
   });
 
+  it('sets Secure on SSO cookies for HTTPS forwarded Netlify requests', async () => {
+    global.fetch = createMetadataFetchMock();
+    setEnv({
+      EVE_SESSION_SECRET: 'test-secret',
+      EVE_SSO_CLIENT_ID: 'client-id',
+      EVE_SSO_REDIRECT_URI: 'https://gryyk-47.netlify.app/api/eve-sso-callback',
+      EVE_SSO_METADATA_URL: 'https://sso.test/metadata'
+    });
+
+    const response = await startHandler({
+      headers: { 'x-forwarded-proto': 'https' },
+      httpMethod: 'GET',
+      queryStringParameters: { returnTo: '/' }
+    });
+
+    expect(response.multiValueHeaders?.['set-cookie']?.[0]).toContain('Secure');
+  });
+
   it('requires an authorized signed session before storing ESI sync consent', async () => {
     const state = signedStateCookieWithPurpose('esi-sync-consent');
     setLiveEnv({
@@ -502,7 +520,8 @@ describe('EVE SSO API contract', () => {
       }
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(302);
+    expect(response.headers?.location).toBe('/?auth_error=invalid_sso_state');
     expect(response.body).not.toContain('test-secret');
   });
 });

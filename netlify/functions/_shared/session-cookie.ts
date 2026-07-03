@@ -12,6 +12,10 @@ export interface CookieOptions {
   secure?: boolean;
 }
 
+export interface CookieRequest {
+  headers?: Record<string, string | undefined>;
+}
+
 export function readSessionSecret(env: NodeJS.ProcessEnv = process.env): string {
   const configured = env.EVE_SESSION_SECRET ?? env.GRYYK_SESSION_SECRET;
 
@@ -24,6 +28,23 @@ export function readSessionSecret(env: NodeJS.ProcessEnv = process.env): string 
   }
 
   return 'local-development-session-secret';
+}
+
+export function shouldUseSecureCookies(
+  event?: CookieRequest,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  if (isProductionRuntime(env)) {
+    return true;
+  }
+
+  const forwardedProto = event?.headers?.['x-forwarded-proto'] ?? event?.headers?.['X-Forwarded-Proto'];
+  if (forwardedProto?.split(',').some((value) => value.trim().toLowerCase() === 'https')) {
+    return true;
+  }
+
+  const siteUrl = env.URL ?? env.DEPLOY_URL;
+  return Boolean(siteUrl?.startsWith('https://'));
 }
 
 export function randomState(bytes = 24): string {

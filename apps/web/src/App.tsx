@@ -57,6 +57,12 @@ export function App() {
 function SessionApp() {
   const sessionState = useSessionState();
   const gateState = sessionAccessGateState(sessionState);
+  const authCallbackError =
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('auth_error');
+  const displayError =
+    authCallbackError === 'invalid_sso_state'
+      ? 'EVE SSO sign-in expired or could not be verified. Start sign-in again.'
+      : sessionState.error;
 
   const session = sessionState.session;
 
@@ -70,5 +76,5 @@ function SessionApp() {
   }
 
   const loginGateState = gateState === 'command' ? 'unavailable' : gateState;
-  return <LoginGate error={sessionState.error} gateState={loginGateState} session={sessionState.session} signOut={sessionState.signOut} />;
+  return <LoginGate error={displayError} gateState={loginGateState} session={sessionState.session} signOut={sessionState.signOut} />;
 }
