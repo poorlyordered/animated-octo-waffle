@@ -54,7 +54,13 @@ import {
   revokeEsiVaultResponse,
   startEsiSyncConsentResponse
 } from '../../tests/fixtures/esiSync';
-import { completedRefreshRun, queuedRefreshRun } from '../../tests/fixtures/intelligenceRefresh';
+import {
+  completedRefreshRun,
+  queuedRefreshRun,
+  refreshEvents,
+  refreshReadiness,
+  refreshTimeline
+} from '../../tests/fixtures/intelligenceRefresh';
 import { operationsHealthResponse } from '../../tests/fixtures/operationsHealth';
 import { productionEvidenceListResponse } from '../../tests/fixtures/productionEvidence';
 
@@ -272,7 +278,10 @@ export const commandSurfaceFixtures = {
   },
   intelligenceRefresh: {
     completed: completedRefreshRun,
-    queued: queuedRefreshRun
+    queued: queuedRefreshRun,
+    readiness: refreshReadiness,
+    timeline: refreshTimeline,
+    events: refreshEvents
   },
   retries: {
     handoff: handoffRetryResponse,

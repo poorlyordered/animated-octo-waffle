@@ -2,6 +2,7 @@ import {
   intelligenceRefreshDomains,
   type IntelligenceRefreshDomain,
   type IntelligenceRefreshDomainStep,
+  type IntelligenceRefreshRunEvent,
   type IntelligenceRefreshRunStatus,
   type IntelligenceRefreshStepResult
 } from '../../../packages/contracts/src/index';
@@ -109,4 +110,57 @@ export function assertNoUnsafeRefreshFields(value: unknown): void {
 
 export function assertSafeRefreshWorkerResult(result: IntelligenceRefreshStepResult): void {
   assertNoUnsafeRefreshFields(result);
+}
+
+export function refreshStepStatusLabel(step: IntelligenceRefreshDomainStep): string {
+  if (step.status === 'queued') return 'Waiting for preparation';
+  if (step.status === 'prepared') return 'Waiting for worker';
+  if (step.status === 'running') return 'Pulling source data';
+  if (step.status === 'completed') return 'Completed source capture';
+  if (step.status === 'blocked') return step.failure ? `Blocked: ${step.failure.reason}` : 'Blocked';
+  if (step.status === 'failed') return step.failure ? `Failed: ${step.failure.reason}` : 'Failed';
+  if (step.status === 'skipped') return step.failure ? `Skipped: ${step.failure.reason}` : 'Skipped';
+  return 'Unknown status';
+}
+
+export function refreshStepStatusTone(step: IntelligenceRefreshDomainStep) {
+  if (step.status === 'completed') return 'complete' as const;
+  if (step.status === 'failed') return 'failed' as const;
+  if (step.status === 'blocked') return 'blocked' as const;
+  if (step.status === 'skipped') return 'warning' as const;
+  if (step.status === 'queued' || step.status === 'prepared') return 'ready' as const;
+  return 'processing' as const;
+}
+
+export function canRetryRefreshStep(step: IntelligenceRefreshDomainStep): boolean {
+  return step.status === 'failed' || step.status === 'blocked';
+}
+
+export function canSkipRefreshStep(step: IntelligenceRefreshDomainStep, allowPartialEvaluation: boolean): boolean {
+  return allowPartialEvaluation && (step.status === 'failed' || step.status === 'blocked' || step.status === 'prepared');
+}
+
+export function refreshEventId(): string {
+  return `event-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function refreshRunCreatedEvent(input: {
+  runId: string;
+  corporationId: string;
+  actor: string;
+  domains: IntelligenceRefreshDomain[];
+  mode: string;
+  createdAt: string;
+}): IntelligenceRefreshRunEvent {
+  return {
+    id: refreshEventId(),
+    runId: input.runId,
+    corporationId: input.corporationId,
+    eventType: 'run_created',
+    actor: input.actor,
+    message: `Commander created ${input.mode.replaceAll('_', ' ')} refresh run.`,
+    safeDetails: [`Domains: ${input.domains.join(', ')}`],
+    artifactLinks: [],
+    createdAt: input.createdAt
+  };
 }

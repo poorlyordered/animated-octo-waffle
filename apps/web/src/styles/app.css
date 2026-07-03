@@ -380,6 +380,29 @@ h2 {
   color: #ffd58a;
 }
 
+.status-ready,
+.status-complete {
+  border-color: #5bbf8a;
+  color: #9df0bd;
+}
+
+.status-warning,
+.status-degraded {
+  border-color: #d8a23d;
+  color: #ffd58a;
+}
+
+.status-blocked,
+.status-failed {
+  border-color: #cc5a5a;
+  color: #ff9b9b;
+}
+
+.status-empty {
+  border-color: #4a5561;
+  color: #9fb0bd;
+}
+
 .notice,
 .summary,
 .coverage,
@@ -515,8 +538,27 @@ textarea {
   width: auto;
 }
 
+.refresh-readiness,
+.refresh-console-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.refresh-console-controls {
+  border: 1px solid #2d3740;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.refresh-console-controls legend {
+  padding: 0 6px;
+  color: #f0d17b;
+  font-weight: 700;
+}
+
 .form-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 

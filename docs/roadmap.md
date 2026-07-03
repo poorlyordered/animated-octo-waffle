@@ -1286,3 +1286,38 @@ Validation:
 
 - Spec: `specs/060-commander-chat-interface`
 - Local validation covered targeted commander-chat contract/unit tests, typecheck, lint, full Jest tests, Playwright browser smoke tests, production build, and diff hygiene.
+
+Recommended next slice:
+
+### M61: Manual Refresh Console - Complete
+
+Goal: give commanders a manual, inspectable way to prepare data pulls and Brain evaluation runs, with clear user feedback for every `processing`, blocked, failed, stale, or ready state shown on the command board.
+
+Delivered capabilities:
+
+- Dedicated Refresh Console as the control surface for data retrieval and evaluation, while the command board remains a summary surface
+- Refresh mode selection for evaluating existing stored data, preparing fresh ESI/source pulls, or running a full Numbers/Opportunity/People refresh
+- Domain selection for Numbers, Opportunity, and People, with refresh modes clarifying whether ESI source preparation and Brain evaluation readiness are included
+- Readiness checklist before run creation covering signed session, authorized corporation, ESI vault/scopes, model provider configuration, MongoDB access, worker callback configuration, and missing prerequisites
+- Durable refresh run creation that records selected domains, mode, requested-by metadata, timestamps, and no-execution boundaries
+- Run detail timeline with step-specific states such as waiting for worker, pulling source data, normalizing, evaluating, ready for review, failed, blocked, skipped, and completed
+- Run event log for commander actions, worker claims, completions, failures, retries, skipped steps, evaluation outcomes, and linked artifacts
+- Safe retry controls for failed or blocked steps that create auditable retry intent without dispatching workers or executing external services from the browser
+- Clearer command-board labels that replace generic `processing` with actionable states such as waiting for worker, evaluation pending, ESI authorization required, using stale brief, or last refresh failed
+- Links from board status pills to the relevant refresh run detail when processing, stale, failed, or blocked state is derived from a run
+
+Deferred follow-up slices:
+
+- Dev/admin-only manual advance controls for local operations, gated separately from production commander actions
+- Rich artifact diffing between prior and current refresh outputs
+- Server-side polling or push-style updates for run timelines
+- Saved refresh presets for common Numbers/Opportunity/People refresh combinations
+
+Boundaries:
+
+- No browser ESI fetch, browser OpenRouter calls, worker dispatch from browser paths, request-path long-running collection, EVE write, role/access/standing mutation, wallet/asset/contract movement, token exposure, raw provider payload exposure, or unapproved external-service mutation
+
+Validation plan:
+
+- Spec Kit feature: `specs/061-manual-refresh-console`
+- Local validation covered targeted refresh Jest tests, typecheck, lint, full Jest tests, targeted and full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene.
