@@ -174,6 +174,19 @@ Request:
 }
 ```
 
+### `POST /api/intelligence-refresh-worker/:runId/steps/:stepId/skip`
+
+Skips a claimed refresh step with a safe reason when the worker determines no useful source delta is available.
+
+Request:
+
+```json
+{
+  "workerId": "numbers-refresh-worker",
+  "reason": "No eligible source delta is available."
+}
+```
+
 ### `POST /api/intelligence-refresh-worker/:runId/evaluate`
 
 Starts Brain evaluation for a refresh run that is completed or partial-evaluation ready.

@@ -98,9 +98,9 @@ evaluating -> failed
 queued -> prepared
 queued -> blocked
 prepared -> running
-prepared -> skipped
 running -> completed
 running -> failed
+running -> skipped
 ```
 
 ### Evaluation

@@ -6,7 +6,8 @@ import {
   intelligenceRefreshWorkerCompleteRequestSchema,
   intelligenceRefreshWorkerEvaluateRequestSchema,
   intelligenceRefreshWorkerFailRequestSchema,
-  intelligenceRefreshWorkerListResponseSchema
+  intelligenceRefreshWorkerListResponseSchema,
+  intelligenceRefreshWorkerSkipRequestSchema
 } from '@gryyk/contracts';
 import { completedRefreshRun, queuedRefreshRun } from '../fixtures/intelligenceRefresh';
 
@@ -29,6 +30,10 @@ describe('intelligence refresh worker API contract', () => {
     expect(intelligenceRefreshWorkerFailRequestSchema.parse({ workerId: 'people-worker-1', reason: 'Source unavailable.' })).toEqual({
       workerId: 'people-worker-1',
       reason: 'Source unavailable.'
+    });
+    expect(intelligenceRefreshWorkerSkipRequestSchema.parse({ workerId: 'people-worker-1', reason: 'No eligible source delta.' })).toEqual({
+      workerId: 'people-worker-1',
+      reason: 'No eligible source delta.'
     });
     expect(intelligenceRefreshWorkerEvaluateRequestSchema.parse({ workerId: 'brain-worker-1', allowPartial: true })).toEqual({
       workerId: 'brain-worker-1',

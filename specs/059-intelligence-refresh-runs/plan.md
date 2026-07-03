@@ -85,8 +85,10 @@ apps/web/src/
 
 apps/web/tests/
 ├── contract/
-├── unit/
-└── e2e/
+└── unit/
+
+apps/web/e2e/
+└── intelligence-refresh.spec.ts
 ```
 
 **Structure Decision**: Add a new bounded `intelligence-refresh` feature that coordinates existing stores and workers by id/status rather than moving ESI, ingestion, or Brain execution into the browser request path. Keep shared contracts in `packages/contracts`, persistence/rules in `netlify/functions/_shared`, route handlers in `netlify/functions`, and command-center UI under `apps/web/src/features/intelligence-refresh`.

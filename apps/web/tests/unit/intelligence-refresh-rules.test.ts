@@ -37,9 +37,19 @@ describe('intelligence refresh rules', () => {
       failure: { reason: 'Source unavailable', failedAt: new Date().toISOString() },
       warnings: []
     };
+    const skipped: IntelligenceRefreshDomainStep = {
+      id: 'step-people',
+      domain: 'people',
+      status: 'skipped',
+      skippedAt: new Date().toISOString(),
+      sectionStatuses: [],
+      failure: { reason: 'No source delta', failedAt: new Date().toISOString() },
+      warnings: []
+    };
 
     expect(refreshEvaluationReady([completedStep('numbers'), failed], false)).toBe(false);
     expect(refreshEvaluationReady([completedStep('numbers'), failed], true)).toBe(true);
+    expect(refreshEvaluationReady([completedStep('numbers'), skipped], true)).toBe(true);
     expect(refreshEvaluationReady([failed], true)).toBe(false);
   });
 

@@ -303,6 +303,42 @@ export async function failRefreshStep(
   });
 }
 
+export async function skipRefreshStep(
+  db: Db,
+  runId: string,
+  stepId: string,
+  workerId: string,
+  reason: string
+): Promise<IntelligenceRefreshRunSummary | null> {
+  const run = await loadRefreshRunForTransition(db, runId);
+  if (!run) return null;
+
+  const step = run.steps.find((item) => item.id === stepId);
+  if (!step || step.status !== 'running' || step.claimedBy !== workerId) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const steps = run.steps.map((item) =>
+    item.id === stepId
+      ? {
+          ...item,
+          status: 'skipped' as const,
+          skippedAt: now,
+          failure: { reason: reason.slice(0, 500), failedAt: now },
+          warnings: [...item.warnings, `Skipped: ${reason.slice(0, 500)}`]
+        }
+      : item
+  );
+
+  return replaceRunState(db, run.id, {
+    steps,
+    status: deriveRefreshRunStatus(steps),
+    evaluation: evaluationForSteps(steps, run.evaluation),
+    updatedAt: now
+  });
+}
+
 export async function markRefreshEvaluationRunning(
   db: Db,
   runId: string,

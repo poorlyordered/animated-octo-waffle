@@ -4,9 +4,9 @@
 
 **Created**: 2026-07-03
 
-**Status**: Draft
+**Status**: Complete
 
-**Input**: User description: "Follow the Spec Kit driven development plan for M59. Build Intelligence Refresh Runs: commander-approved refresh orchestration that creates durable refresh run records, prepares eligible Numbers/People/Opportunity data pull requests, lets trusted workers complete data collection outside request paths, triggers Brain evaluation after completed or partial data refresh, stores the resulting command brief with provenance, and exposes browser-safe run status, partial failures, retry state, and final evaluation. Keep EVE writes, worker dispatch, token material, and player-impacting actions out of browser/request paths."
+**Input**: User description: "Follow the Spec Kit driven development plan for M59. Build Intelligence Refresh Runs: commander-approved refresh orchestration that creates durable refresh run records, prepares eligible Numbers/People/Opportunity data pull requests, lets trusted workers complete data collection outside request paths, triggers Brain evaluation after completed or partial data refresh, stores the resulting command brief with provenance, and exposes browser-safe run status, partial failures, safe follow-up readiness, and final evaluation. Keep EVE writes, worker dispatch, token material, and player-impacting actions out of browser/request paths."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,7 +38,7 @@ As a trusted worker, I can claim a refresh run step, link it to the appropriate 
 
 1. **Given** a queued refresh run with eligible domain steps, **When** an authorized worker claims a step, **Then** that step moves to running with worker identity, timestamps, and a link to the prepared sync or ingestion request.
 2. **Given** a worker completes a data collection step, **When** the worker submits a safe result summary, **Then** the refresh run records completion, source counts, freshness metadata, and safe failure/warning details without raw tokens or raw ESI payloads.
-3. **Given** one domain fails while another completes, **When** the run is inspected, **Then** the system shows partial status and preserves enough detail for retry or evaluation with partial data.
+3. **Given** one domain fails or is skipped while another completes, **When** the run is inspected, **Then** the system shows partial status and preserves enough detail for safe follow-up review or evaluation with partial data.
 
 ---
 
@@ -64,13 +64,13 @@ As a commander, I can see current and recent refresh runs, their domain step sta
 
 **Why this priority**: Refresh orchestration must be visible and auditable, not a hidden background job.
 
-**Independent Test**: Load the command center with fixture refresh runs in queued, running, partial, failed, and completed states. The UI shows safe status, domain details, retry/evaluation readiness, and final brief linkage without exposing secrets or raw source data.
+**Independent Test**: Load the command center with fixture refresh runs in queued, running, partial, failed, skipped, and completed states. The UI shows safe status, domain details, evaluation readiness, safe follow-up reasons, and final brief linkage without exposing secrets or raw source data.
 
 **Acceptance Scenarios**:
 
 1. **Given** recent refresh runs exist, **When** the commander opens the command center, **Then** they can inspect each run's requested domains, step statuses, created/completed timestamps, worker-safe summaries, and final evaluation state.
 2. **Given** a refresh run completed with a command brief, **When** the commander views the run, **Then** they can navigate to or identify the generated command brief and its provenance.
-3. **Given** a refresh run is failed or partial, **When** the commander inspects it, **Then** the UI shows safe failure reasons and retry readiness without offering direct EVE writes, worker dispatch, or external-service execution.
+3. **Given** a refresh run is failed or partial, **When** the commander inspects it, **Then** the UI shows safe failure or skipped-step reasons and evaluation/follow-up readiness without offering direct EVE writes, worker dispatch, retry execution, or external-service execution.
 
 ### Operating Model Alignment
 

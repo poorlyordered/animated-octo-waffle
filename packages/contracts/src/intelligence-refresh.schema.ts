@@ -144,6 +144,13 @@ export const intelligenceRefreshWorkerFailRequestSchema = z
   })
   .strict();
 
+export const intelligenceRefreshWorkerSkipRequestSchema = z
+  .object({
+    workerId: z.string().min(1).max(200),
+    reason: z.string().min(1).max(500)
+  })
+  .strict();
+
 export const intelligenceRefreshWorkerEvaluateRequestSchema = z
   .object({
     workerId: z.string().min(1).max(200),

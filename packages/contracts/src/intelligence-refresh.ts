@@ -145,6 +145,11 @@ export interface IntelligenceRefreshWorkerFailRequest {
   reason: string;
 }
 
+export interface IntelligenceRefreshWorkerSkipRequest {
+  workerId: string;
+  reason: string;
+}
+
 export interface IntelligenceRefreshWorkerEvaluateRequest {
   workerId: string;
   allowPartial?: boolean;

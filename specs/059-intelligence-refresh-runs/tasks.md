@@ -68,14 +68,14 @@
 ### Tests for User Story 2
 
 - [X] T018 [P] [US2] Add worker contract tests in `apps/web/tests/contract/intelligence-refresh-worker-api.test.ts`
-- [X] T019 [P] [US2] Add worker transition unit tests in `apps/web/tests/unit/intelligence-refresh-store.test.ts`
+- [X] T019 [P] [US2] Add worker transition and skip unit tests in `apps/web/tests/unit/intelligence-refresh-store.test.ts`
 
 ### Implementation for User Story 2
 
 - [X] T020 [US2] Implement worker list endpoint in `netlify/functions/intelligence-refresh-worker.ts`
 - [X] T021 [US2] Implement worker step claim endpoint in `netlify/functions/intelligence-refresh-worker.ts`
 - [X] T022 [US2] Implement worker step complete endpoint in `netlify/functions/intelligence-refresh-worker.ts`
-- [X] T023 [US2] Implement worker step fail endpoint in `netlify/functions/intelligence-refresh-worker.ts`
+- [X] T023 [US2] Implement worker step fail and skip endpoints in `netlify/functions/intelligence-refresh-worker.ts`
 - [X] T024 [US2] Update aggregate refresh run status after step transitions in `netlify/functions/_shared/intelligence-refresh-store.ts`
 - [X] T025 [US2] Reject unsafe worker result material in `netlify/functions/intelligence-refresh-worker.ts`
 

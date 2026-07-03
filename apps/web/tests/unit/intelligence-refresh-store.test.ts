@@ -4,7 +4,8 @@ import {
   completeRefreshStep,
   createOrFindActiveRefreshRun,
   failRefreshStep,
-  listClaimableRefreshSteps
+  listClaimableRefreshSteps,
+  skipRefreshStep
 } from '../../../../netlify/functions/_shared/intelligence-refresh-store';
 
 type Document = Record<string, unknown>;
@@ -118,12 +119,14 @@ describe('intelligence refresh store', () => {
       intelligence_refresh_runs: []
     });
 
+    const startedAt = performance.now();
     const first = await createOrFindActiveRefreshRun(db, {
       corporationId,
       requestedBy: commander,
       domains: ['numbers', 'people', 'opportunity'],
       reason: 'Refresh command intelligence.'
     });
+    const elapsedMs = performance.now() - startedAt;
     const second = await createOrFindActiveRefreshRun(db, {
       corporationId,
       requestedBy: commander,
@@ -132,6 +135,7 @@ describe('intelligence refresh store', () => {
     });
 
     expect(first.duplicate).toBe(false);
+    expect(elapsedMs).toBeLessThan(2000);
     expect(first.run.steps.map((step) => step.status)).toEqual(['prepared', 'prepared', 'prepared']);
     expect(first.run.steps.map((step) => step.preparedRequest?.type)).toEqual([
       'esi_sync_request',
@@ -215,6 +219,44 @@ describe('intelligence refresh store', () => {
     expect(failed?.steps.find((step) => step.domain === 'opportunity')).toMatchObject({
       status: 'failed',
       failure: { reason: 'Source unavailable.' }
+    });
+  });
+
+  it('skips only steps claimed by the requesting worker and keeps partial evaluation ready', async () => {
+    const { db } = createDb({
+      esi_token_vaults: [],
+      esi_sync_requests: [],
+      people_ingestion_requests: [],
+      research_requests: [],
+      intelligence_refresh_runs: []
+    });
+    const created = await createOrFindActiveRefreshRun(db, {
+      corporationId,
+      requestedBy: commander,
+      domains: ['people', 'opportunity'],
+      reason: 'Refresh available operational intelligence.'
+    });
+
+    const peopleStep = created.run.steps.find((step) => step.domain === 'people')!;
+    const opportunityStep = created.run.steps.find((step) => step.domain === 'opportunity')!;
+    await claimRefreshStep(db, created.run.id, peopleStep.id, 'people-worker-1');
+    await completeRefreshStep(db, created.run.id, peopleStep.id, 'people-worker-1', {
+      sourceCount: 7,
+      summary: 'People completed.',
+      sectionStatuses: [{ key: 'membership', status: 'captured' }],
+      warnings: []
+    });
+    await claimRefreshStep(db, created.run.id, opportunityStep.id, 'opportunity-worker-1');
+
+    const wrongWorker = await skipRefreshStep(db, created.run.id, opportunityStep.id, 'opportunity-worker-2', 'No source delta.');
+    const skipped = await skipRefreshStep(db, created.run.id, opportunityStep.id, 'opportunity-worker-1', 'No source delta.');
+
+    expect(wrongWorker).toBeNull();
+    expect(skipped?.status).toBe('waiting_for_evaluation');
+    expect(skipped?.evaluation.status).toBe('ready');
+    expect(skipped?.steps.find((step) => step.domain === 'opportunity')).toMatchObject({
+      status: 'skipped',
+      failure: { reason: 'No source delta.' }
     });
   });
 });

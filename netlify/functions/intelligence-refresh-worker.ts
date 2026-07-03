@@ -4,7 +4,8 @@ import {
   intelligenceRefreshWorkerClaimRequestSchema,
   intelligenceRefreshWorkerCompleteRequestSchema,
   intelligenceRefreshWorkerEvaluateRequestSchema,
-  intelligenceRefreshWorkerFailRequestSchema
+  intelligenceRefreshWorkerFailRequestSchema,
+  intelligenceRefreshWorkerSkipRequestSchema
 } from '../../packages/contracts/src/index';
 import type { FunctionEvent } from './_shared/auth-scope';
 import { buildBrainPromptContext } from './_shared/brain-context';
@@ -20,7 +21,8 @@ import {
   failRefreshStep,
   findRefreshRun,
   listClaimableRefreshSteps,
-  markRefreshEvaluationRunning
+  markRefreshEvaluationRunning,
+  skipRefreshStep
 } from './_shared/intelligence-refresh-store';
 import { jsonResponse, safeErrorResponse } from './_shared/http';
 import { getMongoDb } from './_shared/mongo';
@@ -56,7 +58,7 @@ export async function handler(event: FunctionEvent) {
       return safeErrorResponse('Method not allowed', 405);
     }
 
-    const stepMatch = path.match(/\/intelligence-refresh-worker\/([^/]+)\/steps\/([^/]+)\/(claim|complete|fail)$/);
+    const stepMatch = path.match(/\/intelligence-refresh-worker\/([^/]+)\/steps\/([^/]+)\/(claim|complete|fail|skip)$/);
     if (stepMatch) {
       const [, encodedRunId, encodedStepId, action] = stepMatch;
       const runId = decodeURIComponent(encodedRunId);
@@ -76,9 +78,15 @@ export async function handler(event: FunctionEvent) {
         return run ? jsonResponse(200, { run }) : safeErrorResponse('Refresh step is not completable by this worker', 409);
       }
 
-      const request = intelligenceRefreshWorkerFailRequestSchema.parse(body);
-      const run = await failRefreshStep(db, runId, stepId, request.workerId, request.reason);
-      return run ? jsonResponse(200, { run }) : safeErrorResponse('Refresh step is not failable by this worker', 409);
+      if (action === 'fail') {
+        const request = intelligenceRefreshWorkerFailRequestSchema.parse(body);
+        const run = await failRefreshStep(db, runId, stepId, request.workerId, request.reason);
+        return run ? jsonResponse(200, { run }) : safeErrorResponse('Refresh step is not failable by this worker', 409);
+      }
+
+      const request = intelligenceRefreshWorkerSkipRequestSchema.parse(body);
+      const run = await skipRefreshStep(db, runId, stepId, request.workerId, request.reason);
+      return run ? jsonResponse(200, { run }) : safeErrorResponse('Refresh step is not skippable by this worker', 409);
     }
 
     const evaluateMatch = path.match(/\/intelligence-refresh-worker\/([^/]+)\/evaluate$/);
