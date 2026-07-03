@@ -81,6 +81,8 @@ export const commandBriefSchema = z.object({
   createdAt: z.string().datetime(),
   model: z.string().min(1),
   promptVersion: z.string().min(1),
+  refreshRunId: z.string().min(1).optional(),
+  refreshSourceSummary: z.array(z.string().min(1).max(1000)).optional(),
   sourceCount: z.number().int().nonnegative(),
   sourceReferences: z.array(sourceReferenceSchema),
   confidence: z.number().min(0).max(1),

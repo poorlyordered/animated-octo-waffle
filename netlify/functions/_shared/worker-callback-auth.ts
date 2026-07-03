@@ -9,7 +9,8 @@ export type WorkerCallbackClass =
   | 'esi_sync'
   | 'people_ingestion'
   | 'opportunity_ingestion'
-  | 'brain_worker';
+  | 'brain_worker'
+  | 'intelligence_refresh';
 
 const workerClassSecretEnv: Record<WorkerCallbackClass, string> = {
   worker_handoff: 'WORKER_HANDOFF_CALLBACK_SECRET',
@@ -17,7 +18,8 @@ const workerClassSecretEnv: Record<WorkerCallbackClass, string> = {
   esi_sync: 'ESI_SYNC_WORKER_CALLBACK_SECRET',
   people_ingestion: 'PEOPLE_INGESTION_WORKER_CALLBACK_SECRET',
   opportunity_ingestion: 'OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET',
-  brain_worker: 'BRAIN_WORKER_CALLBACK_SECRET'
+  brain_worker: 'BRAIN_WORKER_CALLBACK_SECRET',
+  intelligence_refresh: 'INTELLIGENCE_REFRESH_WORKER_CALLBACK_SECRET'
 };
 
 export function assertWorkerCallbackAuthorized(

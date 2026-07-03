@@ -359,6 +359,33 @@ textarea {
   border-color: #e8c46b;
 }
 
+.refresh-run-list {
+  display: grid;
+  gap: 12px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.refresh-run-item {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #2d3740;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.refresh-run-item header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.intelligence-refresh .coverage-item p {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 860px) {
   .login-gate {
     align-content: start;

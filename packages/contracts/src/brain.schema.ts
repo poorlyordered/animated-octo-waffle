@@ -7,13 +7,15 @@ export const brainWorkerRunRequestSchema = z.object({
   corporationId: z.string().min(1).max(100),
   focus: z.string().min(1).max(200).optional(),
   workerId: z.string().min(1).max(200),
-  reason: z.string().min(1).max(500).optional()
+  reason: z.string().min(1).max(500).optional(),
+  refreshRunId: z.string().min(1).max(200).optional()
 });
 
 export const brainRunSummarySchema = researchRequestSchema.extend({
   provider: brainProviderSchema,
   model: z.string().min(1),
   promptVersion: z.string().min(1),
+  refreshRunId: z.string().min(1).optional(),
   completedAt: z.string().datetime().optional(),
   failedAt: z.string().datetime().optional()
 });

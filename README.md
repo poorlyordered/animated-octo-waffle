@@ -11,7 +11,7 @@ Start here:
 - Worker policy: `docs/worker-policy.md`
 - Spec Kit commands: `.agents/skills/`
 
-Current phase: M57 Auth Landing Gate is complete on `057-auth-landing-gate`. It adds an EVE SSO landing gate based on the original front page while requiring signed production sessions before command information is shown.
+Current phase: M59 Intelligence Refresh Runs is complete on `059-intelligence-refresh-runs`. It adds durable refresh orchestration for Numbers, Opportunity, and People, worker-owned step transitions, Brain evaluation linkage, and a browser-visible refresh status surface.
 
 ## What Has Been Built
 
@@ -25,6 +25,7 @@ Gryyk-47 now has the core command-center loop in place:
 - Opportunity: official-news/research context, dedicated Opportunity surface, decision/queue workflow, ingestion preparation, worker callbacks, and retry controls.
 - People: member profiles, ingestion provenance, leadership follow-ups, People-origin decisions, approved queued work, worker handoff preparation, and retry controls.
 - ESI Token Vault Sync: explicit consent, sealed server-side token vault records, read-sync request preparation for Numbers/People/Opportunity, worker-owned sync completion/failure, and read-only sync history.
+- Intelligence Refresh Runs: signed commanders can create durable Numbers/Opportunity/People refresh runs, trusted workers can report domain step outcomes, and Brain evaluation can link command briefs back to the refresh run.
 - Operations Health: read-only health summary for command APIs, ingestion posture, retries, worker secret configuration, filters, and browser-local saved views.
 - Production Evidence: value-free deployment evidence recorder with local filters and unsafe secret/token/credential rejection.
 
@@ -78,8 +79,9 @@ Then open the local Netlify URL, usually:
 6. Use Decision Records to review the commander's decision backlog. Filters, pagination, and saved views organize records without changing their status.
 7. Use Automation Queue and Worker Handoffs to inspect queued work and worker lifecycle state. Preparing a handoff creates durable metadata only; it does not dispatch or execute work.
 8. Use ESI Token Vault to start explicit read-sync consent, inspect vault status, revoke consent, and prepare duplicate-safe read-sync requests for available domains. Tokens stay server-side and sealed.
-9. Use Operations Health to inspect command API evidence, ingestion posture, retry posture, worker callback secret state, and warnings.
-10. Use Production Evidence to record value-free deployment posture after validation. Do not paste secrets, tokenized URLs, raw production records, connection strings, JWTs, cookies, or private keys; unsafe material is rejected before storage.
+9. Use Intelligence Refresh Runs to start a durable refresh across Numbers, Opportunity, and People, then inspect prepared domain steps, failures, warnings, and Brain/command-brief evaluation linkage.
+10. Use Operations Health to inspect command API evidence, ingestion posture, retry posture, worker callback secret state, and warnings.
+11. Use Production Evidence to record value-free deployment posture after validation. Do not paste secrets, tokenized URLs, raw production records, connection strings, JWTs, cookies, or private keys; unsafe material is rejected before storage.
 
 The expected operating pattern is: inspect evidence, record a decision, approve or reject explicitly, create queued work only after approval, prepare handoffs for workers when appropriate, and review safe outcomes/retries later.
 
@@ -123,6 +125,7 @@ Optional class-specific worker callback secrets:
 - `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`
 - `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`
 - `BRAIN_WORKER_CALLBACK_SECRET`
+- `INTELLIGENCE_REFRESH_WORKER_CALLBACK_SECRET`
 
 Class-specific worker secrets override the shared fallback for their worker class. See `docs/worker-policy.md`.
 
@@ -167,6 +170,7 @@ Current notes:
 
 - The Command Brief MVP expects `research_briefs` and `research_requests` in `MONGODB_DB`.
 - The OpenRouter Brain writes validated command intelligence to `research_briefs` and Brain lifecycle records to `research_requests` with focus `gryyk-47-brain`.
+- Intelligence Refresh Runs store orchestration state in `intelligence_refresh_runs`; evaluation-linked Brain runs and command briefs include `refreshRunId` provenance.
 - The Numbers operating layer expects processed read-only `numbers_snapshots` records in `MONGODB_DB`.
 - The `gryyk47` database contains broader corporation context collections such as `corporation_context`, `strategic_decisions`, `asset_information`, and `research_briefs`.
 - There is no collection named `Gryyk-47` in the checked `gryyk47` database. Treat `Gryyk-47` as the product/corporation label unless a future data audit identifies a real database or collection with that exact name.

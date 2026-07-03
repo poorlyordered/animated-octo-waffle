@@ -1,6 +1,6 @@
 # Production Operations Runbook
 
-Last reviewed: 2026-06-30
+Last reviewed: 2026-07-03
 
 This runbook converts the production-readiness gaps into an operator checklist. It does not authorize a live deploy by itself and must not contain secret values, access tokens, connection strings, callback secrets, OAuth secrets, sealing keys, or production data exports.
 
@@ -30,7 +30,7 @@ Verify in the Netlify project settings before deploy:
 - `EVE_SESSION_SECRET` is configured; `GRYYK_SESSION_SECRET` should remain legacy-only.
 - `ESI_TOKEN_VAULT_SEALING_KEY` is configured for production token vault sealing.
 - `WORKER_CALLBACK_SECRET` is configured as fallback while worker classes migrate.
-- Class-specific worker secrets are configured for each production worker class that will call back: `WORKER_HANDOFF_CALLBACK_SECRET`, `RETRY_WORKER_CALLBACK_SECRET`, `ESI_SYNC_WORKER_CALLBACK_SECRET`, `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`, `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`, and `BRAIN_WORKER_CALLBACK_SECRET`.
+- Class-specific worker secrets are configured for each production worker class that will call back: `WORKER_HANDOFF_CALLBACK_SECRET`, `RETRY_WORKER_CALLBACK_SECRET`, `ESI_SYNC_WORKER_CALLBACK_SECRET`, `PEOPLE_INGESTION_WORKER_CALLBACK_SECRET`, `OPPORTUNITY_INGESTION_WORKER_CALLBACK_SECRET`, `BRAIN_WORKER_CALLBACK_SECRET`, and `INTELLIGENCE_REFRESH_WORKER_CALLBACK_SECRET`.
 - `OPENROUTER_API_KEY` is configured server-side for trusted Brain worker calls.
 - Optional Brain provider values are configured only when needed: `OPENROUTER_MODEL`, `OPENROUTER_BASE_URL`, `OPENROUTER_APP_URL`, `OPENROUTER_APP_TITLE`, `OPENROUTER_TIMEOUT_MS`, and `OPENROUTER_MAX_COMPLETION_TOKENS`.
 - `EVE_SSO_CLIENT_ID`, `EVE_SSO_CLIENT_SECRET`, and `EVE_SSO_REDIRECT_URI` are configured for live EVE SSO.
@@ -61,7 +61,7 @@ Verify with the production MongoDB owner before deploy:
 - The production database named by `MONGODB_DB` is intentionally selected.
 - The application user has least-privilege access for the collections used by the command loop.
 - Backups are enabled and restore expectations are documented.
-- Index posture is reviewed for command-loop collections, including `research_briefs`, `research_requests`, `numbers_snapshots`, `strategic_decisions`, `automation_queue`, `worker_handoffs`, `retry_requests`, `esi_token_vaults`, `esi_sync_requests`, `member_profiles`, `leadership_followups`, People ingestion history, and Opportunity ingestion history.
+- Index posture is reviewed for command-loop collections, including `research_briefs`, `research_requests`, `numbers_snapshots`, `strategic_decisions`, `automation_queue`, `worker_handoffs`, `retry_requests`, `esi_token_vaults`, `esi_sync_requests`, `intelligence_refresh_runs`, `member_profiles`, `leadership_followups`, People ingestion history, and Opportunity ingestion history.
 - Retention expectations are documented for audit/history collections before production data grows.
 - Restore drills or provider restore evidence exist outside this repo before treating production data as durable.
 
@@ -100,7 +100,7 @@ After an approved deploy:
 - Confirm the deployed commit SHA matches the reviewed merge commit.
 - Confirm the command center loads without browser console errors from app code.
 - Confirm `/api/eve-session` returns browser-safe command scope data.
-- Confirm command brief, Numbers, Opportunity, People, Decision Records, and Automation Queue surfaces render.
+- Confirm command brief, Numbers, Opportunity, People, Decision Records, Automation Queue, ESI Sync, and Intelligence Refresh Runs surfaces render.
 - Confirm worker and retry controls still present no-execution boundary language.
 - Confirm no browser response includes MongoDB credentials, session secrets, OAuth secrets, worker secrets, sealing keys, access tokens, refresh tokens, or token hashes.
 

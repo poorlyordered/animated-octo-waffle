@@ -41,7 +41,8 @@ export async function handler(event: FunctionEvent) {
       model: providerResult.model,
       provider: providerResult.provider,
       createdAt,
-      sourceReferences: context.sourceReferences
+      sourceReferences: context.sourceReferences,
+      refreshRunId: request.refreshRunId
     });
     const completedRun = await completeBrainRun(db, run.id, {
       model: providerResult.model,

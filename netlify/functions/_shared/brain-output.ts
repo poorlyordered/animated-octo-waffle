@@ -114,6 +114,8 @@ export function brainOutputToCommandBriefDocument(input: {
   provider: string;
   createdAt: Date;
   sourceReferences?: CommandBrief['sourceReferences'];
+  refreshRunId?: string;
+  refreshSourceSummary?: string[];
 }) {
   const id = new ObjectId();
   const sourceReferences = mergeSourceReferences(input.output.sourceReferences, input.sourceReferences ?? []);
@@ -128,6 +130,8 @@ export function brainOutputToCommandBriefDocument(input: {
     updatedAt: input.createdAt,
     model: input.model,
     promptVersion: brainPromptVersion,
+    refreshRunId: input.refreshRunId,
+    refreshSourceSummary: input.refreshSourceSummary,
     sourceCount: sourceReferences.length,
     sourceReferences,
     confidence: input.output.confidence,

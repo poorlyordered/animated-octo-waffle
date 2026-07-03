@@ -10,6 +10,7 @@ export interface BrainWorkerRunRequest {
   focus?: string;
   workerId: string;
   reason?: string;
+  refreshRunId?: string;
 }
 
 export interface BrainRunSummary {
@@ -20,6 +21,7 @@ export interface BrainRunSummary {
   provider: BrainProvider;
   model: string;
   promptVersion: string;
+  refreshRunId?: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
