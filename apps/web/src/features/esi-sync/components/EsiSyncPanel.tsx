@@ -11,6 +11,7 @@ import type {
   StartEsiSyncConsentResponse
 } from '@gryyk/contracts';
 import { RetryAuditHistory } from '../../retry-audit/components/RetryAuditHistory';
+import { esiConsentStatusMessage, navigateToEsiConsentAuthorization } from '../services/esiSyncConsentNavigation';
 
 interface EsiSyncPanelProps {
   error: string | null;
@@ -36,13 +37,16 @@ export function EsiSyncPanel({
   onStartConsent
 }: EsiSyncPanelProps) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [consentAuthorizationUrl, setConsentAuthorizationUrl] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
   async function handleStartConsent() {
     setBusyAction('consent');
     try {
       const response = await onStartConsent();
-      setActionStatus(`${response.boundary} Requested scopes: ${response.requestedScopes.join(', ')}.`);
+      setConsentAuthorizationUrl(response.authorizationUrl);
+      setActionStatus(esiConsentStatusMessage(response));
+      navigateToEsiConsentAuthorization(response);
     } catch (actionError) {
       setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to start ESI consent.');
     } finally {
@@ -54,6 +58,7 @@ export function EsiSyncPanel({
     setBusyAction('revoke');
     try {
       const response = await onRevokeVault();
+      setConsentAuthorizationUrl(null);
       setActionStatus(`Vault status: ${response.vault.status}. ${response.vault.boundaries.join(' ')}`);
     } catch (actionError) {
       setActionStatus(actionError instanceof Error ? actionError.message : 'Unable to revoke ESI consent.');
@@ -218,6 +223,15 @@ export function EsiSyncPanel({
           </button>
         </div>
         {actionStatus ? <p className="notice">{actionStatus}</p> : null}
+        {consentAuthorizationUrl ? (
+          <p className="notice">
+            If the redirect does not start, use the{' '}
+            <a href={consentAuthorizationUrl} rel="noreferrer">
+              EVE authorization link
+            </a>
+            .
+          </p>
+        ) : null}
         <p className="notice">This surface prepares read-only sync requests only. It does not fetch ESI data, dispatch workers, schedule retries, write to EVE, or move wallets, assets, contracts, or roles.</p>
       </section>
 
