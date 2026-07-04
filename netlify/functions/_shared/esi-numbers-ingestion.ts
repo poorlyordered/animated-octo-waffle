@@ -2,19 +2,12 @@ import type { Db } from 'mongodb';
 import type { NumbersSectionKey, NumbersSectionStatus } from '../../../packages/contracts/src/index';
 import { createNumbersSnapshot } from './numbers-store';
 import { findActiveVaultById } from './esi-token-vault-store';
-import { missingScopes, requiredScopesForDomain, unsealTokenMaterial } from './esi-token-vault';
+import { missingScopes, requiredScopesForDomain } from './esi-token-vault';
 import type { EsiSyncRequestDocument } from './esi-sync-request-store';
 import type { NumbersDocument } from './numbers-normalizer';
+import { createEsiWorkerAdapter, type EsiWorkerEndpointResult } from './esi-worker-adapter';
 
 type Fetch = typeof fetch;
-
-interface EndpointResult {
-  label: string;
-  ok: boolean;
-  data: unknown;
-  failure?: string;
-  url: string;
-}
 
 export async function ingestNumbersFromEsiSyncRequest(
   db: Db,
@@ -36,21 +29,42 @@ export async function ingestNumbersFromEsiSyncRequest(
     throw new Error(`ESI token vault is missing required scopes: ${missing.join(', ')}`);
   }
 
-  const accessToken = unsealTokenMaterial(vault.sealedAccessToken, env);
-  const baseUrl = trimTrailingSlash(env.EVE_ESI_BASE_URL ?? 'https://esi.evetech.net/latest');
+  const adapter = await createEsiWorkerAdapter({ db, corporationId: syncRequest.corporationId, vaultId: syncRequest.vaultId, vault, env, fetchImpl });
   const corporationId = encodeURIComponent(syncRequest.corporationId);
   const endpoints = await Promise.all([
-    fetchEndpoint('Wallet divisions', `${baseUrl}/corporations/${corporationId}/wallets/?datasource=tranquility`, accessToken, fetchImpl),
-    fetchEndpoint('Corporation assets', `${baseUrl}/corporations/${corporationId}/assets/?datasource=tranquility`, accessToken, fetchImpl),
-    fetchEndpoint('Industry jobs', `${baseUrl}/corporations/${corporationId}/industry/jobs/?datasource=tranquility`, accessToken, fetchImpl),
-    fetchEndpoint('Market orders', `${baseUrl}/corporations/${corporationId}/orders/?datasource=tranquility`, accessToken, fetchImpl)
+    adapter.readEndpoint({
+      label: 'Wallet divisions',
+      sourceId: 'esi:wallet-divisions',
+      path: `/corporations/${corporationId}/wallets/`
+    }),
+    adapter.readEndpoint({
+      label: 'Corporation assets',
+      sourceId: 'esi:corporation-assets',
+      path: `/corporations/${corporationId}/assets/`,
+      paginated: true,
+      maxPages: 25
+    }),
+    adapter.readEndpoint({
+      label: 'Industry jobs',
+      sourceId: 'esi:industry-jobs',
+      path: `/corporations/${corporationId}/industry/jobs/`,
+      paginated: true,
+      maxPages: 10
+    }),
+    adapter.readEndpoint({
+      label: 'Market orders',
+      sourceId: 'esi:market-orders',
+      path: `/corporations/${corporationId}/orders/`,
+      paginated: true,
+      maxPages: 25
+    })
   ]);
   const now = new Date().toISOString();
   const failures = endpoints.flatMap((endpoint) => endpoint.failure ?? []);
   const sourceReferences = endpoints.map((endpoint) => ({
     title: endpoint.label,
     url: endpoint.url,
-    sourceId: `esi:${endpoint.label.toLowerCase().replace(/\s+/g, '-')}`
+    sourceId: endpoint.sourceId
   }));
   const document: Omit<NumbersDocument, '_id' | 'id'> = {
     corporationId: syncRequest.corporationId,
@@ -122,20 +136,7 @@ export async function ingestNumbersFromEsiSyncRequest(
   };
 }
 
-async function fetchEndpoint(label: string, url: string, accessToken: string, fetchImpl: Fetch): Promise<EndpointResult> {
-  try {
-    const response = await fetchImpl(url, { headers: { authorization: `Bearer ${accessToken}` } });
-    if (!response.ok) {
-      return { label, ok: false, data: null, failure: `${label} ESI endpoint returned ${response.status}.`, url };
-    }
-
-    return { label, ok: true, data: await response.json(), url };
-  } catch {
-    return { label, ok: false, data: null, failure: `${label} ESI endpoint could not be read.`, url };
-  }
-}
-
-function section(key: NumbersSectionKey, label: string, summary: string, endpoint: EndpointResult) {
+function section(key: NumbersSectionKey, label: string, summary: string, endpoint: EsiWorkerEndpointResult) {
   const status: NumbersSectionStatus = endpoint.ok ? 'healthy' : 'missing';
   return {
     key,
@@ -165,8 +166,4 @@ function industrySummary(data: unknown): string {
 
 function marketSummary(data: unknown): string {
   return `Corporation market returned ${Array.isArray(data) ? data.length : 0} order records.`;
-}
-
-function trimTrailingSlash(value: string): string {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
 }

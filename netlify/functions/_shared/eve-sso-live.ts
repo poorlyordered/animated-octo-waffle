@@ -172,6 +172,44 @@ export async function exchangeAuthorizationCode(
   };
 }
 
+export async function refreshEveSsoToken(
+  refreshToken: string,
+  config: EveSsoLiveConfig,
+  fetchImpl: Fetch = fetch,
+  metadata?: ResolvedEveSsoMetadata
+): Promise<{ accessToken: string; refreshToken?: string; accessTokenExpiresAt: string; grantedScopes: string[] }> {
+  const tokenUrl = config.tokenUrl ?? metadata?.tokenEndpoint ?? (await fetchEveSsoMetadata(config, fetchImpl)).tokenEndpoint;
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken
+  });
+  const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`, 'utf8').toString('base64');
+  const response = await fetchImpl(tokenUrl, {
+    method: 'POST',
+    headers: {
+      authorization: `Basic ${credentials}`,
+      'content-type': 'application/x-www-form-urlencoded'
+    },
+    body
+  });
+
+  if (!response.ok) {
+    throw new Error('EVE SSO token refresh failed');
+  }
+
+  const payload = (await response.json()) as TokenExchangeResponse;
+  if (!payload.access_token) {
+    throw new Error('EVE SSO token refresh failed');
+  }
+
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    accessTokenExpiresAt: new Date(Date.now() + (payload.expires_in ?? 1200) * 1000).toISOString(),
+    grantedScopes: payload.scope?.split(/\s+/).filter(Boolean) ?? config.scopes.split(/\s+/).filter(Boolean)
+  };
+}
+
 export async function fetchEveSsoMetadata(
   config: Pick<EveSsoLiveConfig, 'metadataUrl' | 'authorizationUrl' | 'tokenUrl'>,
   fetchImpl: Fetch = fetch,

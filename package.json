@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.221",
+    "@lgriffin/esi.ts": "^6.0.0",
     "@openrouter/ai-sdk-provider": "^2.10.0",
     "@vitejs/plugin-react": "^5.1.1",
     "ai": "^6.0.219",

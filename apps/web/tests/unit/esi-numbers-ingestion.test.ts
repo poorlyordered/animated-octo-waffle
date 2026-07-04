@@ -8,9 +8,14 @@ type Document = Record<string, unknown>;
 
 function createDb(vault: Document) {
   const numbersSnapshots: Document[] = [];
+  let currentVault = vault;
   const collections = {
     esi_token_vaults: {
-      findOne: jest.fn(async () => vault)
+      findOne: jest.fn(async () => currentVault),
+      findOneAndUpdate: jest.fn(async (_filter: Document, operation: { $set: Document }) => {
+        currentVault = { ...currentVault, ...operation.$set };
+        return currentVault;
+      })
     },
     numbers_snapshots: {
       insertOne: jest.fn(async (document: Document) => {
@@ -30,7 +35,12 @@ function createDb(vault: Document) {
 
 const env = {
   ESI_TOKEN_VAULT_SEALING_KEY: 'test-sealing-key',
-  EVE_ESI_BASE_URL: 'https://esi.test/latest'
+  EVE_ESI_BASE_URL: 'https://esi.test/latest',
+  EVE_SSO_CLIENT_ID: 'client-id',
+  EVE_SSO_CLIENT_SECRET: 'client-secret',
+  EVE_SSO_REDIRECT_URI: 'https://app.test/callback',
+  EVE_SSO_METADATA_URL: 'https://sso.test/metadata',
+  EVE_SSO_TOKEN_URL: 'https://sso.test/token'
 };
 
 const syncRequest: EsiSyncRequestDocument = {
@@ -55,7 +65,7 @@ const syncRequest: EsiSyncRequestDocument = {
   updatedAt: '2026-06-02T13:00:00.000Z'
 };
 
-function activeVault() {
+function activeVault(overrides: Partial<Document> = {}) {
   return {
     id: 'vault-1',
     corporationId: '123456789',
@@ -66,11 +76,12 @@ function activeVault() {
     requestedScopes: syncRequest.requiredScopes,
     sealedAccessToken: sealTokenMaterial('access-token', env),
     sealedRefreshToken: sealTokenMaterial('refresh-token', env),
-    accessTokenExpiresAt: '2026-06-02T14:00:00.000Z',
+    accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     consentedAt: '2026-06-02T12:00:00.000Z',
     status: 'active',
     createdAt: '2026-06-02T12:00:00.000Z',
-    updatedAt: '2026-06-02T12:00:00.000Z'
+    updatedAt: '2026-06-02T12:00:00.000Z',
+    ...overrides
   };
 }
 
@@ -112,5 +123,60 @@ describe('ESI Numbers ingestion', () => {
 
     expect(result.failures).toEqual(['Corporation assets ESI endpoint returned 403.']);
     expect(result.sectionStatuses).toContainEqual({ key: 'assets', status: 'missing' });
+  });
+
+  it('collects paginated assets and preserves successful partial snapshots', async () => {
+    const { db, numbersSnapshots } = createDb(activeVault());
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/wallets/')) return new Response(JSON.stringify([{ balance: 1200 }]));
+      if (url.includes('/assets/') && !url.includes('page=')) {
+        return new Response(JSON.stringify([{ item_id: 1 }]), { headers: { 'x-pages': '3' } });
+      }
+      if (url.includes('/assets/') && url.includes('page=2')) return new Response(JSON.stringify([{ item_id: 2 }]));
+      if (url.includes('/assets/') && url.includes('page=3')) return new Response(JSON.stringify([{ item_id: 3 }]));
+      if (url.includes('/industry/jobs/')) return new Response(JSON.stringify([]));
+      return new Response(JSON.stringify({ error: 'temporary' }), { status: 503 });
+    }) as jest.MockedFunction<typeof fetch>;
+
+    const result = await ingestNumbersFromEsiSyncRequest(db, syncRequest, env, fetchMock);
+
+    expect(result.failures).toEqual(['Market orders ESI endpoint returned 503.']);
+    expect(result.sectionStatuses).toContainEqual({ key: 'assets', status: 'healthy' });
+    expect(result.sectionStatuses).toContainEqual({ key: 'market', status: 'missing' });
+    expect(JSON.stringify(numbersSnapshots[0])).not.toContain('access-token');
+    expect(JSON.stringify(numbersSnapshots[0])).not.toContain('refresh-token');
+  });
+
+  it('refreshes near-expired access tokens before reading Numbers endpoints', async () => {
+    const { db } = createDb(
+      activeVault({
+        accessTokenExpiresAt: new Date(Date.now() - 60_000).toISOString()
+      })
+    );
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === 'https://sso.test/token') {
+        return new Response(
+          JSON.stringify({
+            access_token: 'fresh-access-token',
+            refresh_token: 'fresh-refresh-token',
+            scope: syncRequest.requiredScopes.join(' ')
+          })
+        );
+      }
+
+      return new Response(JSON.stringify([]));
+    }) as jest.MockedFunction<typeof fetch>;
+
+    const result = await ingestNumbersFromEsiSyncRequest(db, syncRequest, env, fetchMock);
+
+    expect(result.failures).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/wallets/'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ authorization: 'Bearer fresh-access-token' })
+      })
+    );
   });
 });

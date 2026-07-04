@@ -1,6 +1,12 @@
 import { ObjectId, type Db } from 'mongodb';
 import type { EveSsoIdentity } from './eve-sso';
-import { createVaultDocument, vaultSummary, type EsiTokenPayload, type EsiTokenVaultDocument } from './esi-token-vault';
+import {
+  createVaultDocument,
+  sealTokenMaterial,
+  vaultSummary,
+  type EsiTokenPayload,
+  type EsiTokenVaultDocument
+} from './esi-token-vault';
 
 const collectionName = 'esi_token_vaults';
 
@@ -84,6 +90,40 @@ export async function markVaultLastSync(
       updatedAt: new Date().toISOString()
     }
   });
+}
+
+export async function updateVaultTokenMaterial(
+  db: Db,
+  vault: EsiTokenVaultDocument,
+  token: {
+    accessToken: string;
+    refreshToken?: string;
+    accessTokenExpiresAt: string;
+    grantedScopes?: string[];
+  },
+  env: NodeJS.ProcessEnv = process.env,
+  now = new Date()
+): Promise<EsiTokenVaultDocument | null> {
+  const update: Record<string, unknown> = {
+    sealedAccessToken: sealTokenMaterial(token.accessToken, env),
+    accessTokenExpiresAt: token.accessTokenExpiresAt,
+    updatedAt: now.toISOString()
+  };
+
+  if (token.refreshToken) {
+    update.sealedRefreshToken = sealTokenMaterial(token.refreshToken, env);
+  }
+
+  if (token.grantedScopes && token.grantedScopes.length > 0) {
+    const requested = new Set(vault.requestedScopes);
+    update.grantedScopes = token.grantedScopes.filter((scope) => requested.has(scope)).sort();
+  }
+
+  const result = await db
+    .collection(collectionName)
+    .findOneAndUpdate(idFilter(vault), { $set: update }, { returnDocument: 'after' });
+
+  return result ? normalizeVaultDocument(result as unknown as EsiTokenVaultDocument) : null;
 }
 
 export function normalizeVaultDocument(document: EsiTokenVaultDocument): EsiTokenVaultDocument {
