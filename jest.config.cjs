@@ -4,6 +4,7 @@ module.exports = {
   extensionsToTreatAsEsm: ['.ts'],
   maxWorkers: 2,
   moduleNameMapper: {
+    '^@lgriffin/esi\\.ts$': '<rootDir>/node_modules/@lgriffin/esi.ts/dist/index.js',
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   roots: ['<rootDir>/apps/web/tests/contract', '<rootDir>/apps/web/tests/unit'],

@@ -3,6 +3,7 @@ import { signEveToken, createEveTokenFixture } from '../helpers/eve-sso-token';
 import {
   exchangeAuthorizationCode,
   fetchEveSsoMetadata,
+  refreshEveSsoToken,
   resolveCorporationIdentity,
   resolveLiveEveSsoVaultConsent,
   validateEveAccessToken
@@ -89,6 +90,43 @@ describe('live EVE SSO adapter', () => {
         })
       })
     );
+  });
+
+  it('refreshes access tokens with server-side basic authentication', async () => {
+    const fetchMock = jest.fn(async () => {
+      return new Response(
+        JSON.stringify({
+          access_token: 'new-jwt-token',
+          refresh_token: 'new-refresh-token',
+          expires_in: 900,
+          scope: 'esi-wallet.read_corporation_wallets.v1'
+        }),
+        {
+          status: 200
+        }
+      );
+    });
+
+    await expect(refreshEveSsoToken('old-refresh-token', config, fetchMock)).resolves.toEqual({
+      accessToken: 'new-jwt-token',
+      refreshToken: 'new-refresh-token',
+      accessTokenExpiresAt: expect.any(String),
+      grantedScopes: ['esi-wallet.read_corporation_wallets.v1']
+    });
+
+    const call = fetchMock.mock.calls[0] as unknown as [RequestInfo | URL, RequestInit];
+    const [, options] = call;
+    expect(options).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          authorization: `Basic ${Buffer.from('client-id:client-secret').toString('base64')}`,
+          'content-type': 'application/x-www-form-urlencoded'
+        })
+      })
+    );
+    expect(String(options.body)).toContain('grant_type=refresh_token');
+    expect(String(options.body)).toContain('refresh_token=old-refresh-token');
   });
 
   it('discovers SSO endpoints from metadata', async () => {

@@ -1321,3 +1321,27 @@ Validation plan:
 
 - Spec Kit feature: `specs/061-manual-refresh-console`
 - Local validation covered targeted refresh Jest tests, typecheck, lint, full Jest tests, targeted and full Playwright browser smoke tests, production build, code-review-and-quality gate, and diff hygiene.
+
+### M62: ESI Worker Adapter Hardening - In Progress
+
+Goal: harden read-only corporation ESI ingestion behind a reusable server-side worker adapter so Numbers refreshes can survive token refresh, pagination, transient ESI failures, and partial endpoint failures without exposing secrets or raw ESI payloads.
+
+Planned capabilities:
+
+- Add a reusable server-side ESI worker adapter for protected corporation reads
+- Incorporate the reviewed ESI TypeScript client dependency for the worker access boundary and ESI error classification
+- Refresh vaulted ESI access tokens before worker reads when expiry is near or past due
+- Persist refreshed token material back into the sealed ESI token vault without exposing tokens or ciphertext
+- Support bounded pagination for corporation assets, industry jobs, and market orders
+- Classify ESI failures into safe operational categories such as authentication, authorization, rate limit, service, network, timeout, and invalid response
+- Preserve partial Numbers results when some endpoint groups succeed and others fail
+- Avoid persistent raw ESI response or ETag caching in this milestone; derived Numbers snapshots and safe sync metadata remain the durable records
+
+Boundaries:
+
+- No browser ESI fetch, browser token refresh, raw ESI response caching, EVE write, role/access/standing mutation, wallet/asset/contract movement, token exposure, sealed token exposure, raw provider payload exposure, or unapproved external-service mutation.
+
+Validation plan:
+
+- Spec Kit feature: `specs/062-esi-worker-adapter`
+- Focused validation covers ESI worker adapter, Numbers ingestion, EVE SSO token refresh, and token vault persistence tests before full typecheck, lint, build, diff hygiene, and quality review.
