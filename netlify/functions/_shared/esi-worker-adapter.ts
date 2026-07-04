@@ -1,5 +1,15 @@
+import { createRequire } from 'node:module';
 import type { Db } from 'mongodb';
-import {
+import { readEveSsoLiveConfig } from './eve-sso';
+import { refreshEveSsoToken } from './eve-sso-live';
+import { findActiveVaultById, updateVaultTokenMaterial } from './esi-token-vault-store';
+import { unsealTokenMaterial, type EsiTokenVaultDocument } from './esi-token-vault';
+
+type Fetch = typeof fetch;
+type EsiClientPackage = typeof import('@lgriffin/esi.ts');
+
+const requireEsiClient = createRequire(`${process.cwd()}/package.json`);
+const {
   ApiClientBuilder,
   isForbidden,
   isNotFound,
@@ -9,13 +19,7 @@ import {
   isTimeout,
   isUnauthorized,
   isValidationError
-} from '@lgriffin/esi.ts';
-import { readEveSsoLiveConfig } from './eve-sso';
-import { refreshEveSsoToken } from './eve-sso-live';
-import { findActiveVaultById, updateVaultTokenMaterial } from './esi-token-vault-store';
-import { unsealTokenMaterial, type EsiTokenVaultDocument } from './esi-token-vault';
-
-type Fetch = typeof fetch;
+} = requireEsiClient('@lgriffin/esi.ts') as EsiClientPackage;
 
 export type EsiWorkerFailureCategory =
   | 'authentication'
